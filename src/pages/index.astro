@@ -7,9 +7,12 @@ import { bookmarks } from "@/lib/load-bookmarks";
 import { toSearchEntry } from "@/lib/search";
 
 const entries = bookmarks.map(toSearchEntry);
+const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
+const feedHref = `${base}rss.xml`;
+const designFeedHref = `${base}rss/design.xml`;
 ---
 
-<Layout title="X bookmarks" description="Posts saved from X, summarized and sorted by topic.">
+<Layout title="X bookmarks" description="Posts saved from X, summarized and sorted by topic." feedHref={feedHref}>
   <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-4 sm:px-6">
     <header class="flex items-start justify-between gap-4 pt-10 pb-8 sm:pt-16">
       <div class="flex flex-col gap-2">
@@ -23,7 +26,7 @@ const entries = bookmarks.map(toSearchEntry);
       {
         bookmarks.length > 0 ? (
           <>
-            <BookmarkFilters client:load entries={entries} />
+            <BookmarkFilters client:only="react" entries={entries} />
             <ul class="flex flex-col gap-4 sm:gap-5">
               {bookmarks.map((bookmark) => (
                 <BookmarkCard bookmark={bookmark} />
@@ -36,7 +39,11 @@ const entries = bookmarks.map(toSearchEntry);
       }
     </main>
 
-    <footer class="border-t py-8 text-sm text-muted-foreground">
+    <footer class="flex flex-col gap-2 border-t py-8 text-sm text-muted-foreground">
+      <p>
+        <a class="underline decoration-border underline-offset-4 hover:decoration-current" href={feedHref}>Follow new bookmarks</a> in a feed reader.
+        Each topic has its own feed, such as <a class="underline decoration-border underline-offset-4 hover:decoration-current" href={designFeedHref}>Design</a>.
+      </p>
       <p>This page is unlisted, not private. Anyone with the link can see it.</p>
     </footer>
   </div>

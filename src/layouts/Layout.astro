@@ -5,9 +5,10 @@ import { DARK_QUERY, THEME_STORAGE_KEY } from "@/lib/theme";
 type Props = {
   title: string;
   description: string;
+  feedHref?: string;
 };
 
-const { title, description } = Astro.props;
+const { title, description, feedHref } = Astro.props;
 const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/favicon.svg`;
 ---
 
@@ -21,6 +22,7 @@ const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/favicon.svg`;
     <meta name="description" content={description} />
     <meta name="color-scheme" content="light dark" />
     <link rel="icon" type="image/svg+xml" href={favicon} />
+    {feedHref && <link rel="alternate" type="application/rss+xml" title="Bookmarks" href={feedHref} />}
     <title>{title}</title>
     <script is:inline define:vars={{ storageKey: THEME_STORAGE_KEY, darkQuery: DARK_QUERY }}>
       const media = window.matchMedia(darkQuery);

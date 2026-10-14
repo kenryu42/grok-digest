@@ -8,6 +8,7 @@
     },
     "posted_at": "2026-01-15",
     "topic": "ai-agents",
+    "text": "We let the agent write a plan, and then we wait. It cannot edit a file until someone says yes. This post is fake. It ships with the template so the page has something to show.",
     "summary": "Sample entry. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
     "key_points": [
       "The agent writes a short plan, then waits for approval.",
@@ -24,6 +25,7 @@
     },
     "posted_at": "2026-01-09",
     "topic": "japan-tech",
+    "text": "東京でローカルファーストの勉強会を開きました（という設定です）。この投稿は実在しません。",
     "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
     "key_points": [
       "Search matches Japanese text too. Try typing 東京.",
@@ -39,7 +41,8 @@
     },
     "posted_at": "2025-12-28",
     "topic": "design",
-    "summary": "Sample entry with no key points, to show how a short card renders. Remove it along with the other samples.",
+    "text": "",
+    "summary": "Sample entry with no key points and no post text, to show how a short card renders. Remove it along with the other samples.",
     "key_points": []
   }
 ]

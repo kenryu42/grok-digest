@@ -2,6 +2,7 @@ import { SearchIcon } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { filterSearch, parseFilter } from "@/lib/filter";
 import { matchingIds, type SearchEntry } from "@/lib/search";
 import { TOPIC_LABELS, TOPICS, type Topic } from "@/lib/topics";
 
@@ -10,8 +11,9 @@ type Props = {
 };
 
 export function BookmarkFilters({ entries }: Props) {
-  const [query, setQuery] = useState("");
-  const [topic, setTopic] = useState<Topic | null>(null);
+  const initial = parseFilter(window.location.search);
+  const [query, setQuery] = useState(initial.query);
+  const [topic, setTopic] = useState<Topic | null>(initial.topic);
 
   const visible = useMemo(() => matchingIds({ entries, query, topic }), [entries, query, topic]);
   const topicsInUse = useMemo(
@@ -25,6 +27,12 @@ export function BookmarkFilters({ entries }: Props) {
     }
   }, [visible]);
 
+  useEffect(() => {
+    const next = `${window.location.pathname}${filterSearch({ query, topic })}${window.location.hash}`;
+    const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (current !== next) window.history.replaceState(null, "", next);
+  }, [query, topic]);
+
   return (
     <div className="flex flex-col gap-4">
       <div className="relative">
@@ -33,7 +41,7 @@ export function BookmarkFilters({ entries }: Props) {
           type="search"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
-          placeholder="Search authors, summaries, key points"
+          placeholder="Search authors, posts, summaries, key points"
           aria-label="Search bookmarks"
           className="h-10 rounded-full bg-card pl-9 dark:bg-card"
         />

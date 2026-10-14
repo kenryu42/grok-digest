@@ -12,12 +12,12 @@ function normalize(text: string): string {
 }
 
 export function toSearchEntry(bookmark: Bookmark): SearchEntry {
-  const { id, topic, author, summary, keyPoints } = bookmark;
+  const { id, topic, author, summary, text, keyPoints } = bookmark;
   return {
     id,
     topic,
     text: normalize(
-      [author.name, `@${author.handle}`, TOPIC_LABELS[topic], summary, ...keyPoints].join("\n"),
+      [author.name, `@${author.handle}`, TOPIC_LABELS[topic], summary, text, ...keyPoints].join("\n"),
     ),
   };
 }

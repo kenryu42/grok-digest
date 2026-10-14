@@ -10,12 +10,12 @@ type Props = {
 };
 
 const { bookmark } = Astro.props;
-const { id, url, author, postedAt, topic, summary, keyPoints } = bookmark;
+const { id, url, author, postedAt, topic, summary, text, keyPoints } = bookmark;
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
 ---
 
-<li data-bookmark-id={id}>
+<li id={`b-${id}`} data-bookmark-id={id}>
   <Card className="gap-4 py-5 shadow-xs ring-foreground/8 [--card-spacing:--spacing(5)] sm:[--card-spacing:--spacing(6)] sm:py-6">
     <CardHeader className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
       <p class="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm">
@@ -38,6 +38,14 @@ const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone
               <li class="text-pretty">{point}</li>
             ))}
           </ul>
+        )
+      }
+      {
+        text !== "" && (
+          <figure class="border-t border-border pt-4">
+            <figcaption class="mb-2 text-xs font-medium text-muted-foreground">Original post</figcaption>
+            <blockquote class="text-sm leading-relaxed whitespace-pre-wrap text-pretty text-foreground/80">{text}</blockquote>
+          </figure>
         )
       }
     </CardContent>

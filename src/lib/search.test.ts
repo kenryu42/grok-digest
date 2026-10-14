@@ -6,13 +6,14 @@ import type { Topic } from "./topics";
 const base = {
   url: "https://x.com/someone/status/1",
   posted_at: "2026-02-01",
+  text: "",
   key_points: [],
 };
 
 const entries = parseBookmarks({
   source: "test.json",
   raw: [
-    { ...base, id: "a", author: { name: "Agent Lab", handle: "agentlab" }, topic: "ai-agents", summary: "Planning loops for coding agents." },
+    { ...base, id: "a", author: { name: "Agent Lab", handle: "agentlab" }, topic: "ai-agents", summary: "Planning loops for coding agents.", text: "The rule is plan-before-edit." },
     { ...base, id: "b", author: { name: "Tokyo Notes", handle: "tokyo" }, topic: "japan-tech", summary: "東京のミートアップ", key_points: ["Local-first apps"] },
   ],
 }).map(toSearchEntry);
@@ -29,6 +30,7 @@ describe("matchingIds", () => {
     expect(ids("CODING agents")).toEqual(["a"]);
     expect(ids("local-first")).toEqual(["b"]);
     expect(ids("@tokyo")).toEqual(["b"]);
+    expect(ids("plan-before-edit")).toEqual(["a"]);
     expect(ids("coding tokyo")).toEqual([]);
   });
 

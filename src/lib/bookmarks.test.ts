@@ -9,6 +9,7 @@ const valid = {
   posted_at: "2026-02-01",
   topic: "dev-tools",
   summary: "A summary.",
+  text: "The original post.",
   key_points: ["One point."],
 };
 
@@ -28,6 +29,7 @@ describe("parseBookmarks", () => {
       postedAt: new Date("2026-02-01"),
       topic: "dev-tools",
       summary: "A summary.",
+      text: "The original post.",
       keyPoints: ["One point."],
     });
   });
@@ -48,6 +50,16 @@ describe("parseBookmarks", () => {
     ["a missing summary", { ...valid, summary: " " }, "summary"],
   ])("rejects %s", (_, entry, field) => {
     expect(() => parse([entry])).toThrow(field);
+  });
+
+  it("keeps an empty post", () => {
+    expect(parse([{ ...valid, text: "  " }])[0]?.text).toBe("");
+  });
+
+  it("rejects a missing post", () => {
+    const raw: Record<string, unknown> = { ...valid };
+    delete raw["text"];
+    expect(() => parse([raw])).toThrow("text");
   });
 
   it("rejects duplicate ids", () => {

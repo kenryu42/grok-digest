@@ -21,6 +21,7 @@ const bookmarkSchema = z
     posted_at: z.union([z.iso.date(), z.iso.datetime({ offset: true })]),
     topic: z.enum(TOPICS),
     summary: nonEmpty,
+    text: z.string().trim(),
     key_points: z.array(nonEmpty),
   })
   .transform(({ posted_at, key_points, ...rest }) => ({
