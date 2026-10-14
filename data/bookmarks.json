@@ -1,0 +1,45 @@
+[
+  {
+    "id": "1000000000000000001",
+    "url": "https://x.com/example_agents/status/1000000000000000001",
+    "author": {
+      "name": "Example Agent Lab (sample)",
+      "handle": "example_agents"
+    },
+    "posted_at": "2026-01-15",
+    "topic": "ai-agents",
+    "summary": "Sample entry. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
+    "key_points": [
+      "The agent writes a short plan, then waits for approval.",
+      "Small, checkable steps beat one large change.",
+      "This post does not exist. The link goes nowhere useful."
+    ]
+  },
+  {
+    "id": "1000000000000000002",
+    "url": "https://x.com/example_tokyo/status/1000000000000000002",
+    "author": {
+      "name": "Tokyo Dev Notes (sample)",
+      "handle": "example_tokyo"
+    },
+    "posted_at": "2026-01-09",
+    "topic": "japan-tech",
+    "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
+    "key_points": [
+      "Search matches Japanese text too. Try typing 東京.",
+      "東京のミートアップ (fictional)."
+    ]
+  },
+  {
+    "id": "1000000000000000003",
+    "url": "https://x.com/example_design/status/1000000000000000003",
+    "author": {
+      "name": "Placeholder Design Co. (sample)",
+      "handle": "example_design"
+    },
+    "posted_at": "2025-12-28",
+    "topic": "design",
+    "summary": "Sample entry with no key points, to show how a short card renders. Remove it along with the other samples.",
+    "key_points": []
+  }
+]
