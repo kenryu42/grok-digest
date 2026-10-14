@@ -1,0 +1,43 @@
+---
+import "@/styles/global.css";
+import { DARK_QUERY, THEME_STORAGE_KEY } from "@/lib/theme";
+
+type Props = {
+  title: string;
+  description: string;
+};
+
+const { title, description } = Astro.props;
+const favicon = `${import.meta.env.BASE_URL.replace(/\/$/, "")}/favicon.svg`;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="description" content={description} />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" type="image/svg+xml" href={favicon} />
+    <title>{title}</title>
+    <script is:inline define:vars={{ storageKey: THEME_STORAGE_KEY, darkQuery: DARK_QUERY }}>
+      const media = window.matchMedia(darkQuery);
+      const applyTheme = () => {
+        let stored = null;
+        try {
+          stored = window.localStorage.getItem(storageKey);
+        } catch {}
+        const dark = stored === "dark" || (stored !== "light" && media.matches);
+        document.documentElement.classList.toggle("dark", dark);
+        document.documentElement.style.colorScheme = dark ? "dark" : "light";
+      };
+      applyTheme();
+      media.addEventListener("change", applyTheme);
+    </script>
+  </head>
+  <body class="min-h-dvh">
+    <slot />
+  </body>
+</html>

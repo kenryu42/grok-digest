@@ -1,0 +1,43 @@
+---
+import BookmarkCard from "@/components/BookmarkCard.astro";
+import { BookmarkFilters } from "@/components/BookmarkFilters";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import Layout from "@/layouts/Layout.astro";
+import { bookmarks } from "@/lib/load-bookmarks";
+import { toSearchEntry } from "@/lib/search";
+
+const entries = bookmarks.map(toSearchEntry);
+---
+
+<Layout title="X bookmarks" description="Posts saved from X, summarized and sorted by topic.">
+  <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-4 sm:px-6">
+    <header class="flex items-start justify-between gap-4 pt-10 pb-8 sm:pt-16">
+      <div class="flex flex-col gap-2">
+        <h1 class="font-heading text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Bookmarks</h1>
+        <p class="text-pretty text-muted-foreground">Posts saved from X, summarized and sorted by topic.</p>
+      </div>
+      <ThemeToggle client:load />
+    </header>
+
+    <main class="flex flex-1 flex-col gap-6 pb-16">
+      {
+        bookmarks.length > 0 ? (
+          <>
+            <BookmarkFilters client:load entries={entries} />
+            <ul class="flex flex-col gap-4 sm:gap-5">
+              {bookmarks.map((bookmark) => (
+                <BookmarkCard bookmark={bookmark} />
+              ))}
+            </ul>
+          </>
+        ) : (
+          <p class="font-serif text-lg text-muted-foreground">No bookmarks yet. Share a post on X by email to add one.</p>
+        )
+      }
+    </main>
+
+    <footer class="border-t py-8 text-sm text-muted-foreground">
+      <p>This page is unlisted, not private. Anyone with the link can see it.</p>
+    </footer>
+  </div>
+</Layout>
