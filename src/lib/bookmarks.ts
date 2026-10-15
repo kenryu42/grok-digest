@@ -36,9 +36,20 @@ export const bookmarkSchema = z
     links: z.array(z.strictObject({ title: nonEmpty, url: z.url({ protocol: /^https$/ }) })),
     media: z
       .array(
-        z.strictObject({ url: z.url({ protocol: /^https$/, hostname: X_MEDIA_HOSTNAME }), alt: nonEmpty.optional() }),
+        z.strictObject({
+          url: z.url({ protocol: /^https$/, hostname: X_MEDIA_HOSTNAME }),
+          alt: nonEmpty.optional(),
+          link: nonEmpty.optional(),
+        }),
       )
       .default([]),
+  })
+  .superRefine(({ text, media }, ctx) => {
+    media.forEach(({ link }, index) => {
+      if (link !== undefined && !text.includes(link)) {
+        ctx.addIssue({ code: "custom", path: ["media", index, "link"], message: `"${link}" is not in text` });
+      }
+    });
   })
   .transform(({ posted_at, saved_at, shelf_life, key_points, ...rest }) => ({
     ...rest,

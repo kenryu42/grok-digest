@@ -56,12 +56,16 @@ describe("parseBookmarks", () => {
     });
   });
 
-  it("keeps a post's images in thread order", () => {
+  it("keeps a post's images in thread order, with the short link that stands for them in the post", () => {
     const media = [
-      { url: "https://pbs.twimg.com/media/GaBcDeFgHiJ.jpg", alt: "A terminal running the CLI" },
+      {
+        url: "https://pbs.twimg.com/media/GaBcDeFgHiJ.jpg",
+        alt: "A terminal running the CLI",
+        link: "pic.x.com/AbCdEf",
+      },
       { url: "https://pbs.twimg.com/ext_tw_video_thumb/1/pu/img/KlMnOp.jpg" },
     ];
-    expect(parse([{ ...valid, media }])[0]?.media).toEqual(media);
+    expect(parse([{ ...valid, text: "The CLI. pic.x.com/AbCdEf", media }])[0]?.media).toEqual(media);
   });
 
   it("sorts by when the bookmark was saved, newest first", () => {
@@ -86,6 +90,11 @@ describe("parseBookmarks", () => {
     ["an image behind a t.co link", { ...valid, media: [{ url: "https://t.co/AbCdEf" }] }, "media"],
     ["a plain-http image", { ...valid, media: [{ url: "http://pbs.twimg.com/media/GaBcDeFgHiJ.jpg" }] }, "media"],
     ["an empty alt text", { ...valid, media: [{ url: "https://pbs.twimg.com/media/A.jpg", alt: " " }] }, "media"],
+    [
+      "an image link that is not in the post",
+      { ...valid, media: [{ url: "https://pbs.twimg.com/media/A.jpg", link: "https://t.co/Missing123" }] },
+      "media",
+    ],
     ["an image as a string", { ...valid, media: ["https://pbs.twimg.com/media/A.jpg"] }, "media"],
   ])("rejects %s", (_, entry, field) => {
     expect(() => parse([entry])).toThrow(field);

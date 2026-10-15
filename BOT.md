@@ -54,7 +54,7 @@ bun run validate
   "shelf_life": "evergreen",
   "tldr": "Stale workaround comments spread because coding agents copy them",
   "summary": "Argues you should delete most code comments, because coding agents copy existing workaround comments and spread hacks through the codebase.",
-  "text": "ban and delete most if not all code comments!\n\nagents love copying what already exists.",
+  "text": "ban and delete most if not all code comments!\n\nagents love copying what already exists. https://t.co/Xq7mPLe0Ab",
   "key_points": [
     "Agents imitate existing code, so stale workaround comments spread like weeds.",
     "Keep only comments that must exist, such as browser-quirk explanations."
@@ -62,7 +62,11 @@ bun run validate
   "action": "Have an agent run /no-comments on one repo and sort each comment into refactor or delete.",
   "links": [{ "title": "pstack: the /no-comments skill", "url": "https://github.com/example/pstack" }],
   "media": [
-    { "url": "https://pbs.twimg.com/media/G3xAmPLeAAAbCdE.jpg", "alt": "A diff that deletes a workaround comment" }
+    {
+      "url": "https://pbs.twimg.com/media/G3xAmPLeAAAbCdE.jpg",
+      "alt": "A diff that deletes a workaround comment",
+      "link": "https://t.co/Xq7mPLe0Ab"
+    }
   ]
 }
 ```
@@ -156,10 +160,11 @@ Every link in the post and its thread, followed to where it really lands. Expand
 
 ### media
 
-The images in the post and its thread, in thread order, so the card can show them. One object per photo:
+The images in the post and its thread, in thread order, so the card can show each one with the post it came from. One object per photo:
 
 - `url`: the image's `https://pbs.twimg.com/` address, such as `https://pbs.twimg.com/media/G3xAmPLeAAAbCdE.jpg`. A `?format=jpg&name=large` query is fine. Never a `t.co` link or an `x.com/…/photo/1` page; the build rejects any other host.
 - `alt`: the author's alt text for the image when it has one, otherwise a few words on what it shows. Leave `alt` out rather than writing `""`.
+- `link`: the short link that stands for the image in `text`, copied exactly as it appears there, such as `https://t.co/Xq7mPLe0Ab` or `pic.x.com/Xq7mPLe0Ab`. X gives all the photos of one post a single link, so photos from the same post share it. The card shows the images where that link is and hides the link. The build rejects a `link` that is not in `text`. Leave `link` out only when `text` has no link for the image; the card then shows it after the post.
 - For a video or GIF, add its poster image (the `pbs.twimg.com` thumbnail X shows before it plays) when you can find it. Skip it otherwise.
 - Don't add link-preview cards or the author's profile picture.
 - Write `[]` when the post has no images.

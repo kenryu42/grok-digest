@@ -15,11 +15,17 @@ const bookmarks = parseBookmarks({
       shelf_life: "evergreen",
       tldr: "A headline.",
       summary: "A summary.",
-      text: "Watch <script> tags.",
+      text: "Watch <script> tags. https://t.co/Aaaaaaaaa1\n\nThe end.",
       key_points: [],
       action: "Try <b>this</b>.",
       links: [{ title: "Docs & guide", url: "https://example.com/docs?a=1&b=2" }],
-      media: [{ url: "https://pbs.twimg.com/media/GaBcDeFgHiJ?format=jpg&name=large", alt: 'A "before" screenshot' }],
+      media: [
+        {
+          url: "https://pbs.twimg.com/media/GaBcDeFgHiJ?format=jpg&name=large",
+          alt: 'A "before" screenshot',
+          link: "https://t.co/Aaaaaaaaa1",
+        },
+      ],
     },
     {
       id: "2",
@@ -70,11 +76,18 @@ describe("feedConfig", () => {
     expect(item?.content).toContain('<li><a href="https://example.com/docs?a=1&amp;b=2">Docs &amp; guide</a></li>');
   });
 
-  it("shows the post's images with their alt text, escaped", () => {
+  it("shows each image in the post in place of its short link, escaped", () => {
     const [item] = config.items;
     expect(item?.content).toContain(
-      '<img src="https://pbs.twimg.com/media/GaBcDeFgHiJ?format=jpg&amp;name=large" alt="A &quot;before&quot; screenshot">',
+      [
+        "<blockquote>",
+        "<p>Watch &lt;script&gt; tags.</p>",
+        '<p><img src="https://pbs.twimg.com/media/GaBcDeFgHiJ?format=jpg&amp;name=large" alt="A &quot;before&quot; screenshot"></p>',
+        "<p>The end.</p>",
+        "</blockquote>",
+      ].join(""),
     );
+    expect(item?.content).not.toContain("t.co/");
   });
 
   it("names the feed address in the self link", () => {

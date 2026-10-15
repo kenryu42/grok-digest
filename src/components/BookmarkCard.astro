@@ -5,7 +5,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import type { Bookmark } from "../lib/bookmarks";
 import { copyText } from "../lib/copy";
-import { imagesWithAlt } from "../lib/media";
+import { postParts } from "../lib/media";
 import { TOPIC_LABELS } from "../lib/topics";
 
 type Props = {
@@ -13,14 +13,13 @@ type Props = {
 };
 
 const { bookmark } = Astro.props;
-const { id, url, author, postedAt, savedAt, topic, shelfLife, tldr, summary, text, keyPoints, action, links } =
-  bookmark;
+const { id, url, author, postedAt, savedAt, topic, shelfLife, tldr, summary, keyPoints, action, links } = bookmark;
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
 const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
-const images = imagesWithAlt(bookmark);
+const post = postParts(bookmark);
 ---
 
 <li id={`b-${id}`} data-bookmark-id={id} data-url={url} data-topic={topic} class="group/bookmark scroll-mt-6">
@@ -90,39 +89,44 @@ const images = imagesWithAlt(bookmark);
             ))}
           </ul>
         )}
-        {(text !== "" || images.length > 0) && (
+        {post.length > 0 && (
           <figure class="border-t border-border pt-4">
             <figcaption class="mb-2 text-xs font-medium text-muted-foreground">Original post</figcaption>
-            {text !== "" && (
-              <blockquote class="text-sm leading-relaxed whitespace-pre-wrap text-pretty text-foreground/80">
-                {text}
-              </blockquote>
-            )}
-            {images.length > 0 && (
-              <ul
-                class:list={["grid max-w-md gap-2", { "grid-cols-2": images.length > 1, "mt-3": text !== "" }]}
-                aria-label="Images in the post"
-              >
-                {images.map((image, index) => (
-                  <li class:list={{ "col-span-2": index === 0 && images.length > 1 && images.length % 2 === 1 }}>
-                    <a
-                      href={image.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      class="block overflow-hidden rounded-lg border border-border bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                    >
-                      <img
-                        src={image.url}
-                        alt={image.alt}
-                        loading="lazy"
-                        decoding="async"
-                        class="aspect-video w-full object-cover"
-                      />
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <blockquote class="flex flex-col gap-3 text-sm leading-relaxed text-pretty text-foreground/80">
+              {post.map((part) =>
+                part.kind === "text" ? (
+                  <p class="whitespace-pre-wrap">{part.text}</p>
+                ) : (
+                  <ul
+                    class:list={["grid max-w-md gap-2", { "grid-cols-2": part.images.length > 1 }]}
+                    aria-label="Images in the post"
+                  >
+                    {part.images.map((image, index) => (
+                      <li
+                        class:list={{
+                          "col-span-2": index === 0 && part.images.length > 1 && part.images.length % 2 === 1,
+                        }}
+                      >
+                        <a
+                          href={image.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          class="block overflow-hidden rounded-lg border border-border bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                        >
+                          <img
+                            src={image.url}
+                            alt={image.alt}
+                            loading="lazy"
+                            decoding="async"
+                            class="aspect-video w-full object-cover"
+                          />
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                ),
+              )}
+            </blockquote>
           </figure>
         )}
       </div>

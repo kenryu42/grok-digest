@@ -9,10 +9,26 @@ import samples from "../template/data/bookmarks.json";
 const REPOSITORY = path.resolve(".");
 const CLI = path.join(REPOSITORY, "src/cli.ts");
 const LOCAL_ADDRESS = /Local\s+(http:\/\/\S+?)\/?\s/;
-const PHOTO_POST_ID = "3000000000000000001";
+const THREAD_ID = "3000000000000000001";
+const THREAD_TEXT = [
+  "Post one: we rebuilt the dashboard.",
+  "",
+  "It took a month. https://t.co/Aaaaaaaaa1",
+  "",
+  "Post two has no photo.",
+  "",
+  "Post three shows the new chart. https://t.co/Bbbbbbbbb2",
+  "",
+  "Post four is text only.",
+  "",
+  "Post five: before and after.",
+  "https://t.co/Ccccccccc3",
+].join("\n");
 const PHOTOS = [
-  { url: "https://pbs.twimg.com/media/GaBcDeFgHiJ.jpg", alt: "A terminal running the CLI" },
-  { url: "https://pbs.twimg.com/media/KlMnOpQrStU.jpg" },
+  { url: "https://pbs.twimg.com/media/GaBcDeFgHi1.jpg", alt: "The old dashboard", link: "https://t.co/Aaaaaaaaa1" },
+  { url: "https://pbs.twimg.com/media/GaBcDeFgHi2.jpg", link: "https://t.co/Aaaaaaaaa1" },
+  { url: "https://pbs.twimg.com/media/GaBcDeFgHi3.jpg", alt: "The new chart", link: "https://t.co/Bbbbbbbbb2" },
+  { url: "https://pbs.twimg.com/media/GaBcDeFgHi4.jpg", alt: "Before and after", link: "https://t.co/Ccccccccc3" },
 ];
 
 let site = "";
@@ -25,6 +41,13 @@ const localUrlsIn = (text: string): string[] =>
     ([, attribute, cssUrl]) => attribute ?? cssUrl ?? "",
   );
 
+const quotedPostIn = (card: string) =>
+  [
+    ...(/<blockquote[^>]*>([\s\S]*?)<\/blockquote>/.exec(card)?.[1] ?? "").matchAll(
+      /<p[^>]*>([\s\S]*?)<\/p>|<img\b[^>]*>/g,
+    ),
+  ].map(([tag, text]) => text ?? /\ssrc="([^"]*)"/.exec(tag)?.[1]);
+
 const imagesOn = (card: string) =>
   [...card.matchAll(/<img\b[^>]*>/g)].map(([tag]) => ({
     src: /\ssrc="([^"]*)"/.exec(tag)?.[1],
@@ -35,13 +58,14 @@ const imagesOn = (card: string) =>
 async function siteWithLinkedPackages(): Promise<string> {
   const root = await mkdtemp(path.join(tmpdir(), "grok-digest-dev-"));
   await cp(path.resolve("template/data"), path.join(root, "data"), { recursive: true });
-  const photoPost = {
+  const thread = {
     ...samples[0],
-    id: PHOTO_POST_ID,
-    url: `https://x.com/example/status/${PHOTO_POST_ID}`,
+    id: THREAD_ID,
+    url: `https://x.com/example/status/${THREAD_ID}`,
+    text: THREAD_TEXT,
     media: PHOTOS,
   };
-  await writeFile(path.join(root, "data/bookmarks.json"), JSON.stringify([...samples, photoPost]));
+  await writeFile(path.join(root, "data/bookmarks.json"), JSON.stringify([...samples, thread]));
   await cp(path.resolve("template/package.json"), path.join(root, "package.json"));
   await mkdir(path.join(root, "node_modules"));
   await symlink(REPOSITORY, path.join(root, "node_modules/grok-digest"));
@@ -103,15 +127,32 @@ describe("dev", () => {
     expect(serverOutput).not.toContain("outside of Vite serving allow list");
   }, 60_000);
 
-  it("shows a post's images on its card, lazily, and no images on cards without any", async () => {
+  it("shows each image under the post it came from, in place of its short link", async () => {
     const page = await (await fetch(origin)).text();
     const cards = page.split('<li id="b-').slice(1);
-    const photoCard = cards.find((card) => card.startsWith(PHOTO_POST_ID));
-    const otherCards = cards.filter((card) => !card.startsWith(PHOTO_POST_ID));
-    expect(imagesOn(photoCard ?? "")).toEqual([
-      { src: PHOTOS[0]?.url, alt: "A terminal running the CLI", lazy: true },
-      { src: PHOTOS[1]?.url, alt: "Image 2 of 2 from the post by @example_agents", lazy: true },
+    const threadCard = cards.find((card) => card.startsWith(THREAD_ID)) ?? "";
+    expect(quotedPostIn(threadCard)).toEqual([
+      "Post one: we rebuilt the dashboard.\n\nIt took a month.",
+      PHOTOS[0]?.url,
+      PHOTOS[1]?.url,
+      "Post two has no photo.\n\nPost three shows the new chart.",
+      PHOTOS[2]?.url,
+      "Post four is text only.\n\nPost five: before and after.",
+      PHOTOS[3]?.url,
     ]);
+    expect(/<figure[\s\S]*?<\/figure>/.exec(threadCard)?.[0]).not.toContain("t.co/");
+    expect(imagesOn(threadCard).slice(0, 2)).toEqual([
+      { src: PHOTOS[0]?.url, alt: "The old dashboard", lazy: true },
+      { src: PHOTOS[1]?.url, alt: "Image 2 of 4 from the post by @example_agents", lazy: true },
+    ]);
+  });
+
+  it("shows no images on cards without any", async () => {
+    const page = await (await fetch(origin)).text();
+    const otherCards = page
+      .split('<li id="b-')
+      .slice(1)
+      .filter((card) => !card.startsWith(THREAD_ID));
     expect(otherCards.length).toBeGreaterThan(0);
     expect(otherCards.flatMap(imagesOn)).toEqual([]);
   });
