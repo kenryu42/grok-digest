@@ -30,6 +30,14 @@
   --color-card: var(--card);
   --color-foreground: var(--foreground);
   --color-background: var(--background);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-done: var(--done);
+  --color-done-foreground: var(--done-foreground);
+  --color-topic: var(--topic);
+  --color-topic-soft: var(--topic-soft);
+  --color-topic-foreground: var(--topic-foreground);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -57,8 +65,13 @@
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.9 0.01 80);
   --input: oklch(0.88 0.01 80);
-  --ring: oklch(0.65 0.02 70);
+  --ring: oklch(0.76 0.15 70);
   --radius: 0.625rem;
+  --brand: oklch(0.76 0.15 70);
+  --brand-ink: oklch(0.5 0.11 60);
+  --brand-soft: oklch(0.955 0.04 85);
+  --done: oklch(0.52 0.12 155);
+  --done-foreground: oklch(0.985 0.004 85);
 }
 
 .dark {
@@ -79,7 +92,48 @@
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 14%);
-  --ring: oklch(0.6 0.015 70);
+  --ring: oklch(0.78 0.14 72);
+  --brand: oklch(0.78 0.14 72);
+  --brand-ink: oklch(0.82 0.12 78);
+  --brand-soft: oklch(0.28 0.04 72);
+  --done: oklch(0.76 0.13 155);
+  --done-foreground: oklch(0.2 0.008 60);
+}
+
+[data-topic] {
+  --topic-chroma: 1;
+  --topic: oklch(0.5 calc(0.11 * var(--topic-chroma)) var(--topic-hue));
+  --topic-soft: oklch(0.95 calc(0.025 * var(--topic-chroma)) var(--topic-hue));
+  --topic-foreground: oklch(0.985 0.004 85);
+}
+
+.dark [data-topic] {
+  --topic: oklch(0.8 calc(0.1 * var(--topic-chroma)) var(--topic-hue));
+  --topic-soft: oklch(0.3 calc(0.045 * var(--topic-chroma)) var(--topic-hue));
+  --topic-foreground: oklch(0.2 0.008 60);
+}
+
+[data-topic="ai-agents"] {
+  --topic-hue: 295;
+}
+[data-topic="models-releases"] {
+  --topic-hue: 250;
+}
+[data-topic="dev-tools"] {
+  --topic-hue: 195;
+}
+[data-topic="startups-business"] {
+  --topic-hue: 120;
+}
+[data-topic="japan-tech"] {
+  --topic-hue: 20;
+}
+[data-topic="design"] {
+  --topic-hue: 340;
+}
+[data-topic="other"] {
+  --topic-hue: 70;
+  --topic-chroma: 0.15;
 }
 
 @layer base {

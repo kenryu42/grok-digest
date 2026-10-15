@@ -1,11 +1,12 @@
 import { ChevronsDownUpIcon, ChevronsUpDownIcon, SearchIcon } from "lucide-react";
+import { cn } from "cn";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "./ui/button.tsx";
 import { Input } from "./ui/input.tsx";
 import { filterSearch, parseFilter, VIEWS, type Filter, type View } from "../lib/filter.ts";
 import { dailyReview, localDay, type ReviewPick } from "../lib/review.ts";
 import { matchingIds, type SearchEntry } from "../lib/search.ts";
-import { TOPIC_LABELS, TOPICS } from "../lib/topics.ts";
+import { TOPIC_LABELS, TOPICS, type Topic } from "../lib/topics.ts";
 
 type Props = {
   entries: SearchEntry[];
@@ -284,7 +285,9 @@ export function BookmarkControls({ entries }: Props) {
             className="inline-flex h-8 items-center gap-1.5 rounded-full px-3.5 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-xs"
           >
             {VIEW_LABELS[v]}
-            <span className="text-xs text-muted-foreground tabular-nums">{counts[v]}</span>
+            <span className="text-xs text-muted-foreground tabular-nums in-aria-pressed:font-semibold in-aria-pressed:text-brand-ink">
+              {counts[v]}
+            </span>
           </button>
         ))}
       </fieldset>
@@ -294,6 +297,7 @@ export function BookmarkControls({ entries }: Props) {
         {topicsInUse.map((t) => (
           <TopicChip
             key={t}
+            topic={t}
             label={TOPIC_LABELS[t]}
             pressed={topic === t}
             onClick={() => update({ topic: topic === t ? null : t })}
@@ -354,7 +358,17 @@ function Status({
   return plural(visible, "bookmark");
 }
 
-function TopicChip({ label, pressed, onClick }: { label: string; pressed: boolean; onClick: () => void }) {
+function TopicChip({
+  topic,
+  label,
+  pressed,
+  onClick,
+}: {
+  topic?: Topic;
+  label: string;
+  pressed: boolean;
+  onClick: () => void;
+}) {
   return (
     <Button
       type="button"
@@ -362,8 +376,15 @@ function TopicChip({ label, pressed, onClick }: { label: string; pressed: boolea
       variant={pressed ? "default" : "outline"}
       aria-pressed={pressed}
       onClick={onClick}
-      className="rounded-full px-3"
+      data-topic={topic}
+      className={cn(
+        "rounded-full px-3",
+        topic !== undefined && pressed && "bg-topic text-topic-foreground hover:bg-topic/85",
+      )}
     >
+      {topic !== undefined && (
+        <span aria-hidden="true" className="size-2 rounded-full bg-topic group-aria-pressed/button:bg-current" />
+      )}
       {label}
     </Button>
   );

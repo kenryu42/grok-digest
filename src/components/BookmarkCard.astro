@@ -21,8 +21,8 @@ const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
 const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
 ---
 
-<li id={`b-${id}`} data-bookmark-id={id} data-url={url} class="group/bookmark scroll-mt-6">
-  <Card className="gap-0 py-0 shadow-xs ring-foreground/8 [--card-spacing:--spacing(5)] has-[summary:focus-visible]:ring-2 has-[summary:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]">
+<li id={`b-${id}`} data-bookmark-id={id} data-url={url} data-topic={topic} class="group/bookmark scroll-mt-6">
+  <Card className="relative gap-0 py-0 shadow-xs before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-topic before:transition-opacity group-data-[done]/bookmark:before:opacity-55 ring-foreground/8 [--card-spacing:--spacing(5)] has-[summary:focus-visible]:ring-2 has-[summary:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]">
     <details open class="group/details transition-opacity group-data-[done]/bookmark:opacity-55">
       <summary class="flex cursor-pointer list-none flex-col gap-2 px-(--card-spacing) pt-(--card-spacing) pb-4 outline-none [&::-webkit-details-marker]:hidden">
         <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
@@ -39,11 +39,7 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
             )}
           </span>
         </span>
-        <span
-          data-review-reason
-          class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
-          hidden
-        ></span>
+        <span data-review-reason class="text-xs font-medium tracking-wide text-brand-ink uppercase" hidden></span>
         <span class="flex items-start justify-between gap-3">
           <h2 class="font-heading text-xl leading-snug font-semibold text-balance text-foreground sm:text-[1.375rem]">
             {tldr}
@@ -54,10 +50,10 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
           />
         </span>
         {action !== "" && (
-          <span class="flex items-start gap-2 rounded-lg bg-secondary px-3 py-2 text-sm leading-relaxed text-secondary-foreground">
-            <ZapIcon className="mt-1 size-3.5 shrink-0" aria-hidden="true" />
+          <span class="flex items-start gap-2 rounded-lg bg-brand-soft px-3 py-2 text-sm leading-relaxed text-foreground">
+            <ZapIcon className="mt-1 size-3.5 shrink-0 fill-brand text-brand-ink" aria-hidden="true" />
             <span class="text-pretty">
-              <span class="font-medium">Try:</span> {action}
+              <span class="font-medium text-brand-ink">Try:</span> {action}
             </span>
           </span>
         )}
@@ -83,7 +79,7 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
                   class="group/link inline-flex items-baseline gap-2 rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
                 >
                   <LinkIcon className="size-3.5 shrink-0 translate-y-0.5 text-muted-foreground" aria-hidden="true" />
-                  <span class="text-pretty text-foreground underline decoration-border underline-offset-4 transition-colors group-hover/link:decoration-foreground">
+                  <span class="text-pretty text-foreground underline decoration-border underline-offset-4 transition-colors group-hover/link:decoration-brand">
                     {link.title}
                   </span>
                   <span class="shrink-0 text-xs text-muted-foreground">{hostOf(link.url)}</span>
@@ -105,8 +101,12 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
 
     <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-(--card-spacing) pb-(--card-spacing)">
       <div class="flex flex-wrap items-center gap-1.5">
-        <Badge variant="secondary">{TOPIC_LABELS[topic]}</Badge>
-        {shelfLife === "news" && <Badge variant="outline">News</Badge>}
+        <Badge className="bg-topic-soft text-topic">{TOPIC_LABELS[topic]}</Badge>
+        {shelfLife === "news" && (
+          <Badge variant="outline" className="border-brand/60 text-brand-ink">
+            News
+          </Badge>
+        )}
       </div>
       <div class="ml-auto flex items-center gap-3">
         <Button
@@ -130,7 +130,7 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
           data-done-toggle
           aria-pressed="false"
           title="Mark done (e)"
-          className="rounded-full aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground dark:aria-pressed:bg-primary dark:aria-pressed:hover:bg-primary/80"
+          className="rounded-full aria-pressed:border-done aria-pressed:bg-done aria-pressed:text-done-foreground aria-pressed:hover:bg-done/85 aria-pressed:hover:text-done-foreground dark:aria-pressed:border-done dark:aria-pressed:bg-done dark:aria-pressed:hover:bg-done/85"
         >
           <CheckIcon aria-hidden="true" />
           Done
@@ -139,7 +139,7 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1 rounded-sm text-sm font-medium whitespace-nowrap text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          class="inline-flex items-center gap-1 rounded-sm text-sm font-medium whitespace-nowrap text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-brand focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           Open on X<ArrowUpRightIcon className="size-3.5" aria-hidden="true" />
         </a>
