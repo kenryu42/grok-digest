@@ -8,7 +8,9 @@ const valid = {
   url: "https://x.com/someone/status/1",
   author: { name: "Someone", handle: "@someone" },
   posted_at: "2026-02-01",
+  saved_at: "2026-02-02T09:30:00+09:00",
   topic: "dev-tools",
+  tldr: "A headline.",
   summary: "A summary.",
   text: "The original post.",
   key_points: ["One point."],
@@ -38,25 +40,29 @@ describe("parseBookmarks", () => {
       url: "https://x.com/someone/status/1",
       author: { name: "Someone", handle: "someone" },
       postedAt: new Date("2026-02-01"),
+      savedAt: new Date("2026-02-02T00:30:00Z"),
       topic: "dev-tools",
+      tldr: "A headline.",
       summary: "A summary.",
       text: "The original post.",
       keyPoints: ["One point."],
     });
   });
 
-  it("sorts newest first", () => {
+  it("sorts by when the bookmark was saved, newest first", () => {
     const ids = parse([
-      { ...valid, id: "old", posted_at: "2025-01-01" },
-      { ...valid, id: "new", posted_at: "2026-03-01T09:00:00+09:00" },
+      { ...valid, id: "saved-earlier", posted_at: "2026-03-01", saved_at: "2026-03-02T09:00:00+09:00" },
+      { ...valid, id: "old-post-saved-later", posted_at: "2023-05-01", saved_at: "2026-03-03T09:00:00+09:00" },
     ]).map(({ id }) => id);
-    expect(ids).toEqual(["new", "old"]);
+    expect(ids).toEqual(["old-post-saved-later", "saved-earlier"]);
   });
 
   it.each([
     ["an unknown topic", { ...valid, topic: "crypto" }, "topic"],
     ["a non-X url", { ...valid, url: "https://example.com/post/1" }, "url"],
     ["a bad date", { ...valid, posted_at: "Feb 1" }, "posted_at"],
+    ["a save date without a time", { ...valid, saved_at: "2026-02-02" }, "saved_at"],
+    ["a missing tldr", { ...valid, tldr: "" }, "tldr"],
     ["a misspelled field", { ...valid, keypoints: [] }, "keypoints"],
     ["a missing summary", { ...valid, summary: " " }, "summary"],
   ])("rejects %s", (_, entry, field) => {

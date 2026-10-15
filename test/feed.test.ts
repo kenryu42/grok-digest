@@ -10,7 +10,9 @@ const bookmarks = parseBookmarks({
       url: "https://x.com/someone/status/1",
       author: { name: "A & B", handle: "someone" },
       posted_at: "2026-02-01",
+      saved_at: "2026-02-03T08:00:00+09:00",
       topic: "design",
+      tldr: "A headline.",
       summary: "A summary.",
       text: "Watch <script> tags.",
       key_points: [],
@@ -20,7 +22,9 @@ const bookmarks = parseBookmarks({
       url: "https://x.com/other/status/2",
       author: { name: "Other", handle: "other" },
       posted_at: "2026-01-01",
+      saved_at: "2026-01-02T08:00:00+09:00",
       topic: "other",
+      tldr: "No words.",
       summary: "No words.",
       text: "",
       key_points: ["One point."],
@@ -38,12 +42,19 @@ const config = feedConfig({
 describe("feedConfig", () => {
   it("limits a topic feed to that topic and escapes the post", () => {
     expect(config.title).toBe("Bookmarks: Design");
-    expect(config.items.map((item) => item.title)).toEqual(["A summary."]);
+    expect(config.items).toHaveLength(1);
     const [item] = config.items;
     expect(item?.link).toBe("https://example.github.io/grok-digest/#b-1");
     expect(item?.content).toContain("&lt;script&gt;");
     expect(item?.content).toContain("A &amp; B");
     expect(item?.content).not.toContain("<script>");
+  });
+
+  it("titles an item with the tldr, dates it by the save, and keeps the summary in the body", () => {
+    const [item] = config.items;
+    expect(item?.title).toBe("A headline.");
+    expect(item?.pubDate).toEqual(new Date("2026-02-02T23:00:00Z"));
+    expect(item?.content).toContain("<p>A summary.</p>");
   });
 
   it("names the feed address in the self link", () => {

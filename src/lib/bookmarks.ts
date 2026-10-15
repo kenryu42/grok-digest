@@ -7,6 +7,7 @@ const X_HOSTNAME = /^(www\.|mobile\.)?(x|twitter)\.com$/;
 const X_HANDLE = /^[A-Za-z0-9_]{1,15}$/;
 
 const nonEmpty = z.string().trim().min(1);
+const instant = z.iso.datetime({ offset: true });
 
 export const bookmarkSchema = z
   .strictObject({
@@ -20,15 +21,18 @@ export const bookmarkSchema = z
         .transform((handle) => handle.replace(/^@/, ""))
         .pipe(z.string().regex(X_HANDLE, "must be an X handle such as @jack")),
     }),
-    posted_at: z.union([z.iso.date(), z.iso.datetime({ offset: true })]),
+    posted_at: z.union([z.iso.date(), instant]),
+    saved_at: instant,
     topic: z.enum(TOPICS),
+    tldr: nonEmpty,
     summary: nonEmpty,
     text: z.string().trim(),
     key_points: z.array(nonEmpty),
   })
-  .transform(({ posted_at, key_points, ...rest }) => ({
+  .transform(({ posted_at, saved_at, key_points, ...rest }) => ({
     ...rest,
     postedAt: new Date(posted_at),
+    savedAt: new Date(saved_at),
     keyPoints: key_points,
   }));
 
@@ -65,6 +69,6 @@ export function parseDataFile<Schema extends z.ZodType>({
 
 export function parseBookmarks({ raw, source }: { raw: unknown; source: string }): Bookmark[] {
   return parseDataFile({ schema: bookmarksFileSchema, raw, source }).toSorted(
-    (a, b) => b.postedAt.getTime() - a.postedAt.getTime(),
+    (a, b) => b.savedAt.getTime() - a.savedAt.getTime(),
   );
 }

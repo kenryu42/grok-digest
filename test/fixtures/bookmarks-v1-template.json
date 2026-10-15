@@ -7,7 +7,9 @@
       "handle": "example_agents"
     },
     "posted_at": "2026-01-15",
+    "saved_at": "2026-01-16T08:12:00+09:00",
     "topic": "ai-agents",
+    "tldr": "Make the coding agent plan before it edits",
     "text": "We let the agent write a plan, and then we wait. It cannot edit a file until someone says yes. This post is fake. It ships with the template so the page has something to show.",
     "summary": "Sample entry. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
     "key_points": [
@@ -24,7 +26,9 @@
       "handle": "example_tokyo"
     },
     "posted_at": "2026-01-09",
+    "saved_at": "2026-01-10T21:40:00+09:00",
     "topic": "japan-tech",
+    "tldr": "サンプル: a Tokyo meetup on local-first apps",
     "text": "東京でローカルファーストの勉強会を開きました（という設定です）。この投稿は実在しません。",
     "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
     "key_points": ["Search matches Japanese text too. Try typing 東京.", "東京のミートアップ (fictional)."]
@@ -37,7 +41,9 @@
       "handle": "example_design"
     },
     "posted_at": "2025-12-28",
+    "saved_at": "2026-01-02T10:05:00+09:00",
     "topic": "design",
+    "tldr": "A short sample card with no key points",
     "text": "",
     "summary": "Sample entry with no key points and no post text, to show how a short card renders. Remove it along with the other samples.",
     "key_points": []

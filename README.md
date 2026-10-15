@@ -61,7 +61,7 @@ The site needs no Astro config. The package depends on the Astro version it was 
 import { SCHEMA_VERSION, bookmarkSchema, parseBookmarks, TOPICS } from "grok-digest/schema";
 ```
 
-`SCHEMA_VERSION` is `1`. The JSON files have no version field. A `bookmarks.json` that already validates is version 1, including files written before this package existed. `posted_at` with milliseconds and a `Z` offset, as the bot writes it, is version 1.
+`SCHEMA_VERSION` is `1`. The JSON files have no version field. A `bookmarks.json` that already validates is version 1. `posted_at` with milliseconds and a `Z` offset, as the bot writes it, is version 1.
 
 | File                  | Version 1 shape                                                        |
 | --------------------- | ---------------------------------------------------------------------- |
@@ -75,7 +75,7 @@ Every site takes every release, so every release reads every data file an earlie
 
 The page title is "Grok Digest". The footer reads "Unofficial. Summaries created with Grok." Every page sends `<meta name="robots" content="noindex,nofollow">` and `<meta name="referrer" content="no-referrer">`. `robots.txt` disallows all crawlers. Feeds live at `rss.xml` and `rss/<topic-id>.xml`. Card anchors are `#b-<id>`.
 
-Search and topic filters are `?q=` and `?topic=` on the page address. The behavior is documented in `template/README.md`.
+The page opens on Today, a daily review of up to five bookmarks, and has Inbox, Done, and All views. Search, topic, and view are `?q=`, `?topic=`, and `?view=` on the page address. The behavior is documented in `template/README.md`.
 
 ## Package exports
 

@@ -1,6 +1,6 @@
 ---
 import BookmarkCard from "../components/BookmarkCard.astro";
-import { BookmarkFilters } from "../components/BookmarkFilters";
+import { BookmarkControls } from "../components/BookmarkControls";
 import { ThemeToggle } from "../components/ThemeToggle";
 import Layout from "../layouts/Layout.astro";
 import { bookmarks } from "../lib/load-bookmarks";
@@ -22,11 +22,19 @@ const designFeedHref = `${base}rss/design.xml`;
       <ThemeToggle client:load />
     </header>
 
+    <noscript>
+      <style is:inline>
+        [data-bookmark-list] {
+          visibility: visible !important;
+        }
+      </style>
+    </noscript>
+
     <main class="flex flex-1 flex-col gap-6 pb-16">
       {bookmarks.length > 0 ? (
         <>
-          <BookmarkFilters client:only="react" entries={entries} />
-          <ul class="flex flex-col gap-4 sm:gap-5">
+          <BookmarkControls client:only="react" entries={entries} />
+          <ul data-bookmark-list class="flex flex-col gap-4 not-data-ready:invisible sm:gap-5">
             {bookmarks.map((bookmark) => (
               <BookmarkCard bookmark={bookmark} />
             ))}

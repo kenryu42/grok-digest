@@ -58,13 +58,13 @@ export function topicFromParam(value: string | undefined): Topic {
 }
 
 function feedItem(bookmark: Bookmark, page: URL): FeedItem {
-  const { author, summary, text, keyPoints, topic, url, postedAt, id } = bookmark;
+  const { author, tldr, summary, text, keyPoints, topic, url, savedAt, id } = bookmark;
   const link = new URL(page.href);
   link.hash = `b-${id}`;
   const points = keyPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
   const quote = text === "" ? "" : `<blockquote><p>${escapeHtml(text)}</p></blockquote>`;
   return {
-    title: summary,
+    title: tldr,
     link: link.href,
     description: [`@${author.handle}`, summary, text].filter((part) => part !== "").join("\n\n"),
     content: [
@@ -76,7 +76,7 @@ function feedItem(bookmark: Bookmark, page: URL): FeedItem {
     ]
       .filter((part) => part !== "")
       .join(""),
-    pubDate: postedAt,
+    pubDate: savedAt,
     categories: [TOPIC_LABELS[topic]],
   };
 }

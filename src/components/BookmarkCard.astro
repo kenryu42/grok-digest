@@ -1,7 +1,8 @@
 ---
-import { ArrowUpRightIcon } from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon } from "lucide-react";
 import { Badge } from "./ui/badge";
-import { Card, CardContent, CardFooter, CardHeader } from "./ui/card";
+import { Button } from "./ui/button";
+import { Card } from "./ui/card";
 import type { Bookmark } from "../lib/bookmarks";
 import { TOPIC_LABELS } from "../lib/topics";
 
@@ -10,52 +11,91 @@ type Props = {
 };
 
 const { bookmark } = Astro.props;
-const { id, url, author, postedAt, topic, summary, text, keyPoints } = bookmark;
+const { id, url, author, postedAt, savedAt, topic, tldr, summary, text, keyPoints } = bookmark;
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
+const isoDay = (date: Date) => date.toISOString().slice(0, 10);
+const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
 ---
 
-<li id={`b-${id}`} data-bookmark-id={id}>
-  <Card className="gap-4 py-5 shadow-xs ring-foreground/8 [--card-spacing:--spacing(5)] sm:[--card-spacing:--spacing(6)] sm:py-6">
-    <CardHeader className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-      <p class="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-sm">
-        <span class="font-medium text-foreground">{author.name}</span>
-        <span class="text-muted-foreground">@{author.handle}</span>
-      </p>
-      <time datetime={postedAt.toISOString().slice(0, 10)} class="shrink-0 text-xs text-muted-foreground tabular-nums">
-        {dateFormat.format(postedAt)}
-      </time>
-    </CardHeader>
+<li id={`b-${id}`} data-bookmark-id={id} data-url={url} class="group/bookmark scroll-mt-6">
+  <Card className="gap-0 py-0 shadow-xs ring-foreground/8 [--card-spacing:--spacing(5)] has-[summary:focus-visible]:ring-2 has-[summary:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]">
+    <details open class="group/details transition-opacity group-data-[done]/bookmark:opacity-55">
+      <summary class="flex cursor-pointer list-none flex-col gap-2 px-(--card-spacing) pt-(--card-spacing) pb-4 outline-none [&::-webkit-details-marker]:hidden">
+        <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
+          <span class="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
+            <span class="font-medium text-foreground">{author.name}</span>
+            <span class="text-muted-foreground">@{author.handle}</span>
+          </span>
+          <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
+            Saved <time datetime={savedAt.toISOString()}>{dateFormat.format(savedAt)}</time>
+            {postedOtherDay && (
+              <>
+                {" · "}Posted <time datetime={isoDay(postedAt)}>{dateFormat.format(postedAt)}</time>
+              </>
+            )}
+          </span>
+        </span>
+        <span
+          data-review-reason
+          class="text-xs font-medium tracking-wide text-muted-foreground uppercase"
+          hidden
+        ></span>
+        <span class="flex items-start justify-between gap-3">
+          <h2 class="font-heading text-xl leading-snug font-semibold text-balance text-foreground sm:text-[1.375rem]">
+            {tldr}
+          </h2>
+          <ChevronDownIcon
+            className="mt-1.5 size-4 shrink-0 text-muted-foreground transition-transform group-open/details:rotate-180"
+            aria-hidden="true"
+          />
+        </span>
+      </summary>
 
-    <CardContent className="flex flex-col gap-4">
-      <p class="font-serif text-[1.0625rem] leading-relaxed text-pretty text-foreground sm:text-lg">{summary}</p>
-      {keyPoints.length > 0 && (
-        <ul class="flex flex-col gap-2 border-l-2 border-border pl-4 text-[0.9375rem] leading-relaxed text-foreground/85">
-          {keyPoints.map((point) => (
-            <li class="text-pretty">{point}</li>
-          ))}
-        </ul>
-      )}
-      {text !== "" && (
-        <figure class="border-t border-border pt-4">
-          <figcaption class="mb-2 text-xs font-medium text-muted-foreground">Original post</figcaption>
-          <blockquote class="text-sm leading-relaxed whitespace-pre-wrap text-pretty text-foreground/80">
-            {text}
-          </blockquote>
-        </figure>
-      )}
-    </CardContent>
+      <div class="flex flex-col gap-4 px-(--card-spacing) pb-4">
+        <p class="font-serif text-[1.0625rem] leading-relaxed text-pretty text-foreground/90">{summary}</p>
+        {keyPoints.length > 0 && (
+          <ul class="flex flex-col gap-2 border-l-2 border-border pl-4 text-[0.9375rem] leading-relaxed text-foreground/85">
+            {keyPoints.map((point) => (
+              <li class="text-pretty">{point}</li>
+            ))}
+          </ul>
+        )}
+        {text !== "" && (
+          <figure class="border-t border-border pt-4">
+            <figcaption class="mb-2 text-xs font-medium text-muted-foreground">Original post</figcaption>
+            <blockquote class="text-sm leading-relaxed whitespace-pre-wrap text-pretty text-foreground/80">
+              {text}
+            </blockquote>
+          </figure>
+        )}
+      </div>
+    </details>
 
-    <CardFooter className="justify-between gap-3 border-t-0 bg-transparent pt-1">
+    <div class="flex items-center justify-between gap-3 px-(--card-spacing) pb-(--card-spacing)">
       <Badge variant="secondary">{TOPIC_LABELS[topic]}</Badge>
-      <a
-        href={url}
-        target="_blank"
-        rel="noopener noreferrer"
-        class="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-      >
-        Open on X<ArrowUpRightIcon className="size-3.5" aria-hidden="true" />
-      </a>
-    </CardFooter>
+      <div class="flex items-center gap-4">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          data-done-toggle
+          aria-pressed="false"
+          title="Mark done (e)"
+          className="rounded-full aria-pressed:border-primary aria-pressed:bg-primary aria-pressed:text-primary-foreground dark:aria-pressed:bg-primary dark:aria-pressed:hover:bg-primary/80"
+        >
+          <CheckIcon aria-hidden="true" />
+          Done
+        </Button>
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+        >
+          Open on X<ArrowUpRightIcon className="size-3.5" aria-hidden="true" />
+        </a>
+      </div>
+    </div>
   </Card>
 </li>

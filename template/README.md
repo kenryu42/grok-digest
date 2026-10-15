@@ -44,7 +44,9 @@ The page reads `data/bookmarks.json` only. `data/processed.json` and `data/remov
     "url": "https://x.com/example_agents/status/1000000000000000001",
     "author": { "name": "Example Agent Lab", "handle": "example_agents" },
     "posted_at": "2026-01-15",
+    "saved_at": "2026-01-16T08:12:00+09:00",
     "topic": "ai-agents",
+    "tldr": "A headline of about ten words.",
     "summary": "One or two sentences about the post.",
     "text": "The post's own words, copied as posted.",
     "key_points": ["A takeaway.", "Another takeaway."]
@@ -61,12 +63,14 @@ Every field is required. `text` may be an empty string, and `key_points` may be 
 | `author.name`   | string           | The display name. Must not be empty.                                                                                      |
 | `author.handle` | string           | 1 to 15 letters, digits, or underscores. A leading `@` is allowed and removed.                                            |
 | `posted_at`     | string           | A date such as `2026-01-15`, or a date and time with an offset such as `2026-01-15T09:30:00+09:00`.                       |
+| `saved_at`      | string           | When the bot received the post: a date and time with an offset, such as `2026-01-16T08:12:00+09:00`.                      |
 | `topic`         | string           | One of the topic IDs below.                                                                                               |
+| `tldr`          | string           | A headline of about ten words. It is the card's title and the feed item's title. Must not be empty.                       |
 | `summary`       | string           | Must not be empty.                                                                                                        |
 | `text`          | string           | The post's own words. May be empty when the post has no text. The card shows it under the summary, and search matches it. |
 | `key_points`    | array of strings | Can be empty. Each string must not be empty.                                                                              |
 
-The page sorts bookmarks newest first by `posted_at`, so the order in the file does not matter.
+The page sorts bookmarks by `saved_at`, most recently saved first, so the order in the file does not matter. A card shows the post date next to the save date when they differ.
 
 | Topic ID            | Label on the page   |
 | ------------------- | ------------------- |
@@ -94,15 +98,22 @@ Every later release reads version 1 files unchanged. The policy is in [MIGRATION
 
 ## The page
 
-The search box and the topic chips are stored in the page address.
+The page opens on **Today**: up to five bookmarks to look at again. It brings back bookmarks saved yesterday, a week ago, a month ago, three months ago, and on today's date in earlier years, then fills the rest from older bookmarks you have not marked done. The five stay the same all day.
 
+Each card has a **Done** button. **Inbox** lists what is not done, **Done** what is, and **All** everything. A search looks through every bookmark, whichever view is open. Done marks, today's five, and **Collapse all** are kept in your browser, so another browser or device starts fresh.
+
+On a keyboard, `j` and `k` move between cards, `Enter` opens or closes one, `e` marks it done, `o` opens it on X, and `/` jumps to the search box.
+
+The view, the search box, and the topic chips are stored in the page address.
+
+- `?view=inbox`, `?view=done`, and `?view=all` open those views. Without `view`, the page opens on Today.
 - `?topic=design` shows the Design bookmarks.
-- `?q=tokyo` shows bookmarks whose author, post, summary, or key points contain `tokyo`.
+- `?q=tokyo` shows bookmarks whose author, tldr, post, summary, or key points contain `tokyo`.
 - The two combine, as in `?q=tokyo&topic=japan-tech`.
 
-An unknown `topic` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card.
+An unknown `topic` or `view` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the All view so the card shows even when it is done.
 
-The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item links to the card on this page and includes the summary, the key points, and the original post.
+The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item is titled with the tldr, dated when the bookmark was saved, links to the card on this page, and includes the summary, the key points, and the original post.
 
 On a `github.io/<repository-name>/` site, `robots.txt` is not at the host root, so a feed reader can fetch the feed. On a custom domain, `robots.txt` disallows every path. A reader that honors that file will refuse the feed.
 

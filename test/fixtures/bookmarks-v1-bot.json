@@ -7,7 +7,9 @@
       "handle": "example_dev"
     },
     "posted_at": "2026-10-13T23:24:10.000Z",
+    "saved_at": "2026-10-14T02:11:45.000Z",
     "topic": "ai-agents",
+    "tldr": "A made-up post in the bot's shape",
     "text": "First line of a post.\n \nSecond paragraph with a link and an emoji 🧵",
     "summary": "A made-up post in the shape the Grok bot writes: a UTC timestamp with milliseconds and multi-line text.",
     "key_points": ["One takeaway.", "Another takeaway."]
@@ -20,7 +22,9 @@
       "handle": "@Example_Lab"
     },
     "posted_at": "2026-10-15T10:43:02+09:00",
+    "saved_at": "2026-10-15T10:50:13+09:00",
     "topic": "models-releases",
+    "tldr": "A post with no text",
     "text": "",
     "summary": "A post with no text, a twitter.com link, and a handle written with a leading @.",
     "key_points": []
