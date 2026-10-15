@@ -16,6 +16,13 @@
       "The agent writes a short plan, then waits for approval.",
       "Small, checkable steps beat one large change.",
       "This post does not exist. The link goes nowhere useful."
+    ],
+    "action": "Ask your coding agent for a plan and approve it before it edits anything.",
+    "links": [
+      {
+        "title": "Example: plan-first agent workflow (sample link)",
+        "url": "https://example.com/plan-first"
+      }
     ]
   },
   {
@@ -34,7 +41,9 @@
     "key_points": [
       "Search matches Japanese text too. Try typing 東京.",
       "東京のミートアップ (fictional)."
-    ]
+    ],
+    "action": "",
+    "links": []
   },
   {
     "id": "1000000000000000003",
@@ -49,6 +58,8 @@
     "tldr": "A short sample card with no key points",
     "text": "",
     "summary": "Sample entry with no key points and no post text, to show how a short card renders. Remove it along with the other samples.",
-    "key_points": []
+    "key_points": [],
+    "action": "",
+    "links": []
   }
 ]

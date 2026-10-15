@@ -49,26 +49,30 @@ The page reads `data/bookmarks.json` only. `data/processed.json` and `data/remov
     "tldr": "A headline of about ten words.",
     "summary": "One or two sentences about the post.",
     "text": "The post's own words, copied as posted.",
-    "key_points": ["A takeaway.", "Another takeaway."]
+    "key_points": ["A takeaway.", "Another takeaway."],
+    "action": "One thing to try because of this post.",
+    "links": [{ "title": "The article the post links to", "url": "https://example.com/article" }]
   }
 ]
 ```
 
-Every field is required. `text` may be an empty string, and `key_points` may be an empty array. The build rejects fields that are not in this table.
+Every field is required. `text` and `action` may be empty strings, and `key_points` and `links` may be empty arrays. The build rejects fields that are not in this table.
 
-| Field           | Type             | Rules                                                                                                                     |
-| --------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| `id`            | string           | Unique in the file. Use the post's status ID, the number at the end of its URL.                                           |
-| `url`           | string           | An `https` link on `x.com` or `twitter.com`. A `www.` or `mobile.` prefix is allowed.                                     |
-| `author.name`   | string           | The display name. Must not be empty.                                                                                      |
-| `author.handle` | string           | 1 to 15 letters, digits, or underscores. A leading `@` is allowed and removed.                                            |
-| `posted_at`     | string           | A date such as `2026-01-15`, or a date and time with an offset such as `2026-01-15T09:30:00+09:00`.                       |
-| `saved_at`      | string           | When the bot received the post: a date and time with an offset, such as `2026-01-16T08:12:00+09:00`.                      |
-| `topic`         | string           | One of the topic IDs below.                                                                                               |
-| `tldr`          | string           | A headline of about ten words. It is the card's title and the feed item's title. Must not be empty.                       |
-| `summary`       | string           | Must not be empty.                                                                                                        |
-| `text`          | string           | The post's own words. May be empty when the post has no text. The card shows it under the summary, and search matches it. |
-| `key_points`    | array of strings | Can be empty. Each string must not be empty.                                                                              |
+| Field           | Type             | Rules                                                                                                                         |
+| --------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | string           | Unique in the file. Use the post's status ID, the number at the end of its URL.                                               |
+| `url`           | string           | An `https` link on `x.com` or `twitter.com`. A `www.` or `mobile.` prefix is allowed.                                         |
+| `author.name`   | string           | The display name. Must not be empty.                                                                                          |
+| `author.handle` | string           | 1 to 15 letters, digits, or underscores. A leading `@` is allowed and removed.                                                |
+| `posted_at`     | string           | A date such as `2026-01-15`, or a date and time with an offset such as `2026-01-15T09:30:00+09:00`.                           |
+| `saved_at`      | string           | When the bot received the post: a date and time with an offset, such as `2026-01-16T08:12:00+09:00`.                          |
+| `topic`         | string           | One of the topic IDs below.                                                                                                   |
+| `tldr`          | string           | A headline of about ten words. It is the card's title and the feed item's title. Must not be empty.                           |
+| `summary`       | string           | Must not be empty.                                                                                                            |
+| `text`          | string           | The post's own words. May be empty when the post has no text. The card shows it under the summary, and search matches it.     |
+| `key_points`    | array of strings | Can be empty. Each string must not be empty.                                                                                  |
+| `action`        | string           | One thing to try because of the post, shown under the card's title. May be empty when there is nothing to do.                 |
+| `links`         | array of objects | Where the post's links go, such as a `t.co` link followed to its page. Each has a `title` and an `https` `url`. Can be empty. |
 
 The page sorts bookmarks by `saved_at`, most recently saved first, so the order in the file does not matter. A card shows the post date next to the save date when they differ.
 
@@ -108,12 +112,12 @@ The view, the search box, and the topic chips are stored in the page address.
 
 - `?view=inbox`, `?view=done`, and `?view=all` open those views. Without `view`, the page opens on Today, or on Inbox when Today is empty. `?view=today` always opens Today.
 - `?topic=design` shows the Design bookmarks.
-- `?q=tokyo` shows bookmarks whose author, tldr, post, summary, or key points contain `tokyo`.
+- `?q=tokyo` shows bookmarks whose author, tldr, post, summary, key points, action, or link titles contain `tokyo`.
 - The two combine, as in `?q=tokyo&topic=japan-tech`.
 
 An unknown `topic` or `view` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the All view so the card shows even when it is done.
 
-The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item is titled with the tldr, dated when the bookmark was saved, links to the card on this page, and includes the summary, the key points, and the original post.
+The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item is titled with the tldr, dated when the bookmark was saved, links to the card on this page, and includes the summary, the action, the key points, the links, and the original post.
 
 On a `github.io/<repository-name>/` site, `robots.txt` is not at the host root, so a feed reader can fetch the feed. On a custom domain, `robots.txt` disallows every path. A reader that honors that file will refuse the feed.
 

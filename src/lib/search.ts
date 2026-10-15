@@ -14,13 +14,23 @@ function normalize(text: string): string {
 }
 
 export function toSearchEntry(bookmark: Bookmark): SearchEntry {
-  const { id, topic, savedAt, author, tldr, summary, text, keyPoints } = bookmark;
+  const { id, topic, savedAt, author, tldr, summary, text, keyPoints, action, links } = bookmark;
   return {
     id,
     topic,
     savedAt,
     text: normalize(
-      [author.name, `@${author.handle}`, TOPIC_LABELS[topic], tldr, summary, text, ...keyPoints].join("\n"),
+      [
+        author.name,
+        `@${author.handle}`,
+        TOPIC_LABELS[topic],
+        tldr,
+        summary,
+        text,
+        ...keyPoints,
+        action,
+        ...links.map(({ title }) => title),
+      ].join("\n"),
     ),
   };
 }

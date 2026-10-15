@@ -16,6 +16,8 @@ const bookmarks = parseBookmarks({
       summary: "A summary.",
       text: "Watch <script> tags.",
       key_points: [],
+      action: "Try <b>this</b>.",
+      links: [{ title: "Docs & guide", url: "https://example.com/docs?a=1&b=2" }],
     },
     {
       id: "2",
@@ -28,6 +30,8 @@ const bookmarks = parseBookmarks({
       summary: "No words.",
       text: "",
       key_points: ["One point."],
+      action: "",
+      links: [],
     },
   ],
 });
@@ -57,6 +61,12 @@ describe("feedConfig", () => {
     expect(item?.content).toContain("<p>A summary.</p>");
   });
 
+  it("includes what to try and the post's links, escaped", () => {
+    const [item] = config.items;
+    expect(item?.content).toContain("<p>Try: Try &lt;b&gt;this&lt;/b&gt;.</p>");
+    expect(item?.content).toContain('<li><a href="https://example.com/docs?a=1&amp;b=2">Docs &amp; guide</a></li>');
+  });
+
   it("names the feed address in the self link", () => {
     expect(config.customData).toContain("https://example.github.io/grok-digest/rss/design.xml");
   });
@@ -72,6 +82,7 @@ describe("feedConfig", () => {
     const all = feedConfig({ bookmarks, topic: null, origin: "https://example.github.io", base: "/" });
     const quiet = all.items.find((item) => item.title === "No words.");
     expect(quiet?.content).not.toContain("<blockquote>");
+    expect(quiet?.content).not.toContain("Try:");
     expect(quiet?.content).toContain("<li>One point.</li>");
     expect(all.customData).toContain("https://example.github.io/rss.xml");
   });

@@ -58,11 +58,14 @@ export function topicFromParam(value: string | undefined): Topic {
 }
 
 function feedItem(bookmark: Bookmark, page: URL): FeedItem {
-  const { author, tldr, summary, text, keyPoints, topic, url, savedAt, id } = bookmark;
+  const { author, tldr, summary, text, keyPoints, action, links, topic, url, savedAt, id } = bookmark;
   const link = new URL(page.href);
   link.hash = `b-${id}`;
   const points = keyPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
   const quote = text === "" ? "" : `<blockquote><p>${escapeHtml(text)}</p></blockquote>`;
+  const linkItems = links
+    .map((outbound) => `<li><a href="${escapeHtml(outbound.url)}">${escapeHtml(outbound.title)}</a></li>`)
+    .join("");
   return {
     title: tldr,
     link: link.href,
@@ -70,7 +73,9 @@ function feedItem(bookmark: Bookmark, page: URL): FeedItem {
     content: [
       `<p>${escapeHtml(author.name)} (@${escapeHtml(author.handle)})</p>`,
       `<p>${escapeHtml(summary)}</p>`,
+      action === "" ? "" : `<p>Try: ${escapeHtml(action)}</p>`,
       points === "" ? "" : `<ul>${points}</ul>`,
+      linkItems === "" ? "" : `<ul>${linkItems}</ul>`,
       quote,
       `<p><a href="${escapeHtml(url)}">Open on X</a></p>`,
     ]

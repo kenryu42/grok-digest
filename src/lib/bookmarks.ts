@@ -28,6 +28,8 @@ export const bookmarkSchema = z
     summary: nonEmpty,
     text: z.string().trim(),
     key_points: z.array(nonEmpty),
+    action: z.string().trim(),
+    links: z.array(z.strictObject({ title: nonEmpty, url: z.url({ protocol: /^https$/ }) })),
   })
   .transform(({ posted_at, saved_at, key_points, ...rest }) => ({
     ...rest,

@@ -1,5 +1,5 @@
 ---
-import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon } from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, LinkIcon, ZapIcon } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -11,11 +11,12 @@ type Props = {
 };
 
 const { bookmark } = Astro.props;
-const { id, url, author, postedAt, savedAt, topic, tldr, summary, text, keyPoints } = bookmark;
+const { id, url, author, postedAt, savedAt, topic, tldr, summary, text, keyPoints, action, links } = bookmark;
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
+const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
 ---
 
 <li id={`b-${id}`} data-bookmark-id={id} data-url={url} class="group/bookmark scroll-mt-6">
@@ -50,6 +51,14 @@ const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
             aria-hidden="true"
           />
         </span>
+        {action !== "" && (
+          <span class="flex items-start gap-2 rounded-lg bg-secondary px-3 py-2 text-sm leading-relaxed text-secondary-foreground">
+            <ZapIcon className="mt-1 size-3.5 shrink-0" aria-hidden="true" />
+            <span class="text-pretty">
+              <span class="font-medium">Try:</span> {action}
+            </span>
+          </span>
+        )}
       </summary>
 
       <div class="flex flex-col gap-4 px-(--card-spacing) pb-4">
@@ -58,6 +67,26 @@ const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
           <ul class="flex flex-col gap-2 border-l-2 border-border pl-4 text-[0.9375rem] leading-relaxed text-foreground/85">
             {keyPoints.map((point) => (
               <li class="text-pretty">{point}</li>
+            ))}
+          </ul>
+        )}
+        {links.length > 0 && (
+          <ul class="flex flex-col gap-1.5 text-sm" aria-label="Links in the post">
+            {links.map((link) => (
+              <li>
+                <a
+                  href={link.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="group/link inline-flex items-baseline gap-2 rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                >
+                  <LinkIcon className="size-3.5 shrink-0 translate-y-0.5 text-muted-foreground" aria-hidden="true" />
+                  <span class="text-pretty text-foreground underline decoration-border underline-offset-4 transition-colors group-hover/link:decoration-foreground">
+                    {link.title}
+                  </span>
+                  <span class="shrink-0 text-xs text-muted-foreground">{hostOf(link.url)}</span>
+                </a>
+              </li>
             ))}
           </ul>
         )}

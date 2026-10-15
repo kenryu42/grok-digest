@@ -16,6 +16,13 @@
       "The agent writes a short plan, then waits for approval.",
       "Small, checkable steps beat one large change.",
       "This post does not exist. The link goes nowhere useful."
+    ],
+    "action": "Ask your coding agent for a plan and approve it before it edits anything.",
+    "links": [
+      {
+        "title": "Example: plan-first agent workflow (sample link)",
+        "url": "https://example.com/plan-first"
+      }
     ]
   },
   {
@@ -31,7 +38,9 @@
     "tldr": "サンプル: a Tokyo meetup on local-first apps",
     "text": "東京でローカルファーストの勉強会を開きました（という設定です）。この投稿は実在しません。",
     "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
-    "key_points": ["Search matches Japanese text too. Try typing 東京.", "東京のミートアップ (fictional)."]
+    "key_points": ["Search matches Japanese text too. Try typing 東京.", "東京のミートアップ (fictional)."],
+    "action": "",
+    "links": []
   },
   {
     "id": "1000000000000000003",
@@ -46,6 +55,8 @@
     "tldr": "A short sample card with no key points",
     "text": "",
     "summary": "Sample entry with no key points and no post text, to show how a short card renders. Remove it along with the other samples.",
-    "key_points": []
+    "key_points": [],
+    "action": "",
+    "links": []
   }
 ]

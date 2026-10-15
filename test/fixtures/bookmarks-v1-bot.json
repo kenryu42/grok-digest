@@ -12,7 +12,14 @@
     "tldr": "A made-up post in the bot's shape",
     "text": "First line of a post.\n \nSecond paragraph with a link and an emoji 🧵",
     "summary": "A made-up post in the shape the Grok bot writes: a UTC timestamp with milliseconds and multi-line text.",
-    "key_points": ["One takeaway.", "Another takeaway."]
+    "key_points": ["One takeaway.", "Another takeaway."],
+    "action": "Try the prompt from the post on one repository.",
+    "links": [
+      {
+        "title": "A linked article",
+        "url": "https://example.com/article"
+      }
+    ]
   },
   {
     "id": "2000000000000000002",
@@ -27,6 +34,8 @@
     "tldr": "A post with no text",
     "text": "",
     "summary": "A post with no text, a twitter.com link, and a handle written with a leading @.",
-    "key_points": []
+    "key_points": [],
+    "action": "",
+    "links": []
   }
 ]

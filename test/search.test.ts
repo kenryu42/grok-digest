@@ -10,6 +10,8 @@ const base = {
   saved_at: "2026-02-02T09:00:00+09:00",
   text: "",
   key_points: [],
+  action: "",
+  links: [],
 };
 
 const entries = parseBookmarks({
@@ -23,6 +25,8 @@ const entries = parseBookmarks({
       tldr: "Agents should plan first",
       summary: "Planning loops for coding agents.",
       text: "The rule is plan-before-edit.",
+      action: "Try a dry-run mode first",
+      links: [{ title: "Planner design notes", url: "https://example.com/planner" }],
     },
     {
       ...base,
@@ -64,6 +68,8 @@ describe("matchingIds", () => {
     expect(ids("@tokyo")).toEqual(["b"]);
     expect(ids("plan-before-edit")).toEqual(["a"]);
     expect(ids("shibuya")).toEqual(["b"]);
+    expect(ids("dry-run")).toEqual(["a"]);
+    expect(ids("design notes")).toEqual(["a"]);
     expect(ids("coding tokyo")).toEqual([]);
   });
 

@@ -14,6 +14,8 @@ const valid = {
   summary: "A summary.",
   text: "The original post.",
   key_points: ["One point."],
+  action: "Try the CLI on a small repo.",
+  links: [{ title: "The project's README", url: "https://github.com/someone/project" }],
 };
 
 const parse = (raw: unknown) => parseBookmarks({ raw, source: "test.json" });
@@ -46,6 +48,8 @@ describe("parseBookmarks", () => {
       summary: "A summary.",
       text: "The original post.",
       keyPoints: ["One point."],
+      action: "Try the CLI on a small repo.",
+      links: [{ title: "The project's README", url: "https://github.com/someone/project" }],
     });
   });
 
@@ -63,6 +67,8 @@ describe("parseBookmarks", () => {
     ["a bad date", { ...valid, posted_at: "Feb 1" }, "posted_at"],
     ["a save date without a time", { ...valid, saved_at: "2026-02-02" }, "saved_at"],
     ["a missing tldr", { ...valid, tldr: "" }, "tldr"],
+    ["a plain-http link", { ...valid, links: [{ title: "Blog", url: "http://example.com/post" }] }, "links"],
+    ["a link without a title", { ...valid, links: [{ title: " ", url: "https://example.com/post" }] }, "links"],
     ["a misspelled field", { ...valid, keypoints: [] }, "keypoints"],
     ["a missing summary", { ...valid, summary: " " }, "summary"],
   ])("rejects %s", (_, entry, field) => {
@@ -71,6 +77,12 @@ describe("parseBookmarks", () => {
 
   it("keeps an empty post", () => {
     expect(parse([{ ...valid, text: "  " }])[0]?.text).toBe("");
+  });
+
+  it("keeps a post with nothing to try and no links", () => {
+    const [bookmark] = parse([{ ...valid, action: " ", links: [] }]);
+    expect(bookmark?.action).toBe("");
+    expect(bookmark?.links).toEqual([]);
   });
 
   it("rejects a missing post", () => {
