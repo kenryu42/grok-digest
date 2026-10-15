@@ -1,7 +1,7 @@
 # Agent instructions
 
-`pnpm check` runs every check a change must pass: type checks, Oxlint, Oxfmt, the comment lint, jscpd,
-Knip and the tests. Run it before you finish. `pnpm format` and `pnpm lint:fix` apply fixes.
+`bun run check` runs every check a change must pass: type checks, Oxlint, Oxfmt, the comment lint, jscpd,
+Knip and the tests. Run it before you finish. `bun run format` and `bun run lint:fix` apply fixes.
 
 ## Comments
 
@@ -12,5 +12,5 @@ Knip and the tests. Run it before you finish. `pnpm format` and `pnpm lint:fix` 
 - A fact about an external tool that code cannot express stays only when the maintainer adds it to
   the `allow` map in `scripts/comment-lint.json`. Never add entries there or to its `exclude` list
   yourself. Deleting an entry whose comment is gone is fine.
-- `pnpm lint:comments`, part of `pnpm check`, enforces this. To fix a failure, follow
+- `bun run lint:comments`, part of `bun run check`, enforces this. To fix a failure, follow
   `.agents/skills/fix-comment-lint/SKILL.md`.

@@ -2,29 +2,20 @@ import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { TOPICS } from "../packages/grok-digest/dist/schema.js";
+import { TOPICS } from "../dist/schema.js";
 
 const ORIGIN = "https://example.github.io";
 const BASE_PATH = "/bm-check";
-const PACKAGE_DIR = path.resolve("packages/grok-digest");
 const TEMPLATE_DIR = path.resolve("template");
-const fromPackedTarball = process.argv.includes("--packed");
 
 const failures = [];
 const expect = (condition, message) => {
   if (!condition) failures.push(message);
 };
 
-function caretAllows(range, version) {
-  const [rangeMajor, rangeMinor] = range.replace(/^\^/, "").split(".").map(Number);
-  const [major, minor] = version.split(".").map(Number);
-  const pinsMinor = rangeMajor === 0;
-  return range.startsWith("^") && rangeMajor === major && (!pinsMinor || rangeMinor === minor);
-}
-
-function packedStarter() {
+function starterFromPackedTarball() {
   const workDir = mkdtempSync(path.join(tmpdir(), "grok-digest-starter-"));
-  execFileSync("pnpm", ["pack", "--pack-destination", workDir], { cwd: PACKAGE_DIR, stdio: "inherit" });
+  execFileSync("bun", ["pm", "pack", "--destination", workDir], { stdio: "inherit" });
   const tarball = readdirSync(workDir).find((name) => name.endsWith(".tgz"));
   const siteDir = path.join(workDir, "site");
   cpSync(TEMPLATE_DIR, siteDir, {
@@ -35,23 +26,14 @@ function packedStarter() {
   const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
   manifest.dependencies["grok-digest"] = `file:${path.join(workDir, tarball)}`;
   writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
-  execFileSync("pnpm", ["install", "--ignore-workspace"], { cwd: siteDir, stdio: "inherit" });
+  execFileSync("bun", ["install"], { cwd: siteDir, stdio: "inherit" });
   return { siteDir, cleanUp: () => rmSync(workDir, { recursive: true, force: true }) };
 }
 
-const packageVersion = JSON.parse(readFileSync(path.join(PACKAGE_DIR, "package.json"), "utf8")).version;
-const starterRange = JSON.parse(readFileSync(path.join(TEMPLATE_DIR, "package.json"), "utf8")).dependencies[
-  "grok-digest"
-];
-expect(
-  caretAllows(starterRange, packageVersion),
-  `template/package.json asks for grok-digest ${starterRange}, which does not allow the package's version ${packageVersion}`,
-);
-
-const { siteDir, cleanUp } = fromPackedTarball ? packedStarter() : { siteDir: TEMPLATE_DIR, cleanUp: () => {} };
+const { siteDir, cleanUp } = starterFromPackedTarball();
 try {
-  execFileSync("pnpm", ["validate"], { cwd: siteDir, stdio: "inherit" });
-  execFileSync("pnpm", ["build"], {
+  execFileSync("bun", ["run", "validate"], { cwd: siteDir, stdio: "inherit" });
+  execFileSync("bun", ["run", "build"], {
     cwd: siteDir,
     stdio: "inherit",
     env: { ...process.env, SITE_URL: ORIGIN, BASE_PATH },
@@ -89,4 +71,4 @@ if (failures.length > 0) {
   console.error(failures.map((failure) => `✖ ${failure}`).join("\n"));
   process.exit(1);
 }
-console.log(`✓ The starter builds under ${ORIGIN}${BASE_PATH}/${fromPackedTarball ? " from the packed tarball" : ""}.`);
+console.log(`✓ The starter builds under ${ORIGIN}${BASE_PATH}/ from the packed tarball.`);

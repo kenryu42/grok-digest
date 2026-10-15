@@ -1,11 +1,11 @@
 ---
 name: fix-comment-lint
-description: "Use in this repository when `pnpm lint:comments` or `pnpm check` reports a comment, a stale entry in `scripts/comment-lint.json`, or a file it cannot parse, and before writing a code comment here. Moves what each comment says into code, a test, or the PR description instead of deleting it and losing it."
+description: "Use in this repository when `bun run lint:comments` or `bun run check` reports a comment, a stale entry in `scripts/comment-lint.json`, or a file it cannot parse, and before writing a code comment here. Moves what each comment says into code, a test, or the PR description instead of deleting it and losing it."
 ---
 
 # Fixing Comment Lint Failures
 
-`pnpm lint:comments`, part of `pnpm check`, rejects code comments. The lazy fix, deleting the comment, loses what it said. For each reported comment, decide which kind it is and move what it says to where that kind belongs. The project's agent instructions govern where they are stricter.
+`bun run lint:comments`, part of `bun run check`, rejects code comments. The lazy fix, deleting the comment, loses what it said. For each reported comment, decide which kind it is and move what it says to where that kind belongs. The project's agent instructions govern where they are stricter.
 
 ## Each Reported Comment
 
@@ -39,4 +39,4 @@ Inside JSX, write the last two as `{/* oxlint-disable-next-line <rules> -- <reas
 
 ## Finish
 
-Run `pnpm lint:comments` until it passes, then run `pnpm check` once as the final check.
+Run `bun run lint:comments` until it passes, then run `bun run check` once as the final check.

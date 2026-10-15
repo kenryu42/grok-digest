@@ -3,17 +3,16 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "astro dev",
-    "build": "astro build",
-    "preview": "astro preview",
+    "dev": "grok-digest dev",
+    "build": "grok-digest build",
+    "preview": "grok-digest preview",
     "validate": "grok-digest validate"
   },
   "dependencies": {
-    "astro": "^7.3.8",
-    "grok-digest": "^0.1.0"
+    "grok-digest": "latest"
   },
   "engines": {
     "node": ">=22.12.0"
   },
-  "packageManager": "pnpm@10.33.4"
+  "packageManager": "bun@1.4.3"
 }
