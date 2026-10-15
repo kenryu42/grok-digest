@@ -110,7 +110,9 @@ Each card has a **Done** button. **Inbox** lists what is not done, **Done** what
 
 On a phone, use **Add to Home Screen** to open the page like an app.
 
-On a keyboard, `j` and `k` move between cards, `Enter` opens or closes one, `e` marks it done, `o` opens it on X, and `/` jumps to the search box.
+**Copy** puts the bookmark on the clipboard as Markdown for any AI assistant: the tldr, the author and post date, the X link, the original post, the summary, the key points, the action, and the links. Paste it and add your question.
+
+On a keyboard, `j` and `k` move between cards, `Enter` opens or closes one, `e` marks it done, `c` copies it, `o` opens it on X, and `/` jumps to the search box.
 
 The view, the search box, and the topic chips are stored in the page address.
 

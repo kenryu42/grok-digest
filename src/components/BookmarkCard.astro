@@ -1,9 +1,10 @@
 ---
-import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, LinkIcon, ZapIcon } from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, LinkIcon, ZapIcon } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import type { Bookmark } from "../lib/bookmarks";
+import { copyText } from "../lib/copy";
 import { TOPIC_LABELS } from "../lib/topics";
 
 type Props = {
@@ -102,12 +103,26 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
       </div>
     </details>
 
-    <div class="flex items-center justify-between gap-3 px-(--card-spacing) pb-(--card-spacing)">
+    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-(--card-spacing) pb-(--card-spacing)">
       <div class="flex flex-wrap items-center gap-1.5">
         <Badge variant="secondary">{TOPIC_LABELS[topic]}</Badge>
         {shelfLife === "news" && <Badge variant="outline">News</Badge>}
       </div>
-      <div class="flex items-center gap-4">
+      <div class="ml-auto flex items-center gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          data-copy={copyText(bookmark)}
+          title="Copy for an AI assistant (c)"
+          className="rounded-full"
+        >
+          <CopyIcon className="group-data-[copied]/button:hidden" aria-hidden="true" />
+          <CheckIcon className="hidden group-data-[copied]/button:block" aria-hidden="true" />
+          <span data-copy-label aria-live="polite">
+            Copy
+          </span>
+        </Button>
         <Button
           type="button"
           variant="outline"
@@ -124,7 +139,7 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1 rounded-sm text-sm font-medium text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          class="inline-flex items-center gap-1 rounded-sm text-sm font-medium whitespace-nowrap text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-foreground focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           Open on X<ArrowUpRightIcon className="size-3.5" aria-hidden="true" />
         </a>

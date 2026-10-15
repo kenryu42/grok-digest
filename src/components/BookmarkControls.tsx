@@ -93,6 +93,32 @@ function focusCard(card: HTMLElement | undefined): void {
   card.scrollIntoView({ block: "start" });
 }
 
+const COPY_LABEL = "Copy";
+const COPY_RESET_MS = 2000;
+const copyResets = new WeakMap<HTMLElement, ReturnType<typeof setTimeout>>();
+
+function showCopyResult(button: HTMLElement, copied: boolean): void {
+  const label = button.querySelector("[data-copy-label]");
+  if (label !== null) label.textContent = copied ? "Copied" : "Couldn't copy";
+  button.toggleAttribute("data-copied", copied);
+  clearTimeout(copyResets.get(button));
+  copyResets.set(
+    button,
+    setTimeout(() => {
+      if (label !== null) label.textContent = COPY_LABEL;
+      button.removeAttribute("data-copied");
+    }, COPY_RESET_MS),
+  );
+}
+
+function copyFrom(button: HTMLElement | null | undefined): void {
+  if (button === null || button === undefined) return;
+  navigator.clipboard.writeText(button.dataset["copy"] ?? "").then(
+    () => showCopyResult(button, true),
+    () => showCopyResult(button, false),
+  );
+}
+
 function plural(count: number, noun: string): string {
   return `${count} ${count === 1 ? noun : `${noun}s`}`;
 }
@@ -176,6 +202,7 @@ export function BookmarkControls({ entries }: Props) {
 
     const onClick = (event: MouseEvent): void => {
       if (!(event.target instanceof Element)) return;
+      copyFrom(event.target.closest<HTMLElement>("[data-copy]"));
       const card = event.target.closest<HTMLElement>("[data-done-toggle]")?.closest<HTMLElement>("[data-bookmark-id]");
       if (card !== null && card !== undefined) toggleDone(card);
     };
@@ -205,6 +232,9 @@ export function BookmarkControls({ entries }: Props) {
           });
           break;
         }
+        case "c":
+          copyFrom(current?.querySelector<HTMLElement>("[data-copy]"));
+          break;
         case "o": {
           const url = current?.dataset["url"];
           if (url !== undefined) window.open(url, "_blank", "noopener,noreferrer");
@@ -284,7 +314,8 @@ export function BookmarkControls({ entries }: Props) {
         </p>
         <div className="flex items-center gap-3">
           <p className="hidden text-xs text-muted-foreground sm:block">
-            <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>e</kbd> done · <kbd>o</kbd> open · <kbd>/</kbd> search
+            <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>e</kbd> done · <kbd>c</kbd> copy · <kbd>o</kbd> open · <kbd>/</kbd>{" "}
+            search
           </p>
           <Button type="button" variant="ghost" size="sm" onClick={() => setCollapsed(!collapsed)}>
             {collapsed ? <ChevronsUpDownIcon aria-hidden="true" /> : <ChevronsDownUpIcon aria-hidden="true" />}
