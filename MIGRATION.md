@@ -29,35 +29,27 @@ git rm AGENTS.md components.json tsconfig.json package.json pnpm-lock.yaml .oxli
 Copy the thin starter, without its sample data:
 
 ```sh
-cp ../grok-digest/template/package.json ../grok-digest/template/astro.config.mjs ../grok-digest/template/.gitignore .
-cp ../grok-digest/template/README.md .
+cp ../grok-digest/template/package.json ../grok-digest/template/.gitignore ../grok-digest/template/README.md .
 mkdir -p .github/workflows
 cp ../grok-digest/template/.github/workflows/deploy.yml .github/workflows/deploy.yml
-cp ../grok-digest/template/.github/dependabot.yml .github/dependabot.yml
+git rm --ignore-unmatch .github/dependabot.yml
 ```
 
-In `package.json`, set `grok-digest` to the version that was published, with a caret, for example `"grok-digest": "^0.1.0"`. The caret accepts later patch releases (and later 0.1.x releases) and refuses the next minor, which is where a schema change will land. Then install and check the data against schema version 1:
+`package.json` asks for `"grok-digest": "latest"`. Install with [Bun](https://bun.sh) and check the data:
 
 ```sh
-pnpm install
-pnpm validate
-SITE_URL=https://<your-username>.github.io BASE_PATH=/<repository-name> pnpm build
+bun install
+bun run validate
+SITE_URL=https://<your-username>.github.io BASE_PATH=/<repository-name> bun run build
 ```
 
-`pnpm validate` prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`. A file that does not match schema version 1 fails the command and names the entry and the field. Do not rewrite a file to get past that: the published package would be rejecting a version 1 file, which is a bug.
+`bun run validate` prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`. A file that does not match schema version 1 fails the command and names the entry and the field. Do not rewrite a file to get past that: the published package would be rejecting a version 1 file, which is a bug.
 
-Commit the new files, including `pnpm-lock.yaml`, and push to `main`. The deploy workflow validates the data, builds with the `SITE_URL` and `BASE_PATH` that GitHub Pages reports, and publishes the same project site as before. Pages stays on **GitHub Actions** as its source.
+Commit the new files, including `bun.lock`, and push to `main`. The deploy workflow validates the data, builds with the `SITE_URL` and `BASE_PATH` that GitHub Pages reports, and publishes the same project site as before. Pages stays on **GitHub Actions** as its source.
 
 ## Receiving later package versions
 
-Dependabot reads `.github/dependabot.yml` and opens a pull request when a new `grok-digest` version is published. Merging that request and the lockfile update is the whole site update. The workflow deploys on the merge.
-
-Two other ways to take updates:
-
-- Renovate, if the GitHub account already runs it. Point it at this repository the same way Dependabot is pointed at npm. Delete `.github/dependabot.yml` in that case so the two bots do not open duplicate pull requests.
-- Pin the dependency to the dist-tag `latest` (`"grok-digest": "latest"`). pnpm still installs the version recorded in `pnpm-lock.yaml` until you refresh it with `pnpm update grok-digest` and commit the lockfile. A frozen install in GitHub Actions will not float on its own. Dependabot is the path that opens the pull request for you; `latest` is the path where you choose when to refresh.
-
-While the package is 0.x, `"grok-digest": "^0.1.0"` does not install `0.2.0`. A pull request that changes the range across a minor boundary is a schema boundary. Read the changelog before merging it.
+The deploy workflow runs `bun update grok-digest` before it builds, so every deploy takes the newest release. A site needs no bot and no pull request to update. `template/README.md` shows how to hold a site on one version.
 
 ## Schema version policy
 
@@ -65,16 +57,17 @@ While the package is 0.x, `"grok-digest": "^0.1.0"` does not install `0.2.0`. A 
 
 Version 1 files:
 
-| File                  | Shape                                                                                                                                                                   |
-| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `data/bookmarks.json` | A JSON array of bookmark objects. Fields, types, and topic ids are the table in the root README. Every field is required. `text` may be `""`. `key_points` may be `[]`. |
-| `data/processed.json` | A JSON array of non-empty strings. The bot records ids it has handled. The site does not read this file.                                                                |
-| `data/removed.json`   | The same shape as `processed.json`, for ids the bot has removed. The site does not read this file.                                                                      |
+| File                  | Shape                                                                                                                                                                         |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `data/bookmarks.json` | A JSON array of bookmark objects. Fields, types, and topic ids are the tables in `template/README.md`. Every field is required. `text` may be `""`. `key_points` may be `[]`. |
+| `data/processed.json` | A JSON array of non-empty strings. The bot records ids it has handled. The site does not read this file.                                                                      |
+| `data/removed.json`   | The same shape as `processed.json`, for ids the bot has removed. The site does not read this file.                                                                            |
 
 `posted_at` may be a date (`2026-01-15`) or a datetime with an offset (`2026-10-13T23:24:10.000Z`). Both are version 1.
 
 Policy:
 
-- A release that still exports `SCHEMA_VERSION` 1 accepts every existing version 1 file unchanged. Take it from the Dependabot pull request.
-- `SCHEMA_VERSION` increases only when a file that was valid would then be rejected or read differently. That release is breaking. Until 1.0.0, the minor version is the breaking slot (`0.1.0` to `0.2.0`). From 1.0.0, the major version is the breaking slot. The starter range does not include that release until a pull request edits `package.json`.
-- The changelog of that release is the migration: which file changes, and the exact rewrite. Version 1 has no rewrite. Do one only when a release tells you to, and do it in the same commit as the version bump so a half-migrated file is never what `main` builds.
+- Every site builds with the newest release, so a release must read every file an earlier release accepted, and read it the same way.
+- A release may add a new shape, such as a new optional field or a new topic. It keeps accepting the old shapes. `SCHEMA_VERSION` increases when a release adds a shape that an older release would reject, and the bot may write the new shape only after that release is out.
+- A file never has to be rewritten to keep building. If a release changes how something is stored, the package reads the old form and converts it while building, and `grok-digest validate` keeps accepting it.
+- The changelog names each new shape and the `SCHEMA_VERSION` that introduced it.

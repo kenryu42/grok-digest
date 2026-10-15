@@ -8,11 +8,11 @@ This repository is one person's Grok Digest site. The page, the feeds, and the s
 
 1. Create a public repository and copy the files from the `template/` directory of [kenryu42/grok-digest](https://github.com/kenryu42/grok-digest) into it. Copy `template/data` only when the repository does not already have data files.
 2. Open **Settings** > **Pages**. Under **Build and deployment**, set **Source** to **GitHub Actions**.
-3. Install dependencies and commit the lockfile:
+3. Install dependencies with [Bun](https://bun.sh) and commit the lockfile:
 
    ```sh
-   pnpm install
-   git add pnpm-lock.yaml
+   bun install
+   git add bun.lock
    git commit -m "Install grok-digest"
    git push
    ```
@@ -25,19 +25,15 @@ You do not set the URL in the repository. The workflow asks GitHub Pages for the
 
 If the deploy fails at the `configure-pages` step, Pages is not enabled yet. Do step 2, then run the workflow again.
 
-`grok-digest` has to be on npm before `pnpm install` can succeed. The package repository's README lists the publishing steps.
-
 ## Updates
 
-`.github/dependabot.yml` asks Dependabot to open a pull request when a new `grok-digest` is published. Merge it to update the site. The dependency range is `^0.1.0`, so a pull request that stays inside `0.1.x` is a schema version 1 release and needs no data changes. A pull request that raises the minor version is a new schema version. Read that release's changelog, and follow the migration it describes, before merging.
+Each deploy builds with the newest `grok-digest`. `package.json` asks for `"latest"`, and the workflow runs `bun update grok-digest` before it builds, so a new release shows up the next time the bot pushes a bookmark. Nothing is committed back to the repository.
 
-Renovate does the same job if you already run it. Remove `.github/dependabot.yml` so the two do not open two pull requests.
-
-Pinning the dependency to the dist-tag `latest` (`"grok-digest": "latest"`) is the alternative with no bot. pnpm keeps the version in `pnpm-lock.yaml` until you run `pnpm update grok-digest` and commit the lockfile. The GitHub Actions install is frozen, so it does not move to a newer release on its own.
+To stay on one version, set `"grok-digest"` in `package.json` to that exact version, such as `"0.1.3"`, then run `bun install` and commit `package.json` and `bun.lock`. Set it back to `"latest"` the same way to follow releases again.
 
 ## Data files
 
-The page reads `data/bookmarks.json` only. `data/processed.json` and `data/removed.json` are arrays of id strings for the bot. `pnpm validate` checks whichever of the three are present, against schema version 1.
+The page reads `data/bookmarks.json` only. `data/processed.json` and `data/removed.json` are arrays of id strings for the bot. `bun run validate` checks whichever of the three are present, against schema version 1.
 
 `data/bookmarks.json` is a JSON array with one object per bookmark:
 
@@ -84,7 +80,7 @@ The page sorts bookmarks newest first by `posted_at`, so the order in the file d
 
 The template ships three fake entries so the page has something to show. Each one has `(sample)` in its author name. Delete them from `data/bookmarks.json` once real bookmarks arrive. An empty list (`[]`) is valid and shows a short "No bookmarks yet" message.
 
-When a file is invalid, `pnpm validate` and the build fail and nothing deploys. The page that was live stays live. The failed run names the entry and the field:
+When a file is invalid, `bun run validate` and the build fail and nothing deploys. The page that was live stays live. The failed run names the entry and the field:
 
 ```text
 data/bookmarks.json is invalid:
@@ -94,7 +90,7 @@ data/bookmarks.json is invalid:
 
 `[2]` is the entry's position in the file, counting from 0.
 
-Schema version 1 has no migration. The rules for a future version are in [MIGRATION.md](https://github.com/kenryu42/grok-digest/blob/main/MIGRATION.md) in the package repository.
+Every later release reads version 1 files unchanged. The policy is in [MIGRATION.md](https://github.com/kenryu42/grok-digest/blob/main/MIGRATION.md) in the package repository.
 
 ## The page
 
@@ -118,19 +114,19 @@ The footer reads "Unofficial. Summaries created with Grok."
 
 ## Develop locally
 
-You need Node.js 22.12 or later and pnpm 10.
+You need Bun 1.4 and Node.js 22.12 or later.
 
 ```sh
-pnpm install
-pnpm validate  # check data/*.json against schema version 1
-pnpm dev       # http://localhost:4321
-pnpm build
-pnpm preview
+bun install
+bun run validate  # check data/*.json
+bun run dev       # http://localhost:4321
+bun run build
+bun run preview
 ```
 
 To build with a GitHub Pages project path:
 
 ```sh
-SITE_URL=https://<your-username>.github.io BASE_PATH=/<repository-name> pnpm build
-BASE_PATH=/<repository-name> pnpm preview
+SITE_URL=https://<your-username>.github.io BASE_PATH=/<repository-name> bun run build
+BASE_PATH=/<repository-name> bun run preview
 ```

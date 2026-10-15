@@ -10,6 +10,7 @@
     "rss",
     "x"
   ],
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/kenryu42/grok-digest.git"

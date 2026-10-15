@@ -1,42 +1,61 @@
 # grok-digest
 
-`grok-digest` is the Astro integration behind a Grok Digest site: X bookmarks summarized by Grok, searchable, sorted by topic, with one RSS feed per topic. Sites install it and keep their own `data/` files. A new package version reaches those sites as a dependency bump.
+`grok-digest` renders a Grok Digest site: X bookmarks summarized by Grok, searchable, sorted by topic, with one RSS feed per topic. A site repository holds only its `data/` files, a `package.json`, and a deploy workflow. The page, the feeds, and the schema come from this package.
 
-The npm package name `grok-digest` was free at the time this repository was restructured, so the package is unscoped.
-
-## Repository layout
-
-| Path                   | Contents                                                                                          |
-| ---------------------- | ------------------------------------------------------------------------------------------------- |
-| `packages/grok-digest` | The published package. The integration, the page, the schema, and the `grok-digest validate` CLI. |
-| `template/`            | The thin site. Copy this directory into a user's repository.                                      |
-| `MIGRATION.md`         | How to convert an existing copy, such as `kenryu42/bm-65zhrc`, and the schema version policy.     |
-
-A user repository contains `data/*.json`, `astro.config.mjs`, `package.json`, the deploy workflow, and Dependabot config. It does not contain the page source. `template/astro.config.mjs` is the whole config: it passes `SITE_URL` and `BASE_PATH` through to Astro and registers `grokDigest({ dataDir: "./data" })`.
-
-`dataDir` is the folder of `bookmarks.json`, relative to the Astro project root. It defaults to `data`.
-
-The integration injects the page, the feeds, the favicon, and `robots.txt`, and it registers React and Tailwind. `SITE_URL` becomes Astro's `site`. `BASE_PATH` becomes Astro's `base`, so links on a `github.io/<repository-name>/` site stay under that path.
+Every deploy installs the newest `grok-digest`, so a release reaches each site the next time its Grok bot pushes a bookmark.
 
 ## Set up a site
 
-Create a public repository, copy `template/` into it (skip `template/data` when the repository already has data), enable GitHub Pages with **GitHub Actions** as the source, then `pnpm install`, commit `pnpm-lock.yaml`, and push. The rest is in `template/README.md`.
+Create a public repository and copy the [`template/`](https://github.com/kenryu42/grok-digest/tree/main/template) directory into it (skip `template/data` when the repository already has data). Enable GitHub Pages with **GitHub Actions** as the source, then:
 
-Turn off **Template repository** on this repository. A GitHub template copy would clone the package source into every site. New sites copy `template/` only. Existing sites follow `MIGRATION.md`. This repository's CI workflow runs `pnpm check` and does not deploy a site. The sample page is the `template/` build inside that check. A live page belongs to each user repository.
+```sh
+bun install
+git add bun.lock
+git commit -m "Install grok-digest"
+git push
+```
 
-## Updates
+The rest is in `template/README.md`. To convert a site that still holds a copy of the page source, follow [MIGRATION.md](https://github.com/kenryu42/grok-digest/blob/main/MIGRATION.md).
 
-`template/.github/dependabot.yml` is what a user repository commits as `.github/dependabot.yml`. Dependabot opens a pull request for each new `grok-digest` version. Merging it updates the site.
+A site repository contains:
 
-Renovate is the same mechanism if that account already runs Renovate. Drop the Dependabot file so only one bot opens pull requests.
+| Path                           | Contents                                                                          |
+| ------------------------------ | --------------------------------------------------------------------------------- |
+| `data/bookmarks.json`          | The bookmarks. The Grok bot appends to it.                                        |
+| `data/processed.json`          | Optional. Ids the bot has handled.                                                |
+| `data/removed.json`            | Optional. Ids the bot has removed.                                                |
+| `package.json`                 | Depends on `"grok-digest": "latest"` and maps the scripts to the CLI below.       |
+| `bun.lock`                     | The lockfile.                                                                     |
+| `.github/workflows/deploy.yml` | Validates the data, builds with the newest `grok-digest`, and publishes to Pages. |
 
-The other option is the dist-tag `latest`: set the dependency to `"grok-digest": "latest"` and run `pnpm update grok-digest` when you want the new version. The lockfile holds the resolved version until that command, and the deploy workflow installs with `--frozen-lockfile`, so a site does not move forward on its own.
+## How a site takes new versions
 
-`template/package.json` depends on `^0.1.0`. That range accepts later `0.1.x` releases and refuses `0.2.0`. A schema change ships as the next minor version while the package is 0.x, and as the next major from 1.0.0.
+`deploy.yml` runs `bun install --frozen-lockfile`, then `bun update grok-digest`. The update moves `grok-digest` to the newest version that `package.json` allows, inside that run only, and commits nothing. With `"latest"`, that is the newest release.
 
-## Schema version 1
+To hold a site on one version, set the dependency to that exact version, such as `"grok-digest": "0.1.3"`. `bun update grok-digest` keeps an exact version where it is. Set it back to `"latest"` to follow releases again.
 
-`grok-digest/schema` exports `SCHEMA_VERSION`, the zod schemas, and `parseBookmarks`.
+If a release fails a site's build, the deploy stops and the page that was live stays live.
+
+## CLI
+
+```text
+grok-digest build                Build the site into dist/.
+grok-digest dev                  Serve the site at http://localhost:4321 and reload on changes.
+grok-digest preview              Serve the site built in dist/.
+grok-digest validate [file ...]  Check the data files.
+
+--data-dir <dir>  The folder that holds the data files. Defaults to "data".
+```
+
+`build`, `dev`, and `preview` read two environment variables. `SITE_URL` is the site's origin, such as `https://<your-username>.github.io`, and becomes Astro's `site`. `BASE_PATH` is the path the site is served under, such as `/<repository-name>`, and becomes Astro's `base`, so links on a `github.io/<repository-name>/` site stay under that path. The deploy workflow sets both from GitHub Pages.
+
+`validate` with no file checks `data/bookmarks.json` and whichever of `data/processed.json` and `data/removed.json` exist. It prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`, and fails naming the entry and the field of an invalid file.
+
+The site needs no Astro config. The package depends on the Astro version it was tested with and runs it.
+
+## Data files
+
+`grok-digest/schema` exports `SCHEMA_VERSION`, the zod schemas, and `parseBookmarks`:
 
 ```js
 import { SCHEMA_VERSION, bookmarkSchema, parseBookmarks, TOPICS } from "grok-digest/schema";
@@ -50,9 +69,7 @@ import { SCHEMA_VERSION, bookmarkSchema, parseBookmarks, TOPICS } from "grok-dig
 | `data/processed.json` | Array of non-empty id strings. Optional. The page does not read it.    |
 | `data/removed.json`   | Same shape as `processed.json`. Optional. The page does not read it.   |
 
-`grok-digest validate data/bookmarks.json` checks files from a user repository. With no arguments it checks `data/bookmarks.json` and any of the two state files that exist. `pnpm validate` in `template/` runs that command.
-
-A release that keeps `SCHEMA_VERSION` at 1 accepts every version 1 file unchanged. `SCHEMA_VERSION` increases only when a previously valid file would be rejected or read differently. The changelog of that release describes the rewrite, and the starter's version range does not install it until someone edits `package.json`. The full policy is in `MIGRATION.md`. Version 1 has no rewrite.
+Every site takes every release, so every release reads every data file an earlier release accepted. The policy is in `MIGRATION.md`.
 
 ## The page
 
@@ -60,52 +77,46 @@ The page title is "Grok Digest". The footer reads "Unofficial. Summaries created
 
 Search and topic filters are `?q=` and `?topic=` on the page address. The behavior is documented in `template/README.md`.
 
+## Package exports
+
+| Export               | Role                                                                                                                                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `grok-digest`        | Default export, the Astro integration `grokDigest({ dataDir })`, for a site that keeps its own Astro config.                                                                                           |
+| `grok-digest/schema` | `SCHEMA_VERSION`, `bookmarkSchema`, `bookmarksFileSchema`, `stateFileSchema`, `parseBookmarks`, `parseDataFile`, `TOPICS`, `TOPIC_LABELS`, and the `Bookmark`, `BookmarkFileEntry`, and `Topic` types. |
+| `grok-digest` bin    | The CLI above.                                                                                                                                                                                         |
+
 ## Develop
 
-You need Node.js 22.12 or later and pnpm 10.
+You need Bun 1.4 and Node.js 22.12 or later.
 
 ```sh
-pnpm install
-pnpm dev       # builds the package, then serves template/ at http://localhost:4321
-pnpm test
-pnpm check     # typecheck, oxlint, oxfmt, comment lint, jscpd, knip, tests, starter build
-pnpm format
-pnpm --filter grok-digest build
+bun install
+bun run dev      # builds the package, then serves template/ at http://localhost:4321
+bun run test
+bun run check    # typecheck, oxlint, oxfmt, comment lint, jscpd, knip, tests, starter build
+bun run format
 ```
 
-`pnpm check` builds the package, then builds `template/` with `SITE_URL=https://example.github.io` and `BASE_PATH=/bm-check` and checks that the written links stay under that path. `node scripts/check-starter.mjs --packed` repeats the build from `pnpm pack` in a directory outside the workspace.
-
-To preview the sample site on a project path:
-
-```sh
-pnpm --filter grok-digest build
-SITE_URL=https://<your-username>.github.io BASE_PATH=/grok-digest pnpm --filter grok-digest-starter build
-```
-
-The artifact is `template/dist`.
+`bun run check` ends by packing the package with `bun pm pack`, installing the tarball into a copy of `template/` outside the repository, and building it with `SITE_URL=https://example.github.io` and `BASE_PATH=/bm-check`. It checks that the written links stay under that path. This is the same install a site's deploy does.
 
 ## Publish
 
-Publishing is manual. This repository does not create the npm token and the release workflow does not run until you push a tag.
+Releases are published by `.github/workflows/release.yml` when a `v<version>` tag is pushed. It refuses a tag that does not match `package.json`, runs `bun run check`, then runs `npm publish --provenance`.
 
-1. Create an npm access token that can publish `grok-digest`, and add it to this repository as the Actions secret `NPM_TOKEN`. Do not commit the token.
-2. Set `packages/grok-digest/package.json` `version` to the release, and write the matching entry in `packages/grok-digest/CHANGELOG.md`. A schema change increments `SCHEMA_VERSION` in the same commit and follows the policy in `MIGRATION.md`.
-3. Merge that commit to `main`.
-4. Tag the merge commit and push the tag. The tag is `v` plus the version in `package.json`, for example `v0.1.0`:
+1. Set `version` in `package.json` and write the matching entry in `CHANGELOG.md`.
+2. Merge that commit to `main`.
+3. Tag the merge commit and push the tag:
 
    ```sh
    git tag v0.1.0
    git push origin v0.1.0
    ```
 
-`.github/workflows/release.yml` runs on that tag. It refuses the job when the tag and `package.json` disagree, then runs `pnpm publish --access public --provenance --no-git-checks` from `packages/grok-digest`. Provenance uses GitHub's OIDC token (`id-token: write`). `prepack` builds `dist/` before the tarball is made.
+The workflow logs in to npm in one of two ways:
 
-After the first publish, migrate existing sites with `MIGRATION.md`. New sites copy `template/`.
+- **Trusted publishing**, once the package exists on npm. On npmjs.com, open the package's **Settings**, add a trusted publisher for GitHub Actions with repository `kenryu42/grok-digest` and workflow `release.yml`. No secret is needed.
+- **An `NPM_TOKEN` secret**, for the first release, because npm only offers trusted publishing for a package that already exists. Create a granular access token that can publish, add it as the Actions secret `NPM_TOKEN`, and delete the secret and the token after trusted publishing is set up.
 
-## Package exports
+## License
 
-| Export               | Role                                                                                                                                                                                                   |
-| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `grok-digest`        | Default export, the Astro integration `grokDigest({ dataDir })`.                                                                                                                                       |
-| `grok-digest/schema` | `SCHEMA_VERSION`, `bookmarkSchema`, `bookmarksFileSchema`, `stateFileSchema`, `parseBookmarks`, `parseDataFile`, `TOPICS`, `TOPIC_LABELS`, and the `Bookmark`, `BookmarkFileEntry`, and `Topic` types. |
-| `grok-digest` bin    | `grok-digest validate [file ...] [--data-dir <dir>]`.                                                                                                                                                  |
+MIT
