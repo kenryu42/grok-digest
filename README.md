@@ -112,10 +112,16 @@ Releases are published by `.github/workflows/release.yml` when a `v<version>` ta
    git push origin v0.1.0
    ```
 
-The workflow logs in to npm in one of two ways:
+The workflow logs in to npm with trusted publishing, so the repository holds no npm token. On npmjs.com, the package's **Settings** list `kenryu42/grok-digest` with workflow `release.yml` as a trusted publisher.
 
-- **Trusted publishing**, once the package exists on npm. On npmjs.com, open the package's **Settings**, add a trusted publisher for GitHub Actions with repository `kenryu42/grok-digest` and workflow `release.yml`. No secret is needed.
-- **An `NPM_TOKEN` secret**, for the first release, because npm only offers trusted publishing for a package that already exists. Create a granular access token that can publish, add it as the Actions secret `NPM_TOKEN`, and delete the secret and the token after trusted publishing is set up.
+npm offers trusted publishing only for a package that already exists, so version 0.1.0 was published from a maintainer's machine. Provenance needs CI, so that one publish turns it off:
+
+```sh
+npm login
+bun install --frozen-lockfile
+bun run check
+npm publish --provenance=false
+```
 
 ## License
 
