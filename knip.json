@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": ["validate"],
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.{mjs,js}"]
+    },
+    "packages/grok-digest": {
+      "entry": ["src/index.ts", "src/schema.ts", "src/cli.ts", "src/pages/**/*.{astro,ts}", "src/routes/**/*.ts"],
+      "project": ["src/**/*.{ts,tsx,astro,css}", "test/**/*.ts", "scripts/**/*.mjs"]
+    },
+    "template": {}
+  }
+}

@@ -1,0 +1,28 @@
+[
+  {
+    "id": "2000000000000000001",
+    "url": "https://x.com/example_dev/status/2000000000000000001",
+    "author": {
+      "name": "Example Dev",
+      "handle": "example_dev"
+    },
+    "posted_at": "2026-10-13T23:24:10.000Z",
+    "topic": "ai-agents",
+    "text": "First line of a post.\n \nSecond paragraph with a link and an emoji 🧵",
+    "summary": "A made-up post in the shape the Grok bot writes: a UTC timestamp with milliseconds and multi-line text.",
+    "key_points": ["One takeaway.", "Another takeaway."]
+  },
+  {
+    "id": "2000000000000000002",
+    "url": "https://twitter.com/Example_Lab/status/2000000000000000002",
+    "author": {
+      "name": "Example Lab",
+      "handle": "@Example_Lab"
+    },
+    "posted_at": "2026-10-15T10:43:02+09:00",
+    "topic": "models-releases",
+    "text": "",
+    "summary": "A post with no text, a twitter.com link, and a handle written with a leading @.",
+    "key_points": []
+  }
+]

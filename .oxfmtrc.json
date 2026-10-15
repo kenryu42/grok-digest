@@ -2,5 +2,5 @@
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
   "printWidth": 120,
   "astro": true,
-  "ignorePatterns": ["pnpm-lock.yaml", "data/bookmarks.json"]
+  "ignorePatterns": ["pnpm-lock.yaml", "**/data/bookmarks.json", "**/dist/**", "**/.astro/**"]
 }
