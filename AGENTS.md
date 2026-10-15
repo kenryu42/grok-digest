@@ -3,6 +3,13 @@
 `bun run check` runs every check a change must pass: type checks, Oxlint, Oxfmt, the comment lint, jscpd,
 Knip and the tests. Run it before you finish. `bun run format` and `bun run lint:fix` apply fixes.
 
+## Shipping changes
+
+- This repo does not use pull requests. Do not open one.
+- When a change is ready and `bun run check` passes, run the `autoreview` skill. Fix what it finds
+  and run it again until it reports no findings.
+- Then commit with a Conventional Commit message and push straight to `main`.
+
 ## Comments
 
 - Do not write code comments. Say it in code: a clearer name, a named value, a type.
