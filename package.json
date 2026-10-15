@@ -16,7 +16,7 @@
     "url": "git+https://github.com/kenryu42/grok-digest.git"
   },
   "bin": {
-    "grok-digest": "./dist/cli.js"
+    "grok-digest": "dist/cli.js"
   },
   "files": [
     "dist",
