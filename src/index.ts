@@ -25,6 +25,7 @@ const ROUTES = [
 
 const RENDERER_PACKAGES = ["@astrojs/react", "react", "react-dom"];
 const PACKAGE_ENTRY = fileURLToPath(import.meta.url);
+const PACKAGE_ROOT = path.resolve(path.dirname(PACKAGE_ENTRY), "..");
 
 const isRendererImport = (id: string): boolean =>
   RENDERER_PACKAGES.some((name) => id === name || id.startsWith(`${name}/`));
@@ -66,6 +67,15 @@ function rendererFromPackage(): Plugin {
   };
 }
 
+function servePackageFiles(): Plugin {
+  return {
+    name: "grok-digest:serve-package-files",
+    configResolved(config) {
+      config.server.fs.allow.push(PACKAGE_ROOT);
+    },
+  };
+}
+
 function bookmarksModule({ file, source }: { file: string; source: string }): Plugin {
   return {
     name: "grok-digest:bookmarks",
@@ -89,7 +99,9 @@ export default function grokDigest({ dataDir = "data" }: GrokDigestOptions = {})
         const source = path.relative(root, file).split(path.sep).join("/");
         updateConfig({
           integrations: [react()],
-          vite: { plugins: [rendererFromPackage(), tailwindcss(), bookmarksModule({ file, source })] },
+          vite: {
+            plugins: [rendererFromPackage(), servePackageFiles(), tailwindcss(), bookmarksModule({ file, source })],
+          },
         });
         for (const { pattern, entrypoint } of ROUTES) {
           injectRoute({ pattern, entrypoint: new URL(entrypoint, import.meta.url) });
