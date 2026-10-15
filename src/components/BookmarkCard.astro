@@ -28,26 +28,22 @@ const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone
     </CardHeader>
 
     <CardContent className="flex flex-col gap-4">
-      <p class="font-serif text-[1.0625rem] leading-relaxed text-pretty text-foreground sm:text-lg">
-        {summary}
-      </p>
-      {
-        keyPoints.length > 0 && (
-          <ul class="flex flex-col gap-2 border-l-2 border-border pl-4 text-[0.9375rem] leading-relaxed text-foreground/85">
-            {keyPoints.map((point) => (
-              <li class="text-pretty">{point}</li>
-            ))}
-          </ul>
-        )
-      }
-      {
-        text !== "" && (
-          <figure class="border-t border-border pt-4">
-            <figcaption class="mb-2 text-xs font-medium text-muted-foreground">Original post</figcaption>
-            <blockquote class="text-sm leading-relaxed whitespace-pre-wrap text-pretty text-foreground/80">{text}</blockquote>
-          </figure>
-        )
-      }
+      <p class="font-serif text-[1.0625rem] leading-relaxed text-pretty text-foreground sm:text-lg">{summary}</p>
+      {keyPoints.length > 0 && (
+        <ul class="flex flex-col gap-2 border-l-2 border-border pl-4 text-[0.9375rem] leading-relaxed text-foreground/85">
+          {keyPoints.map((point) => (
+            <li class="text-pretty">{point}</li>
+          ))}
+        </ul>
+      )}
+      {text !== "" && (
+        <figure class="border-t border-border pt-4">
+          <figcaption class="mb-2 text-xs font-medium text-muted-foreground">Original post</figcaption>
+          <blockquote class="text-sm leading-relaxed whitespace-pre-wrap text-pretty text-foreground/80">
+            {text}
+          </blockquote>
+        </figure>
+      )}
     </CardContent>
 
     <CardFooter className="justify-between gap-3 border-t-0 bg-transparent pt-1">

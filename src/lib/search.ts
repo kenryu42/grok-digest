@@ -16,9 +16,7 @@ export function toSearchEntry(bookmark: Bookmark): SearchEntry {
   return {
     id,
     topic,
-    text: normalize(
-      [author.name, `@${author.handle}`, TOPIC_LABELS[topic], summary, text, ...keyPoints].join("\n"),
-    ),
+    text: normalize([author.name, `@${author.handle}`, TOPIC_LABELS[topic], summary, text, ...keyPoints].join("\n")),
   };
 }
 

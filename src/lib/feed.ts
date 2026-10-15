@@ -44,7 +44,9 @@ export function feedConfig({
     title: label === null ? "Bookmarks" : `Bookmarks: ${label}`,
     description: label === null ? "Posts saved from X." : `Posts saved from X in ${label}.`,
     site: page.href,
-    items: bookmarks.filter((bookmark) => topic === null || bookmark.topic === topic).map((bookmark) => feedItem(bookmark, page)),
+    items: bookmarks
+      .filter((bookmark) => topic === null || bookmark.topic === topic)
+      .map((bookmark) => feedItem(bookmark, page)),
     customData: `<atom:link href="${escapeHtml(self.href)}" rel="self" type="application/rss+xml"/>`,
     xmlns: { atom: "http://www.w3.org/2005/Atom" },
   };

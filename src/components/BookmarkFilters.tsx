@@ -16,10 +16,7 @@ export function BookmarkFilters({ entries }: Props) {
   const [topic, setTopic] = useState<Topic | null>(initial.topic);
 
   const visible = useMemo(() => matchingIds({ entries, query, topic }), [entries, query, topic]);
-  const topicsInUse = useMemo(
-    () => TOPICS.filter((t) => entries.some((entry) => entry.topic === t)),
-    [entries],
-  );
+  const topicsInUse = useMemo(() => TOPICS.filter((t) => entries.some((entry) => entry.topic === t)), [entries]);
 
   useEffect(() => {
     for (const card of document.querySelectorAll<HTMLElement>("[data-bookmark-id]")) {

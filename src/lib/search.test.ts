@@ -13,13 +13,26 @@ const base = {
 const entries = parseBookmarks({
   source: "test.json",
   raw: [
-    { ...base, id: "a", author: { name: "Agent Lab", handle: "agentlab" }, topic: "ai-agents", summary: "Planning loops for coding agents.", text: "The rule is plan-before-edit." },
-    { ...base, id: "b", author: { name: "Tokyo Notes", handle: "tokyo" }, topic: "japan-tech", summary: "東京のミートアップ", key_points: ["Local-first apps"] },
+    {
+      ...base,
+      id: "a",
+      author: { name: "Agent Lab", handle: "agentlab" },
+      topic: "ai-agents",
+      summary: "Planning loops for coding agents.",
+      text: "The rule is plan-before-edit.",
+    },
+    {
+      ...base,
+      id: "b",
+      author: { name: "Tokyo Notes", handle: "tokyo" },
+      topic: "japan-tech",
+      summary: "東京のミートアップ",
+      key_points: ["Local-first apps"],
+    },
   ],
 }).map(toSearchEntry);
 
-const ids = (query: string, topic: Topic | null = null) =>
-  [...matchingIds({ entries, query, topic })].sort();
+const ids = (query: string, topic: Topic | null = null) => [...matchingIds({ entries, query, topic })].sort();
 
 describe("matchingIds", () => {
   it("returns everything for an empty query and no topic", () => {

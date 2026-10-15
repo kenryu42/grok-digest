@@ -23,26 +23,30 @@ const designFeedHref = `${base}rss/design.xml`;
     </header>
 
     <main class="flex flex-1 flex-col gap-6 pb-16">
-      {
-        bookmarks.length > 0 ? (
-          <>
-            <BookmarkFilters client:only="react" entries={entries} />
-            <ul class="flex flex-col gap-4 sm:gap-5">
-              {bookmarks.map((bookmark) => (
-                <BookmarkCard bookmark={bookmark} />
-              ))}
-            </ul>
-          </>
-        ) : (
-          <p class="font-serif text-lg text-muted-foreground">No bookmarks yet. Share a post on X by email to add one.</p>
-        )
-      }
+      {bookmarks.length > 0 ? (
+        <>
+          <BookmarkFilters client:only="react" entries={entries} />
+          <ul class="flex flex-col gap-4 sm:gap-5">
+            {bookmarks.map((bookmark) => (
+              <BookmarkCard bookmark={bookmark} />
+            ))}
+          </ul>
+        </>
+      ) : (
+        <p class="font-serif text-lg text-muted-foreground">No bookmarks yet. Share a post on X by email to add one.</p>
+      )}
     </main>
 
     <footer class="flex flex-col gap-2 border-t py-8 text-sm text-muted-foreground">
       <p>
-        <a class="underline decoration-border underline-offset-4 hover:decoration-current" href={feedHref}>Follow new bookmarks</a> in a feed reader.
-        Each topic has its own feed, such as <a class="underline decoration-border underline-offset-4 hover:decoration-current" href={designFeedHref}>Design</a>.
+        <a class="underline decoration-border underline-offset-4 hover:decoration-current" href={feedHref}>
+          Follow new bookmarks
+        </a>{" "}
+        in a feed reader. Each topic has its own feed, such as{" "}
+        <a class="underline decoration-border underline-offset-4 hover:decoration-current" href={designFeedHref}>
+          Design
+        </a>
+        .
       </p>
       <p>This page is unlisted, not private. Anyone with the link can see it.</p>
     </footer>

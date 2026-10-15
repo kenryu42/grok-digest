@@ -37,44 +37,44 @@ The template ships three fake entries so the page has something to show. Each on
 
 ```json
 [
-	{
-		"id": "1000000000000000001",
-		"url": "https://x.com/example_agents/status/1000000000000000001",
-		"author": { "name": "Example Agent Lab", "handle": "example_agents" },
-		"posted_at": "2026-01-15",
-		"topic": "ai-agents",
-		"summary": "One or two sentences about the post.",
-		"text": "The post's own words, copied as posted.",
-		"key_points": ["A takeaway.", "Another takeaway."]
-	}
+  {
+    "id": "1000000000000000001",
+    "url": "https://x.com/example_agents/status/1000000000000000001",
+    "author": { "name": "Example Agent Lab", "handle": "example_agents" },
+    "posted_at": "2026-01-15",
+    "topic": "ai-agents",
+    "summary": "One or two sentences about the post.",
+    "text": "The post's own words, copied as posted.",
+    "key_points": ["A takeaway.", "Another takeaway."]
+  }
 ]
 ```
 
 Every field is required. `text` may be an empty string, and `key_points` may be an empty array. The build rejects fields that are not in this table.
 
-| Field | Type | Rules |
-| --- | --- | --- |
-| `id` | string | Unique in the file. Use the post's status ID, the number at the end of its URL. |
-| `url` | string | An `https` link on `x.com` or `twitter.com`. A `www.` or `mobile.` prefix is allowed. |
-| `author.name` | string | The display name. Must not be empty. |
-| `author.handle` | string | 1 to 15 letters, digits, or underscores. A leading `@` is allowed and removed. |
-| `posted_at` | string | A date such as `2026-01-15`, or a date and time with an offset such as `2026-01-15T09:30:00+09:00`. |
-| `topic` | string | One of the topic IDs below. |
-| `summary` | string | Must not be empty. |
-| `text` | string | The post's own words. May be empty when the post has no text. The card shows it under the summary, and search matches it. |
-| `key_points` | array of strings | Can be empty. Each string must not be empty. |
+| Field           | Type             | Rules                                                                                                                     |
+| --------------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| `id`            | string           | Unique in the file. Use the post's status ID, the number at the end of its URL.                                           |
+| `url`           | string           | An `https` link on `x.com` or `twitter.com`. A `www.` or `mobile.` prefix is allowed.                                     |
+| `author.name`   | string           | The display name. Must not be empty.                                                                                      |
+| `author.handle` | string           | 1 to 15 letters, digits, or underscores. A leading `@` is allowed and removed.                                            |
+| `posted_at`     | string           | A date such as `2026-01-15`, or a date and time with an offset such as `2026-01-15T09:30:00+09:00`.                       |
+| `topic`         | string           | One of the topic IDs below.                                                                                               |
+| `summary`       | string           | Must not be empty.                                                                                                        |
+| `text`          | string           | The post's own words. May be empty when the post has no text. The card shows it under the summary, and search matches it. |
+| `key_points`    | array of strings | Can be empty. Each string must not be empty.                                                                              |
 
 The page sorts bookmarks newest first by `posted_at`, so the order in the file does not matter.
 
-| Topic ID | Label on the page |
-| --- | --- |
-| `ai-agents` | AI agents |
-| `models-releases` | Models & releases |
-| `dev-tools` | Dev tools |
+| Topic ID            | Label on the page   |
+| ------------------- | ------------------- |
+| `ai-agents`         | AI agents           |
+| `models-releases`   | Models & releases   |
+| `dev-tools`         | Dev tools           |
 | `startups-business` | Startups & business |
-| `japan-tech` | Japan tech |
-| `design` | Design |
-| `other` | Other |
+| `japan-tech`        | Japan tech          |
+| `design`            | Design              |
+| `other`             | Other               |
 
 `src/lib/bookmarks.ts` defines this format as a zod schema. `src/lib/topics.ts` defines the topics. Change those two files to change the format or the topic list.
 
@@ -144,23 +144,23 @@ BASE_PATH=/<repository-name> pnpm preview
 
 The stack is Astro with static output, React islands, TypeScript, Tailwind CSS v4, and shadcn/ui.
 
-| Path | Contents |
-| --- | --- |
-| `data/bookmarks.json` | The bookmarks. The bot edits only this file. |
-| `src/lib/bookmarks.ts` | The zod schema and `parseBookmarks`, which validates the file and sorts it. |
-| `src/lib/topics.ts` | Topic IDs and their labels. |
-| `src/lib/search.ts` | The search and topic filter logic. It has no React or DOM code. |
-| `src/lib/filter.ts` | Reads and writes the `q` and `topic` parameters in the page address. |
-| `src/lib/feed.ts` | Builds the RSS feed for the whole list and for one topic. |
-| `src/pages/index.astro` | The page. |
-| `src/pages/rss.xml.ts` | The feed of every bookmark. |
-| `src/pages/rss/[topic].xml.ts` | One feed per topic. |
-| `src/components/BookmarkCard.astro` | One bookmark card. Rendered to static HTML at build time. |
-| `src/components/BookmarkFilters.tsx` | The search box and topic chips. A React island that hides and shows the static cards. |
-| `src/components/ThemeToggle.tsx` | The light and dark toggle. A React island. |
-| `src/layouts/Layout.astro` | The HTML shell, the robots meta tag, and the script that applies the theme before first paint. |
-| `src/components/ui/` | shadcn/ui components. Add more with `pnpm dlx shadcn@latest add <component>`. |
-| `.github/workflows/deploy.yml` | Tests, builds, and deploys to GitHub Pages on every push to `main`. |
+| Path                                 | Contents                                                                                       |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
+| `data/bookmarks.json`                | The bookmarks. The bot edits only this file.                                                   |
+| `src/lib/bookmarks.ts`               | The zod schema and `parseBookmarks`, which validates the file and sorts it.                    |
+| `src/lib/topics.ts`                  | Topic IDs and their labels.                                                                    |
+| `src/lib/search.ts`                  | The search and topic filter logic. It has no React or DOM code.                                |
+| `src/lib/filter.ts`                  | Reads and writes the `q` and `topic` parameters in the page address.                           |
+| `src/lib/feed.ts`                    | Builds the RSS feed for the whole list and for one topic.                                      |
+| `src/pages/index.astro`              | The page.                                                                                      |
+| `src/pages/rss.xml.ts`               | The feed of every bookmark.                                                                    |
+| `src/pages/rss/[topic].xml.ts`       | One feed per topic.                                                                            |
+| `src/components/BookmarkCard.astro`  | One bookmark card. Rendered to static HTML at build time.                                      |
+| `src/components/BookmarkFilters.tsx` | The search box and topic chips. A React island that hides and shows the static cards.          |
+| `src/components/ThemeToggle.tsx`     | The light and dark toggle. A React island.                                                     |
+| `src/layouts/Layout.astro`           | The HTML shell, the robots meta tag, and the script that applies the theme before first paint. |
+| `src/components/ui/`                 | shadcn/ui components. Add more with `pnpm dlx shadcn@latest add <component>`.                  |
+| `.github/workflows/deploy.yml`       | Tests, builds, and deploys to GitHub Pages on every push to `main`.                            |
 
 The page follows the system color scheme. The toggle stores an override in `localStorage`. If you toggle back to the system's scheme, the override is removed and the page follows the system again.
 
