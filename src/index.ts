@@ -21,6 +21,8 @@ const ROUTES = [
   { pattern: "/rss/[topic].xml", entrypoint: `pages/rss/[topic].xml${SCRIPT_EXTENSION}` },
   { pattern: "/favicon.svg", entrypoint: `routes/favicon.svg${SCRIPT_EXTENSION}` },
   { pattern: "/robots.txt", entrypoint: `routes/robots.txt${SCRIPT_EXTENSION}` },
+  { pattern: "/manifest.webmanifest", entrypoint: `routes/manifest.webmanifest${SCRIPT_EXTENSION}` },
+  { pattern: "/icon-[size].png", entrypoint: `routes/icon-[size].png${SCRIPT_EXTENSION}` },
 ];
 
 const RENDERER_PACKAGES = ["@astrojs/react", "react", "react-dom"];

@@ -46,6 +46,7 @@ The page reads `data/bookmarks.json` only. `data/processed.json` and `data/remov
     "posted_at": "2026-01-15",
     "saved_at": "2026-01-16T08:12:00+09:00",
     "topic": "ai-agents",
+    "shelf_life": "evergreen",
     "tldr": "A headline of about ten words.",
     "summary": "One or two sentences about the post.",
     "text": "The post's own words, copied as posted.",
@@ -67,6 +68,7 @@ Every field is required. `text` and `action` may be empty strings, and `key_poin
 | `posted_at`     | string           | A date such as `2026-01-15`, or a date and time with an offset such as `2026-01-15T09:30:00+09:00`.                           |
 | `saved_at`      | string           | When the bot received the post: a date and time with an offset, such as `2026-01-16T08:12:00+09:00`.                          |
 | `topic`         | string           | One of the topic IDs below.                                                                                                   |
+| `shelf_life`    | string           | `news` for posts that go stale, such as launches and announcements, or `evergreen` for ideas and how-tos that stay useful.    |
 | `tldr`          | string           | A headline of about ten words. It is the card's title and the feed item's title. Must not be empty.                           |
 | `summary`       | string           | Must not be empty.                                                                                                            |
 | `text`          | string           | The post's own words. May be empty when the post has no text. The card shows it under the summary, and search matches it.     |
@@ -102,9 +104,11 @@ Every later release reads version 1 files unchanged. The policy is in [MIGRATION
 
 ## The page
 
-The page opens on **Today**: up to five bookmarks to look at again. It brings back bookmarks saved yesterday, a week ago, a month ago, three months ago, and on today's date in earlier years, then fills the rest from older bookmarks you have not marked done. The five stay the same all day. When there is nothing to review, the page opens on **Inbox** instead.
+The page opens on **Today**: up to five bookmarks to look at again. It brings back bookmarks saved yesterday, a week ago, a month ago, three months ago, and on today's date in earlier years, then fills the rest from older bookmarks you have not marked done. A `news` bookmark comes back only the day after it was saved and a week later, and never fills a free slot. The five stay the same all day. When there is nothing to review, the page opens on **Inbox** instead.
 
 Each card has a **Done** button. **Inbox** lists what is not done, **Done** what is, and **All** everything. A search looks through every bookmark, whichever view is open. Done marks, today's five, and **Collapse all** are kept in your browser, so another browser or device starts fresh.
+
+On a phone, use **Add to Home Screen** to open the page like an app.
 
 On a keyboard, `j` and `k` move between cards, `Enter` opens or closes one, `e` marks it done, `o` opens it on X, and `/` jumps to the search box.
 

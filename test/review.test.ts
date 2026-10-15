@@ -4,9 +4,12 @@ import { dailyReview, REVIEW_SIZE } from "../src/lib/review.ts";
 const TOKYO = "Asia/Tokyo";
 const TODAY = "2026-10-15";
 
-const savedOn = (id: string, savedAt: string) => ({ id, savedAt: new Date(savedAt) });
+type Saved = { id: string; savedAt: Date; shelfLife: "news" | "evergreen" };
 
-const review = (bookmarks: { id: string; savedAt: Date }[], done: string[] = [], today = TODAY) =>
+const savedOn = (id: string, savedAt: string): Saved => ({ id, savedAt: new Date(savedAt), shelfLife: "evergreen" });
+const newsOn = (id: string, savedAt: string): Saved => ({ ...savedOn(id, savedAt), shelfLife: "news" });
+
+const review = (bookmarks: Saved[], done: string[] = [], today = TODAY) =>
   dailyReview({ bookmarks, done: new Set(done), today, timeZone: TOKYO });
 
 describe("dailyReview", () => {
@@ -60,6 +63,20 @@ describe("dailyReview", () => {
     );
     expect(review(bookmarks)).toEqual(picks);
     expect(review(backlog, [], "2026-10-16")).not.toEqual(review(backlog));
+  });
+
+  it("brings news back only the next day and a week later", () => {
+    const picks = review([
+      newsOn("yesterday", "2026-10-14T09:00:00+09:00"),
+      newsOn("week", "2026-10-08T09:00:00+09:00"),
+      newsOn("month", "2026-09-15T09:00:00+09:00"),
+      newsOn("year", "2025-10-15T09:00:00+09:00"),
+      newsOn("stale", "2026-05-02T09:00:00+09:00"),
+    ]);
+    expect(picks).toEqual([
+      { id: "week", reason: "Saved a week ago" },
+      { id: "yesterday", reason: "Saved yesterday" },
+    ]);
   });
 
   it("shows at most five due bookmarks", () => {

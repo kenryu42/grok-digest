@@ -1,7 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { cpSync, rmSync } from "node:fs";
 
-const COPIED_AS_IS = /\.(?:astro|css|svg|txt)$/;
+const COPIED_AS_IS = /\.(?:astro|css|png|svg|txt)$/;
 
 rmSync("dist", { recursive: true, force: true });
 execFileSync("tsc", ["-p", "tsconfig.build.json"], { stdio: "inherit" });

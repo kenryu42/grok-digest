@@ -6,6 +6,7 @@ export type SearchEntry = {
   id: string;
   topic: Topic;
   savedAt: Date;
+  shelfLife: Bookmark["shelfLife"];
   text: string;
 };
 
@@ -14,11 +15,12 @@ function normalize(text: string): string {
 }
 
 export function toSearchEntry(bookmark: Bookmark): SearchEntry {
-  const { id, topic, savedAt, author, tldr, summary, text, keyPoints, action, links } = bookmark;
+  const { id, topic, savedAt, shelfLife, author, tldr, summary, text, keyPoints, action, links } = bookmark;
   return {
     id,
     topic,
     savedAt,
+    shelfLife,
     text: normalize(
       [
         author.name,

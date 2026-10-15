@@ -11,7 +11,8 @@ type Props = {
 };
 
 const { bookmark } = Astro.props;
-const { id, url, author, postedAt, savedAt, topic, tldr, summary, text, keyPoints, action, links } = bookmark;
+const { id, url, author, postedAt, savedAt, topic, shelfLife, tldr, summary, text, keyPoints, action, links } =
+  bookmark;
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
@@ -102,7 +103,10 @@ const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
     </details>
 
     <div class="flex items-center justify-between gap-3 px-(--card-spacing) pb-(--card-spacing)">
-      <Badge variant="secondary">{TOPIC_LABELS[topic]}</Badge>
+      <div class="flex flex-wrap items-center gap-1.5">
+        <Badge variant="secondary">{TOPIC_LABELS[topic]}</Badge>
+        {shelfLife === "news" && <Badge variant="outline">News</Badge>}
+      </div>
       <div class="flex items-center gap-4">
         <Button
           type="button"

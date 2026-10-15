@@ -56,9 +56,25 @@ try {
     expect(file === "/" || existsSync(path.join(dist, file)), `${url} points at a file the build did not write`);
   }
 
-  for (const file of ["favicon.svg", "robots.txt", "rss.xml", ...TOPICS.map((topic) => `rss/${topic}.xml`)]) {
+  for (const file of [
+    "favicon.svg",
+    "robots.txt",
+    "rss.xml",
+    ...TOPICS.map((topic) => `rss/${topic}.xml`),
+    "manifest.webmanifest",
+    "icon-180.png",
+  ]) {
     expect(existsSync(path.join(dist, file)), `the build did not write ${file}`);
   }
+  const manifest = JSON.parse(read("manifest.webmanifest"));
+  expect(manifest.start_url === "./", "manifest.webmanifest does not start at the page it sits next to");
+  for (const { src, sizes } of manifest.icons) {
+    const png = readFileSync(path.join(dist, src));
+    const [width, height] = [png.readUInt32BE(16), png.readUInt32BE(20)];
+    expect(sizes === `${width}x${height}`, `${src} is ${width}x${height}, not the ${sizes} the manifest says`);
+  }
+  expect(html.includes(`href="${BASE_PATH}/manifest.webmanifest"`), "index.html does not link the manifest");
+
   const feed = read("rss.xml");
   expect(feed.includes(`<link>${ORIGIN}${BASE_PATH}/</link>`), "rss.xml does not link the site under the base path");
   expect(feed.includes(`href="${ORIGIN}${BASE_PATH}/rss.xml"`), "rss.xml does not name its own address");

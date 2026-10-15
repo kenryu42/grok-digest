@@ -7,12 +7,14 @@ const REVIEW_AGES = new Map([
   [90, "Saved 3 months ago"],
 ]);
 
+const NEWS_AGES = new Set([1, 7]);
+
 const BACKLOG_REASON = "From your backlog";
 const DAY_MS = 86_400_000;
 
 export type ReviewPick = { id: string; reason: string };
 
-type Saved = { id: string; savedAt: Date };
+type Saved = { id: string; savedAt: Date; shelfLife: "news" | "evergreen" };
 
 export function localDay(date: Date, timeZone?: string): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
@@ -50,10 +52,16 @@ export function dailyReview({
 }): ReviewPick[] {
   const candidates = bookmarks
     .filter(({ id }) => !done.has(id))
-    .map(({ id, savedAt }) => {
+    .map(({ id, savedAt, shelfLife }) => {
       const saved = localDay(savedAt, timeZone);
       const age = daysBetween(saved, today);
-      return { id, age, reason: REVIEW_AGES.get(age) ?? anniversaryReason(saved, today) };
+      const news = shelfLife === "news";
+      const reason = news
+        ? NEWS_AGES.has(age)
+          ? REVIEW_AGES.get(age)
+          : undefined
+        : (REVIEW_AGES.get(age) ?? anniversaryReason(saved, today));
+      return { id, age, news, reason };
     })
     .filter(({ age }) => age >= 1);
 
@@ -64,7 +72,7 @@ export function dailyReview({
     .map(({ id, reason }) => ({ id, reason }));
 
   const backlog = candidates
-    .filter(({ reason }) => reason === undefined)
+    .filter(({ news, reason }) => !news && reason === undefined)
     .toSorted((a, b) => hash(`${today}:${a.id}`) - hash(`${today}:${b.id}`))
     .slice(0, REVIEW_SIZE - due.length)
     .map(({ id }) => ({ id, reason: BACKLOG_REASON }));

@@ -9,6 +9,8 @@ const X_HANDLE = /^[A-Za-z0-9_]{1,15}$/;
 const nonEmpty = z.string().trim().min(1);
 const instant = z.iso.datetime({ offset: true });
 
+const SHELF_LIVES = ["news", "evergreen"] as const;
+
 export const bookmarkSchema = z
   .strictObject({
     id: nonEmpty,
@@ -24,6 +26,7 @@ export const bookmarkSchema = z
     posted_at: z.union([z.iso.date(), instant]),
     saved_at: instant,
     topic: z.enum(TOPICS),
+    shelf_life: z.enum(SHELF_LIVES),
     tldr: nonEmpty,
     summary: nonEmpty,
     text: z.string().trim(),
@@ -31,8 +34,9 @@ export const bookmarkSchema = z
     action: z.string().trim(),
     links: z.array(z.strictObject({ title: nonEmpty, url: z.url({ protocol: /^https$/ }) })),
   })
-  .transform(({ posted_at, saved_at, key_points, ...rest }) => ({
+  .transform(({ posted_at, saved_at, shelf_life, key_points, ...rest }) => ({
     ...rest,
+    shelfLife: shelf_life,
     postedAt: new Date(posted_at),
     savedAt: new Date(saved_at),
     keyPoints: key_points,
