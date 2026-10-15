@@ -129,7 +129,9 @@ You need Node.js 22.12 or later and pnpm 10.
 pnpm install
 pnpm dev       # start a dev server at http://localhost:4321
 pnpm test      # run the unit tests for the schema and search
-pnpm build     # type-check with astro check, then build into dist/
+pnpm check     # type-check, lint, check formatting and duplication, find unused code, run the tests
+pnpm format    # format the code with Oxfmt
+pnpm build     # build into dist/
 pnpm preview   # serve dist/ locally
 ```
 
@@ -144,23 +146,23 @@ BASE_PATH=/<repository-name> pnpm preview
 
 The stack is Astro with static output, React islands, TypeScript, Tailwind CSS v4, and shadcn/ui.
 
-| Path                                 | Contents                                                                                       |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------- |
-| `data/bookmarks.json`                | The bookmarks. The bot edits only this file.                                                   |
-| `src/lib/bookmarks.ts`               | The zod schema and `parseBookmarks`, which validates the file and sorts it.                    |
-| `src/lib/topics.ts`                  | Topic IDs and their labels.                                                                    |
-| `src/lib/search.ts`                  | The search and topic filter logic. It has no React or DOM code.                                |
-| `src/lib/filter.ts`                  | Reads and writes the `q` and `topic` parameters in the page address.                           |
-| `src/lib/feed.ts`                    | Builds the RSS feed for the whole list and for one topic.                                      |
-| `src/pages/index.astro`              | The page.                                                                                      |
-| `src/pages/rss.xml.ts`               | The feed of every bookmark.                                                                    |
-| `src/pages/rss/[topic].xml.ts`       | One feed per topic.                                                                            |
-| `src/components/BookmarkCard.astro`  | One bookmark card. Rendered to static HTML at build time.                                      |
-| `src/components/BookmarkFilters.tsx` | The search box and topic chips. A React island that hides and shows the static cards.          |
-| `src/components/ThemeToggle.tsx`     | The light and dark toggle. A React island.                                                     |
-| `src/layouts/Layout.astro`           | The HTML shell, the robots meta tag, and the script that applies the theme before first paint. |
-| `src/components/ui/`                 | shadcn/ui components. Add more with `pnpm dlx shadcn@latest add <component>`.                  |
-| `.github/workflows/deploy.yml`       | Tests, builds, and deploys to GitHub Pages on every push to `main`.                            |
+| Path                                 | Contents                                                                                              |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `data/bookmarks.json`                | The bookmarks. The bot edits only this file.                                                          |
+| `src/lib/bookmarks.ts`               | The zod schema and `parseBookmarks`, which validates the file and sorts it.                           |
+| `src/lib/topics.ts`                  | Topic IDs and their labels.                                                                           |
+| `src/lib/search.ts`                  | The search and topic filter logic. It has no React or DOM code.                                       |
+| `src/lib/filter.ts`                  | Reads and writes the `q` and `topic` parameters in the page address.                                  |
+| `src/lib/feed.ts`                    | Builds the RSS feed for the whole list and for one topic.                                             |
+| `src/pages/index.astro`              | The page.                                                                                             |
+| `src/pages/rss.xml.ts`               | The feed of every bookmark.                                                                           |
+| `src/pages/rss/[topic].xml.ts`       | One feed per topic.                                                                                   |
+| `src/components/BookmarkCard.astro`  | One bookmark card. Rendered to static HTML at build time.                                             |
+| `src/components/BookmarkFilters.tsx` | The search box and topic chips. A React island that hides and shows the static cards.                 |
+| `src/components/ThemeToggle.tsx`     | The light and dark toggle. A React island.                                                            |
+| `src/layouts/Layout.astro`           | The HTML shell, the robots meta tag, and the script that applies the theme before first paint.        |
+| `src/components/ui/`                 | shadcn/ui components. Add more with `pnpm dlx shadcn@latest add <component>`, then run `pnpm format`. |
+| `.github/workflows/deploy.yml`       | Runs `pnpm check`, builds, and deploys to GitHub Pages on every push to `main`.                       |
 
 The page follows the system color scheme. The toggle stores an override in `localStorage`. If you toggle back to the system's scheme, the override is removed and the page follows the system again.
 
