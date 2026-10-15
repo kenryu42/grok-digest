@@ -47,7 +47,7 @@ export function BookmarkFilters({ entries }: Props) {
         />
       </div>
 
-      <div role="group" aria-label="Filter by topic" className="flex flex-wrap gap-2">
+      <fieldset aria-label="Filter by topic" className="flex min-w-0 flex-wrap gap-2">
         <TopicChip label="All" pressed={topic === null} onClick={() => setTopic(null)} />
         {topicsInUse.map((t) => (
           <TopicChip
@@ -57,7 +57,7 @@ export function BookmarkFilters({ entries }: Props) {
             onClick={() => setTopic(topic === t ? null : t)}
           />
         ))}
-      </div>
+      </fieldset>
 
       <p aria-live="polite" className="text-sm text-muted-foreground">
         {visible.size === entries.length
