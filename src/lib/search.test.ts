@@ -32,7 +32,7 @@ const entries = parseBookmarks({
   ],
 }).map(toSearchEntry);
 
-const ids = (query: string, topic: Topic | null = null) => [...matchingIds({ entries, query, topic })].sort();
+const ids = (query: string, topic: Topic | null = null) => [...matchingIds({ entries, query, topic })].toSorted();
 
 describe("matchingIds", () => {
   it("returns everything for an empty query and no topic", () => {

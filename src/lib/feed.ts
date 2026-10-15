@@ -2,7 +2,7 @@ import type { Bookmark } from "./bookmarks";
 import { isTopic } from "./filter";
 import { TOPIC_LABELS, type Topic } from "./topics";
 
-export type FeedItem = {
+type FeedItem = {
   title: string;
   link: string;
   description: string;
