@@ -19,7 +19,8 @@
     "grok-digest": "dist/cli.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "LICENSE-THIRD-PARTY"
   ],
   "type": "module",
   "exports": {
@@ -47,7 +48,7 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "lint:comments": "node scripts/lint-comments.mjs",
-    "lint:dup": "jscpd --threshold 0 --exit-code 1 --no-tips --reporters ai --ignore '**/bun.lock,**/data/*.json,**/test/fixtures/**,**/dist/**,**/.github/workflows/**' .",
+    "lint:dup": "jscpd --threshold 0 --exit-code 1 --no-tips --reporters ai --ignore '**/bun.lock,**/src/styles/shadcn-tailwind.css,**/data/*.json,**/test/fixtures/**,**/dist/**,**/.github/workflows/**' .",
     "knip": "knip",
     "format": "oxfmt",
     "format:check": "oxfmt --check",
@@ -66,7 +67,6 @@
     "radix-ui": "^1.8.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "shadcn": "^4.21.5",
     "tailwindcss": "^4.3.3",
     "tw-animate-css": "^1.4.0",
     "zod": "^4.6.7"
