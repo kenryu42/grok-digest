@@ -20,6 +20,7 @@
   },
   "files": [
     "dist",
+    "BOT.md",
     "LICENSE-THIRD-PARTY"
   ],
   "type": "module",

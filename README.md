@@ -2,6 +2,8 @@
 
 `grok-digest` renders a Grok Digest site: X bookmarks summarized by Grok, searchable, sorted by topic, with one RSS feed per topic. A site repository holds only its `data/` files, a `package.json`, and a deploy workflow. The page, the feeds, and the schema come from this package.
 
+[`BOT.md`](BOT.md) is the manual for the Grok bot that writes a site's data: what to do with a shared post, every field of an entry, and how to change or remove one. It ships in the package, so `node_modules/grok-digest/BOT.md` always matches the installed version.
+
 Every deploy installs the newest `grok-digest`, so a release reaches each site the next time its Grok bot pushes a bookmark.
 
 ## Set up a site
@@ -63,11 +65,11 @@ import { SCHEMA_VERSION, bookmarkSchema, parseBookmarks, TOPICS } from "grok-dig
 
 `SCHEMA_VERSION` is `1`. The JSON files have no version field. A `bookmarks.json` that already validates is version 1. `posted_at` with milliseconds and a `Z` offset, as the bot writes it, is version 1.
 
-| File                  | Version 1 shape                                                        |
-| --------------------- | ---------------------------------------------------------------------- |
-| `data/bookmarks.json` | Array of bookmark objects. The field table is in `template/README.md`. |
-| `data/processed.json` | Array of non-empty id strings. Optional. The page does not read it.    |
-| `data/removed.json`   | Same shape as `processed.json`. Optional. The page does not read it.   |
+| File                  | Version 1 shape                                                      |
+| --------------------- | -------------------------------------------------------------------- |
+| `data/bookmarks.json` | Array of bookmark objects. Every field is described in `BOT.md`.     |
+| `data/processed.json` | Array of non-empty id strings. Optional. The page does not read it.  |
+| `data/removed.json`   | Same shape as `processed.json`. Optional. The page does not read it. |
 
 Every site takes every release, so every release reads every data file an earlier release accepted. The policy is in `MIGRATION.md`.
 

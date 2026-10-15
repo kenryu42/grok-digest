@@ -33,6 +33,10 @@ function starterFromPackedTarball() {
 const { siteDir, cleanUp } = starterFromPackedTarball();
 try {
   execFileSync("bun", ["run", "validate"], { cwd: siteDir, stdio: "inherit" });
+  expect(
+    existsSync(path.join(siteDir, "node_modules/grok-digest/BOT.md")),
+    "the installed package lacks BOT.md, the bot's manual",
+  );
   execFileSync("bun", ["run", "build"], {
     cwd: siteDir,
     stdio: "inherit",
