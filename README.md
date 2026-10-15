@@ -1,4 +1,4 @@
-# x-bookmarks
+# grok-digest
 
 Your X bookmarks as a searchable page on GitHub Pages, sorted by topic. A Grok bot adds an entry to `data/bookmarks.json` each time you share an X post by email. GitHub Actions then rebuilds and publishes the page. You never edit code.
 

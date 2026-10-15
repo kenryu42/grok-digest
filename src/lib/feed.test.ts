@@ -32,7 +32,7 @@ const config = feedConfig({
   bookmarks,
   topic: "design",
   origin: "https://example.github.io",
-  base: "/x-bookmarks/",
+  base: "/grok-digest/",
 });
 
 describe("feedConfig", () => {
@@ -40,21 +40,21 @@ describe("feedConfig", () => {
     expect(config.title).toBe("Bookmarks: Design");
     expect(config.items.map((item) => item.title)).toEqual(["A summary."]);
     const [item] = config.items;
-    expect(item?.link).toBe("https://example.github.io/x-bookmarks/#b-1");
+    expect(item?.link).toBe("https://example.github.io/grok-digest/#b-1");
     expect(item?.content).toContain("&lt;script&gt;");
     expect(item?.content).toContain("A &amp; B");
     expect(item?.content).not.toContain("<script>");
   });
 
   it("names the feed address in the self link", () => {
-    expect(config.customData).toContain("https://example.github.io/x-bookmarks/rss/design.xml");
+    expect(config.customData).toContain("https://example.github.io/grok-digest/rss/design.xml");
   });
 
   it("keeps the project path when the base has no trailing slash", () => {
-    const bare = feedConfig({ bookmarks, topic: null, origin: "https://example.github.io", base: "/x-bookmarks" });
-    expect(bare.site).toBe("https://example.github.io/x-bookmarks/");
-    expect(bare.customData).toContain("https://example.github.io/x-bookmarks/rss.xml");
-    expect(bare.items[0]?.link).toBe("https://example.github.io/x-bookmarks/#b-1");
+    const bare = feedConfig({ bookmarks, topic: null, origin: "https://example.github.io", base: "/grok-digest" });
+    expect(bare.site).toBe("https://example.github.io/grok-digest/");
+    expect(bare.customData).toContain("https://example.github.io/grok-digest/rss.xml");
+    expect(bare.items[0]?.link).toBe("https://example.github.io/grok-digest/#b-1");
   });
 
   it("omits the quote when the post has no text", () => {
