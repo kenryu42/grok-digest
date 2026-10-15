@@ -19,8 +19,7 @@
     "grok-digest": "dist/cli.js"
   },
   "files": [
-    "dist",
-    "CHANGELOG.md"
+    "dist"
   ],
   "type": "module",
   "exports": {

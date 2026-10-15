@@ -101,27 +101,21 @@ bun run format
 
 ## Publish
 
-Releases are published by `.github/workflows/release.yml` when a `v<version>` tag is pushed. It refuses a tag that does not match `package.json`, runs `bun run check`, then runs `npm publish --provenance`.
+Releases are cut from GitHub Actions. Open **Actions** > **Prepare Release** > **Run workflow** and choose:
 
-1. Set `version` in `package.json` and write the matching entry in `CHANGELOG.md`.
-2. Merge that commit to `main`.
-3. Tag the merge commit and push the tag:
+| Input     | Meaning                                                                        |
+| --------- | ------------------------------------------------------------------------------ |
+| `bump`    | `patch`, `minor`, or `major`, applied to the version in `package.json`.        |
+| `version` | Optional. An exact version such as `0.2.0`, without the `v`. Overrides `bump`. |
+| `dry_run` | Run every check on the new version and stop before changing Git.               |
 
-   ```sh
-   git tag v0.1.0
-   git push origin v0.1.0
-   ```
+`prepare-release.yml` refuses a version that is not newer, whose tag exists, or that is already on npm. It sets the new version, runs `bun run check`, commits `release: v<version>` to `main`, pushes the commit and the `v<version>` tag together, and starts `publish.yml` on that tag.
 
-The workflow logs in to npm with trusted publishing, so the repository holds no npm token. On npmjs.com, the package's **Settings** list `kenryu42/grok-digest` with workflow `release.yml` as a trusted publisher.
+`publish.yml` checks the tag again, packs the tarball, publishes that exact tarball to npm with provenance, and creates a GitHub release with generated notes and the tarball attached. Rerunning it for a tag that is already on npm skips the publish and finishes the release.
 
-npm offers trusted publishing only for a package that already exists, so version 0.1.0 was published from a maintainer's machine. Provenance needs CI, so that one publish turns it off:
+npm accepts the publish through trusted publishing, so the repository holds no npm token. On npmjs.com, the package's **Settings** list `kenryu42/grok-digest` with workflow `publish.yml` as a trusted publisher.
 
-```sh
-npm login
-bun install --frozen-lockfile
-bun run check
-npm publish --provenance=false
-```
+Version 0.1.0 was published from a maintainer's machine, because npm offers trusted publishing only for a package that already exists.
 
 ## License
 

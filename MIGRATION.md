@@ -70,4 +70,4 @@ Policy:
 - Every site builds with the newest release, so a release must read every file an earlier release accepted, and read it the same way.
 - A release may add a new shape, such as a new optional field or a new topic. It keeps accepting the old shapes. `SCHEMA_VERSION` increases when a release adds a shape that an older release would reject, and the bot may write the new shape only after that release is out.
 - A file never has to be rewritten to keep building. If a release changes how something is stored, the package reads the old form and converts it while building, and `grok-digest validate` keeps accepting it.
-- The changelog names each new shape and the `SCHEMA_VERSION` that introduced it.
+- The release notes name each new shape and the `SCHEMA_VERSION` that introduced it.

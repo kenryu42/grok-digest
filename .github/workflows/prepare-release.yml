@@ -1,0 +1,133 @@
+name: Prepare Release
+run-name: prepare ${{ inputs.version || inputs.bump }} release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: Semver bump applied to the version in package.json on main
+        required: true
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
+      version:
+        description: Explicit stable version without a v prefix; overrides bump
+        required: false
+        type: string
+      dry_run:
+        description: Validate the complete release without mutating Git
+        required: false
+        default: false
+        type: boolean
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  verify:
+    if: github.repository == 'kenryu42/grok-digest'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+      base: ${{ steps.resolve.outputs.base }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: package.json
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      - name: Resolve the next version
+        id: resolve
+        env:
+          BUMP: ${{ inputs.bump }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          CURRENT=$(jq -r .version package.json)
+          if [ -z "$VERSION" ]; then
+            IFS=. read -r MAJOR MINOR PATCH <<< "$CURRENT"
+            case "$BUMP" in
+              major) VERSION="$((MAJOR + 1)).0.0" ;;
+              minor) VERSION="${MAJOR}.$((MINOR + 1)).0" ;;
+              patch) VERSION="${MAJOR}.${MINOR}.$((PATCH + 1))" ;;
+            esac
+          fi
+          if ! [[ "$VERSION" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]; then
+            echo "::error::$VERSION is not a stable semver version."
+            exit 1
+          fi
+          if [ "$(printf '%s\n%s\n' "$CURRENT" "$VERSION" | sort -V | tail -1)" != "$VERSION" ] || [ "$CURRENT" = "$VERSION" ]; then
+            echo "::error::v$VERSION is not newer than v$CURRENT."
+            exit 1
+          fi
+          git fetch origin --tags
+          if git rev-parse --verify --quiet "refs/tags/v$VERSION" > /dev/null; then
+            echo "::error::Tag v$VERSION already exists."
+            exit 1
+          fi
+          if [ -n "$(npm view "grok-digest@$VERSION" version 2>/dev/null)" ]; then
+            echo "::error::grok-digest@$VERSION is already on npm."
+            exit 1
+          fi
+          echo "Preparing v$VERSION from v$CURRENT"
+          printf 'version=%s\nbase=%s\n' "$VERSION" "$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Check the release version
+        env:
+          VERSION: ${{ steps.resolve.outputs.version }}
+        run: |
+          bun install --frozen-lockfile
+          npm version "$VERSION" --no-git-tag-version
+          bun run check
+
+  tag:
+    if: ${{ !inputs.dry_run }}
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Commit, tag, and push the release
+        env:
+          VERSION: ${{ needs.verify.outputs.version }}
+          BASE: ${{ needs.verify.outputs.base }}
+        run: |
+          test "$(git rev-parse HEAD)" = "$BASE"
+          npm version "$VERSION" --no-git-tag-version
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "release: v$VERSION"
+          git tag "v$VERSION"
+          git push --atomic origin HEAD:main "v$VERSION"
+
+  dispatch:
+    needs: [verify, tag]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write
+    steps:
+      - name: Start the publish workflow on the tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: v${{ needs.verify.outputs.version }}
+        run: gh workflow run publish.yml --repo "$GITHUB_REPOSITORY" --ref "$TAG" -f tag="$TAG"
