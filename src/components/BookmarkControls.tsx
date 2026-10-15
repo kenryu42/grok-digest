@@ -78,8 +78,8 @@ function linkedCard(): HTMLElement | null {
   return target === "" ? null : document.querySelector<HTMLElement>(`[data-bookmark-id][id="${CSS.escape(target)}"]`);
 }
 
-function initialFilter(): Filter {
-  const filter = parseFilter(window.location.search);
+function initialFilter(reviewIsEmpty: boolean): Filter {
+  const filter = parseFilter(window.location.search, { reviewIsEmpty });
   return linkedCard() === null ? filter : { ...filter, view: "all" };
 }
 
@@ -98,9 +98,10 @@ function plural(count: number, noun: string): string {
 }
 
 export function BookmarkControls({ entries }: Props) {
-  const [filter, setFilter] = useState(initialFilter);
-  const [done, setDone] = useState(storedDone);
   const [review] = useState(() => todaysReview(entries, storedDone()));
+  const reviewIsEmpty = review.length === 0;
+  const [filter, setFilter] = useState(() => initialFilter(reviewIsEmpty));
+  const [done, setDone] = useState(storedDone);
   const [collapsed, setCollapsed] = useState(() => readStored(COLLAPSED_KEY) === true);
   const searchRef = useRef<HTMLInputElement>(null);
 
@@ -151,10 +152,10 @@ export function BookmarkControls({ entries }: Props) {
   }, [done]);
 
   useEffect(() => {
-    const next = `${window.location.pathname}${filterSearch(filter)}${window.location.hash}`;
+    const next = `${window.location.pathname}${filterSearch(filter, { reviewIsEmpty })}${window.location.hash}`;
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (current !== next) window.history.replaceState(null, "", next);
-  }, [filter]);
+  }, [filter, reviewIsEmpty]);
 
   useEffect(() => {
     document.querySelector("[data-bookmark-list]")?.toggleAttribute("data-ready", true);

@@ -98,7 +98,7 @@ Every later release reads version 1 files unchanged. The policy is in [MIGRATION
 
 ## The page
 
-The page opens on **Today**: up to five bookmarks to look at again. It brings back bookmarks saved yesterday, a week ago, a month ago, three months ago, and on today's date in earlier years, then fills the rest from older bookmarks you have not marked done. The five stay the same all day.
+The page opens on **Today**: up to five bookmarks to look at again. It brings back bookmarks saved yesterday, a week ago, a month ago, three months ago, and on today's date in earlier years, then fills the rest from older bookmarks you have not marked done. The five stay the same all day. When there is nothing to review, the page opens on **Inbox** instead.
 
 Each card has a **Done** button. **Inbox** lists what is not done, **Done** what is, and **All** everything. A search looks through every bookmark, whichever view is open. Done marks, today's five, and **Collapse all** are kept in your browser, so another browser or device starts fresh.
 
@@ -106,7 +106,7 @@ On a keyboard, `j` and `k` move between cards, `Enter` opens or closes one, `e` 
 
 The view, the search box, and the topic chips are stored in the page address.
 
-- `?view=inbox`, `?view=done`, and `?view=all` open those views. Without `view`, the page opens on Today.
+- `?view=inbox`, `?view=done`, and `?view=all` open those views. Without `view`, the page opens on Today, or on Inbox when Today is empty. `?view=today` always opens Today.
 - `?topic=design` shows the Design bookmarks.
 - `?q=tokyo` shows bookmarks whose author, tldr, post, summary, or key points contain `tokyo`.
 - The two combine, as in `?q=tokyo&topic=japan-tech`.

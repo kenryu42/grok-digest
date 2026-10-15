@@ -13,12 +13,26 @@ describe("parseFilter", () => {
   it("opens today's review and ignores unknown values", () => {
     expect(parseFilter("?topic=crypto&view=starred")).toEqual({ query: "", topic: null, view: "today" });
   });
+
+  it("opens the inbox when today's review is empty, unless the address asks for today", () => {
+    expect(parseFilter("", { reviewIsEmpty: true }).view).toBe("inbox");
+    expect(parseFilter("?view=starred", { reviewIsEmpty: true }).view).toBe("inbox");
+    expect(parseFilter("?view=today", { reviewIsEmpty: true }).view).toBe("today");
+    expect(parseFilter("?view=done", { reviewIsEmpty: true }).view).toBe("done");
+  });
 });
 
 describe("filterSearch", () => {
   it("omits empty parts and the default view", () => {
     expect(filterSearch({ query: "  ", topic: null, view: "today" })).toBe("");
     expect(filterSearch({ query: "tokyo", topic: "design", view: "inbox" })).toBe("?q=tokyo&topic=design&view=inbox");
+  });
+
+  it("leaves the inbox out of the address when it is the page's default", () => {
+    const empty = { reviewIsEmpty: true };
+    expect(filterSearch({ query: "", topic: null, view: "inbox" }, empty)).toBe("");
+    expect(filterSearch({ query: "", topic: null, view: "today" }, empty)).toBe("?view=today");
+    expect(parseFilter(filterSearch({ query: "", topic: null, view: "today" }, empty), empty).view).toBe("today");
   });
 
   it("round-trips through parseFilter", () => {
