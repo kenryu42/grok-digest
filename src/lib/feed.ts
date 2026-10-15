@@ -1,5 +1,6 @@
 import type { Bookmark } from "./bookmarks.ts";
 import { isTopic } from "./filter.ts";
+import { imagesWithAlt } from "./media.ts";
 import { TOPIC_LABELS, type Topic } from "./topics.ts";
 
 type FeedItem = {
@@ -63,6 +64,9 @@ function feedItem(bookmark: Bookmark, page: URL): FeedItem {
   link.hash = `b-${id}`;
   const points = keyPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
   const quote = text === "" ? "" : `<blockquote><p>${escapeHtml(text)}</p></blockquote>`;
+  const images = imagesWithAlt(bookmark)
+    .map((image) => `<p><img src="${escapeHtml(image.url)}" alt="${escapeHtml(image.alt)}"></p>`)
+    .join("");
   const linkItems = links
     .map((outbound) => `<li><a href="${escapeHtml(outbound.url)}">${escapeHtml(outbound.title)}</a></li>`)
     .join("");
@@ -77,6 +81,7 @@ function feedItem(bookmark: Bookmark, page: URL): FeedItem {
       points === "" ? "" : `<ul>${points}</ul>`,
       linkItems === "" ? "" : `<ul>${linkItems}</ul>`,
       quote,
+      images,
       `<p><a href="${escapeHtml(url)}">Open on X</a></p>`,
     ]
       .filter((part) => part !== "")

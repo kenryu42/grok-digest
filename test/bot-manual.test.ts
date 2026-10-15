@@ -12,6 +12,7 @@ describe("BOT.md", () => {
     const [bookmark] = parseBookmarks({ raw: [JSON.parse(example ?? "")], source: "BOT.md" });
     expect(bookmark?.action).not.toBe("");
     expect(bookmark?.links).not.toHaveLength(0);
+    expect(bookmark?.media).not.toHaveLength(0);
   });
 
   it("lists every topic the build accepts, with its label", () => {

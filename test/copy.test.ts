@@ -55,6 +55,33 @@ describe("copyText", () => {
     );
   });
 
+  it("lists the post's images under the post, with their alt text", () => {
+    expect(
+      copied({
+        text: "the new dashboard:",
+        media: [
+          { url: "https://pbs.twimg.com/media/GaBcDeFgHiJ.jpg", alt: "A dashboard with three charts" },
+          { url: "https://pbs.twimg.com/media/KlMnOpQrStU.jpg" },
+        ],
+      }),
+    ).toBe(
+      [
+        "A post I saved from X:",
+        "",
+        "**Stale workaround comments spread because coding agents copy them**",
+        "lauren (@poteto) · posted Oct 13, 2026 · https://x.com/poteto/status/1",
+        "",
+        "> the new dashboard:",
+        "",
+        "Images:",
+        "- A dashboard with three charts: https://pbs.twimg.com/media/GaBcDeFgHiJ.jpg",
+        "- https://pbs.twimg.com/media/KlMnOpQrStU.jpg",
+        "",
+        "Summary: Argues you should delete most code comments.",
+      ].join("\n"),
+    );
+  });
+
   it("leaves out the parts a bookmark does not have", () => {
     expect(copied({})).toBe(
       [

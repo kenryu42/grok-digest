@@ -19,6 +19,7 @@ const bookmarks = parseBookmarks({
       key_points: [],
       action: "Try <b>this</b>.",
       links: [{ title: "Docs & guide", url: "https://example.com/docs?a=1&b=2" }],
+      media: [{ url: "https://pbs.twimg.com/media/GaBcDeFgHiJ?format=jpg&name=large", alt: 'A "before" screenshot' }],
     },
     {
       id: "2",
@@ -67,6 +68,13 @@ describe("feedConfig", () => {
     const [item] = config.items;
     expect(item?.content).toContain("<p>Try: Try &lt;b&gt;this&lt;/b&gt;.</p>");
     expect(item?.content).toContain('<li><a href="https://example.com/docs?a=1&amp;b=2">Docs &amp; guide</a></li>');
+  });
+
+  it("shows the post's images with their alt text, escaped", () => {
+    const [item] = config.items;
+    expect(item?.content).toContain(
+      '<img src="https://pbs.twimg.com/media/GaBcDeFgHiJ?format=jpg&amp;name=large" alt="A &quot;before&quot; screenshot">',
+    );
   });
 
   it("names the feed address in the self link", () => {

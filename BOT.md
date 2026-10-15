@@ -60,11 +60,14 @@ bun run validate
     "Keep only comments that must exist, such as browser-quirk explanations."
   ],
   "action": "Have an agent run /no-comments on one repo and sort each comment into refactor or delete.",
-  "links": [{ "title": "pstack: the /no-comments skill", "url": "https://github.com/example/pstack" }]
+  "links": [{ "title": "pstack: the /no-comments skill", "url": "https://github.com/example/pstack" }],
+  "media": [
+    { "url": "https://pbs.twimg.com/media/G3xAmPLeAAAbCdE.jpg", "alt": "A diff that deletes a workaround comment" }
+  ]
 }
 ```
 
-Write every field, in this order. The build rejects an entry with a missing field or a field not listed here. `text` and `action` may be empty strings, and `key_points` and `links` may be empty arrays.
+Write every field, in this order. The build rejects an entry with a missing field or a field not listed here. `text` and `action` may be empty strings, and `key_points`, `links`, and `media` may be empty arrays. Entries saved before `media` existed have no `media` field; that is valid, and you don't need to add one.
 
 ### id
 
@@ -125,7 +128,7 @@ One or two sentences on what the post says and why it matters. For a thread, sum
 
 ### text
 
-The post's own words, copied exactly as posted, with its line breaks. For a thread, the author's posts in order, separated by a blank line. Write `""` when the post has no text.
+The post's own words, copied exactly as posted, with its line breaks. For a thread, the author's posts in order, separated by a blank line. Keep a `t.co` line that stands for an image or video as it is; the image itself goes in `media`. Write `""` when the post has no text.
 
 Keep it complete. Most AI assistants can't open x.com, so when the owner copies a bookmark into one, this text is all it gets of the post.
 
@@ -150,6 +153,18 @@ Every link in the post and its thread, followed to where it really lands. Expand
 - `title`: the page's own title, cut to about 8 words, or a plain description such as `GitHub repo: example/pstack`.
 - Leave out links to the post itself, to the author's profile, and to the post's images or videos.
 - Write `[]` when there are none.
+
+### media
+
+The images in the post and its thread, in thread order, so the card can show them. One object per photo:
+
+- `url`: the image's `https://pbs.twimg.com/` address, such as `https://pbs.twimg.com/media/G3xAmPLeAAAbCdE.jpg`. A `?format=jpg&name=large` query is fine. Never a `t.co` link or an `x.com/…/photo/1` page; the build rejects any other host.
+- `alt`: the author's alt text for the image when it has one, otherwise a few words on what it shows. Leave `alt` out rather than writing `""`.
+- For a video or GIF, add its poster image (the `pbs.twimg.com` thumbnail X shows before it plays) when you can find it. Skip it otherwise.
+- Don't add link-preview cards or the author's profile picture.
+- Write `[]` when the post has no images.
+
+Images never go in `links`, and `text` keeps the post's exact words, including any `t.co` lines that stood for the images.
 
 ## Change or remove a bookmark
 

@@ -52,7 +52,16 @@ describe("parseBookmarks", () => {
       keyPoints: ["One point."],
       action: "Try the CLI on a small repo.",
       links: [{ title: "The project's README", url: "https://github.com/someone/project" }],
+      media: [],
     });
+  });
+
+  it("keeps a post's images in thread order", () => {
+    const media = [
+      { url: "https://pbs.twimg.com/media/GaBcDeFgHiJ.jpg", alt: "A terminal running the CLI" },
+      { url: "https://pbs.twimg.com/ext_tw_video_thumb/1/pu/img/KlMnOp.jpg" },
+    ];
+    expect(parse([{ ...valid, media }])[0]?.media).toEqual(media);
   });
 
   it("sorts by when the bookmark was saved, newest first", () => {
@@ -74,6 +83,10 @@ describe("parseBookmarks", () => {
     ["a link without a title", { ...valid, links: [{ title: " ", url: "https://example.com/post" }] }, "links"],
     ["a misspelled field", { ...valid, keypoints: [] }, "keypoints"],
     ["a missing summary", { ...valid, summary: " " }, "summary"],
+    ["an image behind a t.co link", { ...valid, media: [{ url: "https://t.co/AbCdEf" }] }, "media"],
+    ["a plain-http image", { ...valid, media: [{ url: "http://pbs.twimg.com/media/GaBcDeFgHiJ.jpg" }] }, "media"],
+    ["an empty alt text", { ...valid, media: [{ url: "https://pbs.twimg.com/media/A.jpg", alt: " " }] }, "media"],
+    ["an image as a string", { ...valid, media: ["https://pbs.twimg.com/media/A.jpg"] }, "media"],
   ])("rejects %s", (_, entry, field) => {
     expect(() => parse([entry])).toThrow(field);
   });

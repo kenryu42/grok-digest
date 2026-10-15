@@ -5,6 +5,7 @@ export const SCHEMA_VERSION = 1;
 
 const X_HOSTNAME = /^(www\.|mobile\.)?(x|twitter)\.com$/;
 const X_HANDLE = /^[A-Za-z0-9_]{1,15}$/;
+const X_MEDIA_HOSTNAME = /^pbs\.twimg\.com$/;
 
 const nonEmpty = z.string().trim().min(1);
 const instant = z.iso.datetime({ offset: true });
@@ -33,6 +34,11 @@ export const bookmarkSchema = z
     key_points: z.array(nonEmpty),
     action: z.string().trim(),
     links: z.array(z.strictObject({ title: nonEmpty, url: z.url({ protocol: /^https$/ }) })),
+    media: z
+      .array(
+        z.strictObject({ url: z.url({ protocol: /^https$/, hostname: X_MEDIA_HOSTNAME }), alt: nonEmpty.optional() }),
+      )
+      .default([]),
   })
   .transform(({ posted_at, saved_at, shelf_life, key_points, ...rest }) => ({
     ...rest,
