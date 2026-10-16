@@ -35,6 +35,7 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 - [Swipe mode](./swipe-mode.md): one card per screen with vertical swipes, swipe-left to done, Undo, tap to expand, speed reading and close.
 - [RSS feeds](./feeds.md): the all-bookmarks feed and one feed per topic.
 - [Validate data files](./validate-data.md): `grok-digest validate` on good and bad data.
+- [Text size](./text-size.md): the `Aa` picker in the header, which scales the cards and swipe mode but not the controls, and is remembered.
 - [Customize the page](./customize.md): `custom/config.json`, `custom/theme.css`, and ejected components.
 
 Not mapped yet: the theme toggle (`Toggle dark mode`), opening the page from the home screen (only the manifest and icons are checkable here), and `grok-digest build` and `preview` under `BASE_PATH`.

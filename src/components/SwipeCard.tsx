@@ -8,7 +8,7 @@ import { TOPIC_LABELS } from "../lib/topics.ts";
 const KEYBOARD_CLICK = 0;
 
 const BLOCK_STYLES: Record<BlockKind, string> = {
-  headline: "font-heading text-[1.375rem] leading-snug font-semibold text-balance sm:text-3xl",
+  headline: "font-heading text-headline leading-snug font-semibold text-balance sm:text-3xl",
   summary: "font-serif text-lg leading-relaxed text-pretty sm:text-xl",
   point: "border-l-2 border-border pl-4 text-base leading-relaxed text-pretty sm:text-lg",
   action: "rounded-lg bg-brand-soft px-3 py-2 text-base leading-relaxed text-pretty sm:text-lg",

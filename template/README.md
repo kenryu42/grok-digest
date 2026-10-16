@@ -63,6 +63,8 @@ The page opens on **Today**: up to five bookmarks to look at again. It brings ba
 
 Each card has a **Done** button. **Inbox** lists what is not done, **Done** what is, and **All** everything. A search looks through every bookmark, whichever view is open. Done marks, today's five, and **Collapse all** are kept in your browser, so another browser or device starts fresh.
 
+The **Aa** button next to the dark mode button sets the size of the text on the cards and in swipe mode: Small, Default, Large, or Larger. The search box, the views, and the other controls keep their size. Your choice is kept in your browser.
+
 On a phone, use **Add to Home Screen** to open the page like an app.
 
 **Copy** puts the bookmark on the clipboard as Markdown for any AI assistant: the tldr, the author and post date, the X link, the original post and its image addresses, the summary, the key points, the action, and the links. Paste it and add your question.

@@ -1,5 +1,6 @@
 ---
 import Mascot from "../assets/mascot.svg";
+import { TextSizeControl } from "./TextSizeControl";
 import { ThemeToggle } from "./ThemeToggle";
 
 type Props = {
@@ -14,5 +15,8 @@ const { title } = Astro.props;
     <Mascot aria-hidden="true" class="h-9 w-11.25 sm:h-11 sm:w-13.75" />
     <h1 class="font-heading text-lg font-semibold tracking-tight sm:text-xl">{title}</h1>
   </div>
-  <ThemeToggle client:load />
+  <div class="flex items-center gap-1">
+    <TextSizeControl client:load />
+    <ThemeToggle client:load />
+  </div>
 </header>

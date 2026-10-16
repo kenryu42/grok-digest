@@ -7,7 +7,7 @@ description: "Use in the grok-digest repository to prove a change works in the r
 
 Grok Digest is one static page of bookmark cards (an Astro page with a React island for the controls), plus RSS feeds and a `grok-digest` CLI. Users touch three surfaces:
 
-- **The page** (primary): search, views (Today, Inbox, Done, All; a bottom tab bar on phones), topic chips, a `Detail` slider (`Minimal`, `Light`, `Deep`, `Full`) that sets how much each card shows, cards that open with a tap and carry Copy, Done and Open on X, swipe-to-done on touch, a full-screen swipe mode with optional speed reading, and keyboard shortcuts on desktop.
+- **The page** (primary): search, views (Today, Inbox, Done, All; a bottom tab bar on phones), topic chips, a `Detail` slider (`Minimal`, `Light`, `Deep`, `Full`) that sets how much each card shows, cards that open with a tap and carry Copy, Done and Open on X, swipe-to-done on touch, a full-screen swipe mode with optional speed reading, a text size picker (`Aa`) in the header, and keyboard shortcuts on desktop.
 - **The feeds**: `/rss.xml` and `/rss/<topic>.xml`.
 - **The CLI**: `grok-digest validate`, `build`, `dev` and `preview`.
 
@@ -77,20 +77,21 @@ $V eval "$RUN" 'document.querySelector("output").textContent'
 
 Stable handles in this app:
 
-| What         | Handle                                                                                                                                                                   |
-| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| A card       | `li[data-bookmark-id]`, id `b-<bookmark id>`; hidden cards have the `hidden` attribute                                                                                   |
-| Card state   | `data-done` and `data-depth` (`headline`, `gist`, `points`, `full` = Minimal, Light, Deep, Full) on the `li`                                                             |
-| Card title   | `h2` holding a button (`data-card-toggle`) with `aria-expanded`; tapping the header opens                                                                                |
-| Detail       | phone button `Detail: <level>` (`aria-expanded`); range input `Detail`; stops `[data-depth-stop=<level>]`                                                                |
-| Swipe mode   | button `Swipe through cards`; `dialog` named `Swipe mode`, pager `[data-swipe-pager]`, current page `[data-swipe-page][data-current]`, counter `[data-swipe-counter]`    |
-| Swipe inside | `Close swipe mode`, `Speed read` (`aria-pressed`), `Play`/`Pause`/`Read again`, `Copy`, `Done`, `Open on X`; word `[data-speed-word]`, paused text `[data-speed-paused]` |
-| View buttons | `nav[aria-label=Views]` (bottom tab bar on phones), group `Choose a view`, buttons named `Today 5`, `Inbox 14` and so on, with `aria-pressed`                            |
-| Topic chips  | group `Filter by topic`, buttons `All topics`, `AI agents` and so on, with `aria-pressed`                                                                                |
-| Card buttons | `Copy` (`data-copy`), `Done` (`data-done-toggle`, `aria-pressed`), link `Open on X`                                                                                      |
-| Undo toast   | the `output` element, button `Undo` (`data-undo`)                                                                                                                        |
-| Status line  | `p[aria-live]`                                                                                                                                                           |
-| Stored state | `localStorage` keys `grok-digest:/:done`, `:review`, `:cards-depth`, `:speed-reading-wpm`                                                                                |
+| What         | Handle                                                                                                                                                                                                          |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| A card       | `li[data-bookmark-id]`, id `b-<bookmark id>`; hidden cards have the `hidden` attribute                                                                                                                          |
+| Card state   | `data-done` and `data-depth` (`headline`, `gist`, `points`, `full` = Minimal, Light, Deep, Full) on the `li`                                                                                                    |
+| Card title   | `h2` holding a button (`data-card-toggle`) with `aria-expanded`; tapping the header opens                                                                                                                       |
+| Detail       | phone button `Detail: <level>` (`aria-expanded`); range input `Detail`; stops `[data-depth-stop=<level>]`                                                                                                       |
+| Swipe mode   | button `Swipe through cards`; `dialog` named `Swipe mode`, pager `[data-swipe-pager]`, current page `[data-swipe-page][data-current]`, counter `[data-swipe-counter]`                                           |
+| Swipe inside | `Close swipe mode`, `Speed read` (`aria-pressed`), `Play`/`Pause`/`Read again`, `Copy`, `Done`, `Open on X`; word `[data-speed-word]`, paused text `[data-speed-paused]`                                        |
+| View buttons | `nav[aria-label=Views]` (bottom tab bar on phones), group `Choose a view`, buttons named `Today 5`, `Inbox 14` and so on, with `aria-pressed`                                                                   |
+| Topic chips  | group `Filter by topic`, buttons `All topics`, `AI agents` and so on, with `aria-pressed`                                                                                                                       |
+| Card buttons | `Copy` (`data-copy`), `Done` (`data-done-toggle`, `aria-pressed`), link `Open on X`                                                                                                                             |
+| Undo toast   | the `output` element, button `Undo` (`data-undo`)                                                                                                                                                               |
+| Status line  | `p[aria-live]`                                                                                                                                                                                                  |
+| Text size    | header button `Text size` (`aria-expanded`), group `Choose a text size` with `Small`, `Default`, `Large`, `Larger` (`aria-pressed`, `data-text-size-option`); `data-text-size` on `<html>`, absent at `Default` |
+| Stored state | `localStorage` keys `grok-digest:/:done`, `:review`, `:cards-depth`, `:speed-reading-wpm`; `grok-digest:text-size` and `grok-digest:theme` for every site                                                       |
 
 ## Evidence
 

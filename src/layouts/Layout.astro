@@ -2,6 +2,7 @@
 import "../styles/global.css";
 import "virtual:grok-digest/theme.css";
 import { siteHref } from "../lib/paths";
+import { TEXT_SIZE_STORAGE_KEY, TEXT_SIZES, DEFAULT_TEXT_SIZE } from "../lib/text-size";
 import { DARK_QUERY, THEME_STORAGE_KEY } from "../lib/theme";
 
 type Props = {
@@ -43,6 +44,17 @@ const { title, description, feedHref } = Astro.props;
       };
       applyTheme();
       media.addEventListener("change", applyTheme);
+    </script>
+    <script
+      is:inline
+      define:vars={{ textSizeKey: TEXT_SIZE_STORAGE_KEY, textSizes: TEXT_SIZES, defaultTextSize: DEFAULT_TEXT_SIZE }}
+    >
+      try {
+        const stored = window.localStorage.getItem(textSizeKey);
+        if (stored !== defaultTextSize && textSizes.includes(stored)) {
+          document.documentElement.dataset.textSize = stored;
+        }
+      } catch {}
     </script>
   </head>
   <body class="min-h-dvh">

@@ -4,11 +4,11 @@ Reference for editing a component ejected with `bunx grok-digest eject <Componen
 
 The page's parts are [Astro components](https://docs.astro.build/en/basics/astro-components/), ejected as `.astro` files:
 
-| Component      | What it is                                              | It gets                      |
-| -------------- | ------------------------------------------------------- | ---------------------------- |
-| `Header`       | The mascot, the title, and the dark mode button.        | `title`, from the settings   |
-| `Footer`       | The feed links and the notes at the bottom.             | Nothing                      |
-| `BookmarkCard` | One bookmark's card. The page renders one per bookmark. | `bookmark`, the parsed entry |
+| Component      | What it is                                                      | It gets                      |
+| -------------- | --------------------------------------------------------------- | ---------------------------- |
+| `Header`       | The mascot, the title, and the text size and dark mode buttons. | `title`, from the settings   |
+| `Footer`       | The feed links and the notes at the bottom.                     | Nothing                      |
+| `BookmarkCard` | One bookmark's card. The page renders one per bookmark.         | `bookmark`, the parsed entry |
 
 The controls above the cards are React components, ejected as `.tsx` files. Each gets one prop, `controls`, and must keep its named export, such as `export function ViewTabs`:
 
