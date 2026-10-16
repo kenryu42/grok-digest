@@ -9,3 +9,8 @@ cpSync("src", "dist", {
   recursive: true,
   filter: (source) => !source.includes(".") || COPIED_AS_IS.test(source),
 });
+
+const { componentFile, OVERRIDABLE_COMPONENTS } = await import("../dist/lib/custom.js");
+for (const file of OVERRIDABLE_COMPONENTS.map(componentFile).filter((name) => name.endsWith(".tsx"))) {
+  cpSync(`src/components/${file}`, `dist/components/${file}`);
+}

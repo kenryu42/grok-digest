@@ -13,18 +13,3 @@ declare module "virtual:grok-digest/config" {
 }
 
 declare module "virtual:grok-digest/theme.css";
-
-declare module "virtual:grok-digest/components/Header.astro" {
-  const Header: typeof import("./components/Header.astro").default;
-  export default Header;
-}
-
-declare module "virtual:grok-digest/components/Footer.astro" {
-  const Footer: typeof import("./components/Footer.astro").default;
-  export default Footer;
-}
-
-declare module "virtual:grok-digest/components/BookmarkCard.astro" {
-  const BookmarkCard: typeof import("./components/BookmarkCard.astro").default;
-  export default BookmarkCard;
-}

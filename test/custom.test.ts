@@ -2,11 +2,14 @@ import { spawn } from "node:child_process";
 import { once } from "node:events";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { componentFile, OVERRIDABLE_COMPONENTS } from "../src/lib/custom.ts";
 import { CLI, linkedSite, startDevServer, stop } from "./linked-site.ts";
 
 const BUILD_TIMEOUT_MS = 60_000;
-const COMPONENTS = ["Header", "Footer", "BookmarkCard"];
+const DEPENDENCY_OPTIMIZING_MS = 20_000;
+const ISLAND_URL = /(?:component-url|renderer-url)="([^"]+)"/g;
+const LOCAL_IMPORT = /(?:\bfrom\s*|\bimport\s*\(?\s*)["'](\/[^"']+)["']/g;
 
 let site = "";
 
@@ -48,6 +51,25 @@ async function islandFilesMissing(): Promise<string[]> {
   const urls = [...html.matchAll(/(?:component-url|renderer-url)="([^"]+)"/g)].map(([, url]) => url ?? "");
   const present = await Promise.all(urls.map((url) => readFile(sitePath(`dist${url}`)).then(Boolean, () => false)));
   return urls.filter((_, index) => !present[index]);
+}
+
+async function crawlScripts(origin: string, entries: string[]): Promise<{ served: Set<string>; failures: string[] }> {
+  const served = new Set<string>();
+  const failures: string[] = [];
+  const visit = async (urls: string[]): Promise<void> => {
+    const unseen = [...new Set(urls)].filter((url) => !served.has(url));
+    for (const url of unseen) served.add(url);
+    const imported = await Promise.all(
+      unseen.map(async (url) => {
+        const response = await fetch(new URL(url, origin));
+        if (!response.ok) failures.push(`${response.status} ${url}`);
+        return [...(await response.text()).matchAll(LOCAL_IMPORT)].map(([, specifier]) => specifier ?? "");
+      }),
+    );
+    if (imported.flat().length > 0) await visit(imported.flat());
+  };
+  await visit(entries);
+  return { served, failures };
 }
 
 beforeEach(async () => {
@@ -133,9 +155,11 @@ describe("custom/components", () => {
     async () => {
       await build();
       const before = await read("dist/index.html");
-      const ejected = await Promise.all(COMPONENTS.map((name) => run("eject", name)));
+      const ejected = await Promise.all(OVERRIDABLE_COMPONENTS.map((name) => run("eject", name)));
       expect(ejected.map(({ output }) => output.trim())).toEqual(
-        COMPONENTS.map((name) => `✓ Copied ${name} to custom/components/${name}.astro. Edit that file to change it.`),
+        OVERRIDABLE_COMPONENTS.map(
+          (name) => `✓ Copied ${name} to custom/components/${componentFile(name)}. Edit that file to change it.`,
+        ),
       );
       const output = await build();
       expect(output).not.toContain("ejected from an older");
@@ -148,7 +172,7 @@ describe("custom/components", () => {
   it(
     "serves ejected components in dev, importing what the package depends on",
     async () => {
-      await Promise.all(COMPONENTS.map((name) => run("eject", name)));
+      await Promise.all(OVERRIDABLE_COMPONENTS.map((name) => run("eject", name)));
       const dev = await startDevServer(site);
       try {
         const response = await fetch(dev.address);
@@ -156,10 +180,44 @@ describe("custom/components", () => {
         expect(response.status).toBe(200);
         expect(page).toContain('<li id="b-');
         expect(page).toContain("Unofficial. Summaries created with Grok.");
+        const islands = [...page.matchAll(ISLAND_URL)].map(([, url]) => url ?? "");
+        const scripts = await vi.waitFor(
+          async () => {
+            const crawled = await crawlScripts(dev.address, islands);
+            expect(crawled.failures).toEqual([]);
+            return crawled;
+          },
+          { timeout: DEPENDENCY_OPTIMIZING_MS, interval: 500 },
+        );
+        expect([...scripts.served].filter((url) => url.includes("/custom/components/"))).toHaveLength(
+          OVERRIDABLE_COMPONENTS.filter((name) => componentFile(name).endsWith(".tsx")).length,
+        );
         expect(dev.output()).not.toContain("[ERROR]");
       } finally {
         await stop(dev.child);
       }
+    },
+    BUILD_TIMEOUT_MS,
+  );
+
+  it(
+    "puts an edited control part in the page's script in place of the default",
+    async () => {
+      await run("eject", "StatusLine");
+      const part = await read("custom/components/StatusLine.tsx");
+      expect(part).toContain("Inbox zero. Everything is done.");
+      await write(
+        "custom/components/StatusLine.tsx",
+        part.replace("Inbox zero. Everything is done.", "Nothing left to read!"),
+      );
+      await build();
+      const scripts = await Promise.all(
+        (await readdir(sitePath("dist/_astro")))
+          .filter((name) => name.endsWith(".js"))
+          .map((name) => read(`dist/_astro/${name}`)),
+      );
+      expect(scripts.some((script) => script.includes("Nothing left to read!"))).toBe(true);
+      expect(scripts.some((script) => script.includes("Inbox zero. Everything is done."))).toBe(false);
     },
     BUILD_TIMEOUT_MS,
   );
@@ -173,7 +231,7 @@ describe("custom/components", () => {
     const unknown = await run("eject", "Sidebar");
     expect(unknown.code).toBe(1);
     expect(unknown.output).toContain(
-      '"Sidebar" is not a component you can eject. Components: Header, Footer, BookmarkCard.',
+      `"Sidebar" is not a component you can eject. Components: ${OVERRIDABLE_COMPONENTS.join(", ")}.`,
     );
   });
 });

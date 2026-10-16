@@ -33,7 +33,7 @@ To stay on one version, set `"grok-digest"` in `package.json` to that exact vers
 
 ## Change the page
 
-Ask the Grok bot. It changes the page from a `custom/` folder in this repository: settings such as the title, the view the page opens on, and how many bookmarks Today brings back go in `custom/config.json`, colors and fonts in `custom/theme.css`, and a reworked header, footer, or card in `custom/components/`. Everything else keeps updating with each release, and the bot carries new releases into the parts it changed. Delete `custom/` to go back to the page as released.
+Ask the Grok bot. It changes the page from a `custom/` folder in this repository: settings such as the title, the view the page opens on, and how many bookmarks Today brings back go in `custom/config.json`, colors and fonts in `custom/theme.css`, and a reworked header, footer, card, or part of the controls in `custom/components/`. Everything else keeps updating with each release, and the bot carries new releases into the parts it changed. Delete `custom/` to go back to the page as released.
 
 ## Data files
 

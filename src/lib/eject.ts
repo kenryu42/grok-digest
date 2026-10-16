@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import {
+  componentFile,
   COMPONENTS_DIR,
   CUSTOM_DIR,
   EJECTED_DIR,
@@ -17,33 +18,42 @@ export const INTERNAL_PREFIX = "grok-digest/internal/";
 
 const RELATIVE_IMPORT = /(\b(?:from|import)\s*)(["'])(\.{1,2}\/[^"']+)\2/g;
 const FRONTMATTER_END = "\n---";
+const SCRIPT_EXTENSION = /\.tsx?$/;
 const GIT_MERGE_FILE_ERROR = 128;
 const CONFLICT_MARKER = /^<{7}(?: |$)/m;
 
-export const defaultComponentFile = (name: OverridableComponent): string =>
-  path.join(MODULE_ROOT, COMPONENTS_DIR, `${name}.astro`);
+const sourceComponentFile = (name: OverridableComponent): string =>
+  path.join(MODULE_ROOT, COMPONENTS_DIR, componentFile(name));
+
+export function defaultComponentFile(name: OverridableComponent): string {
+  const compiled = path.join(MODULE_ROOT, COMPONENTS_DIR, `${name}.js`);
+  return existsSync(compiled) ? compiled : sourceComponentFile(name);
+}
 
 export const overrideFile = (root: string, name: OverridableComponent): string =>
-  path.join(root, CUSTOM_DIR, COMPONENTS_DIR, `${name}.astro`);
+  path.join(root, CUSTOM_DIR, COMPONENTS_DIR, componentFile(name));
 
 const ejectedBaseFile = (root: string, name: OverridableComponent): string =>
-  path.join(root, CUSTOM_DIR, COMPONENTS_DIR, EJECTED_DIR, `${name}.astro`);
+  path.join(root, CUSTOM_DIR, COMPONENTS_DIR, EJECTED_DIR, componentFile(name));
 
 export const displayPath = (root: string, file: string): string => path.relative(root, file).split(path.sep).join("/");
 
-function withPackageImports(source: string): string {
-  const end = source.indexOf(FRONTMATTER_END, 3);
-  const frontmatter = source.slice(0, end);
-  const rewritten = frontmatter.replaceAll(
+const withPackageImports = (code: string): string =>
+  code.replaceAll(
     RELATIVE_IMPORT,
     (_match, keyword: string, quote: string, specifier: string) =>
-      `${keyword}${quote}${INTERNAL_PREFIX}${path.posix.join(COMPONENTS_DIR, specifier)}${quote}`,
+      `${keyword}${quote}${INTERNAL_PREFIX}${path.posix.join(COMPONENTS_DIR, specifier).replace(SCRIPT_EXTENSION, "")}${quote}`,
   );
-  return `${rewritten}${source.slice(end)}`;
+
+function importsEjected(file: string, source: string): string {
+  if (!file.endsWith(".astro")) return withPackageImports(source);
+  const end = source.indexOf(FRONTMATTER_END, 3);
+  return `${withPackageImports(source.slice(0, end))}${source.slice(end)}`;
 }
 
 async function ejectedDefault(name: OverridableComponent): Promise<string> {
-  return withPackageImports(await readFile(defaultComponentFile(name), "utf8"));
+  const file = sourceComponentFile(name);
+  return importsEjected(file, await readFile(file, "utf8"));
 }
 
 export async function ejectComponent({ root, name }: { root: string; name: OverridableComponent }): Promise<string> {
@@ -100,7 +110,7 @@ async function mergeOverride(root: string, name: OverridableComponent, scratch: 
   const shown = displayPath(root, file);
   const latest = await ejectedDefault(name);
   if ((await readFile(base, "utf8")) === latest) return { name, file: shown, outcome: "up to date" };
-  const latestFile = path.join(scratch, `${name}.astro`);
+  const latestFile = path.join(scratch, componentFile(name));
   await writeFile(latestFile, latest);
   const conflicts = mergeFile({ file, base, latest: latestFile });
   await writeFile(base, latest);

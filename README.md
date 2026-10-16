@@ -43,16 +43,19 @@ If a release fails a site's build, the deploy stops and the page that was live s
 
 A site changes its page from `custom/`, and keeps every release for the parts it leaves alone. A site without `custom/` gets the page exactly as released. The owner asks the Grok bot for a change; [`BOT.md`](BOT.md) tells it how, under "Change the page".
 
-| Path                                  | Changes                                                                                                                        |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `custom/config.json`                  | Settings: `title`, `defaultView`, `reviewSize`, `detail.phone`, `detail.desktop`, and `swipeMode`. `validate` checks the file. |
-| `custom/theme.css`                    | Plain CSS loaded after the page's own: the color variables, fonts, and any selector.                                           |
-| `custom/components/<Component>.astro` | Replaces `Header`, `Footer`, or `BookmarkCard`. Tailwind classes in it work.                                                   |
-| `custom/components/.ejected/`         | Written by `eject` and `merge`. The component as the site last took it from the package.                                       |
+| Path                                  | Changes                                                                                                                                                     |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `custom/config.json`                  | Settings: `title`, `defaultView`, `reviewSize`, `detail.phone`, `detail.desktop`, and `swipeMode`. `validate` checks the file.                              |
+| `custom/theme.css`                    | Plain CSS loaded after the page's own: the color variables, fonts, and any selector.                                                                        |
+| `custom/components/<Component>.astro` | Replaces `Header`, `Footer`, or `BookmarkCard`. Tailwind classes in it work.                                                                                |
+| `custom/components/<Component>.tsx`   | Replaces a part of the controls: `ControlsLayout`, `ViewTabs`, `SearchField`, `TopicChips`, `DetailControl`, `StatusLine`, `KeyboardHints`, or `UndoToast`. |
+| `custom/components/.ejected/`         | Written by `eject` and `merge`. The component as the site last took it from the package.                                                                    |
 
 `grok-digest eject <Component>` copies the package's component into `custom/components/`, with its imports pointed at `grok-digest/internal/…`, the package's own modules. When a release changes that component, the build warns, and `grok-digest merge` runs `git merge-file` to apply the change to the site's copy. A change that conflicts with the site's own leaves conflict markers and makes `merge` exit with 1, and the build refuses the file until they are resolved.
 
 The page finds cards and their parts by `data-` attributes, so an ejected `BookmarkCard` keeps them. `Header` and `Footer` carry none.
+
+The controls island keeps its state and behavior in `useBookmarkControls` and renders `ControlsLayout`, which renders the other parts. Each part gets one prop, `controls`: the state and the functions that change it. The parts import each other through `virtual:grok-digest/components/<Component>`, which the integration resolves to the site's copy when there is one. Its fields are listed in `BOT.md`; renaming or removing one is a breaking change for ejected parts.
 
 ## CLI
 
@@ -61,7 +64,7 @@ grok-digest build                Build the site into dist/.
 grok-digest dev                  Serve the site at http://localhost:4321 and reload on changes.
 grok-digest preview              Serve the site built in dist/.
 grok-digest validate [file ...]  Check the data files and custom/config.json.
-grok-digest eject <component>    Copy Header, Footer, or BookmarkCard into custom/components/.
+grok-digest eject <component>    Copy a page component or a part of the controls into custom/components/.
 grok-digest merge                Bring ejected components up to the installed version.
 
 --data-dir <dir>  The folder that holds the data files. Defaults to "data".

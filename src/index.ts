@@ -5,7 +5,7 @@ import tailwindcss from "@tailwindcss/vite";
 import type { AstroIntegration } from "astro";
 import type { Plugin } from "vite";
 import { existsSync } from "node:fs";
-import { CONFIG_FILE, CUSTOM_DIR, isOverridable, THEME_FILE } from "./lib/custom.ts";
+import { componentFile, CONFIG_FILE, CUSTOM_DIR, OVERRIDABLE_COMPONENTS, THEME_FILE } from "./lib/custom.ts";
 import { BOOKMARKS_FILE, readJsonFile } from "./lib/data-files.ts";
 import {
   conflictedOverrides,
@@ -27,7 +27,7 @@ const RESOLVED_BOOKMARKS_MODULE_ID = `\0${BOOKMARKS_MODULE_ID}`;
 const CONFIG_MODULE_ID = "virtual:grok-digest/config";
 const RESOLVED_CONFIG_MODULE_ID = `\0${CONFIG_MODULE_ID}`;
 const THEME_MODULE_ID = "virtual:grok-digest/theme.css";
-const COMPONENT_MODULE = /^virtual:grok-digest\/components\/(\w+)\.astro$/;
+const COMPONENT_MODULE = /^virtual:grok-digest\/components\/(\w+)(\.astro)?$/;
 const SCRIPT_EXTENSION = path.extname(fileURLToPath(import.meta.url));
 
 const ROUTES = [
@@ -136,8 +136,10 @@ function customModules(root: string): Plugin {
       if (id === THEME_MODULE_ID)
         return existsSync(themeFile) ? themeFile : path.join(MODULE_ROOT, "styles", THEME_FILE);
       if (id.startsWith(INTERNAL_PREFIX)) return this.resolve(path.join(MODULE_ROOT, id.slice(INTERNAL_PREFIX.length)));
-      const name = COMPONENT_MODULE.exec(id)?.[1];
-      if (name === undefined || !isOverridable(name)) return undefined;
+      const [, base, astro] = COMPONENT_MODULE.exec(id) ?? [];
+      const file = `${base}${astro ?? ".tsx"}`;
+      const name = OVERRIDABLE_COMPONENTS.find((component) => componentFile(component) === file);
+      if (name === undefined) return undefined;
       const override = overrideFile(root, name);
       return existsSync(override) ? override : defaultComponentFile(name);
     },
@@ -147,7 +149,10 @@ function customModules(root: string): Plugin {
         ...new Set(
           [...code.matchAll(IMPORT_SPECIFIER)]
             .map(([, , , specifier = ""]) => specifier)
-            .filter((specifier) => isBareImport(specifier) && !specifier.startsWith(INTERNAL_PREFIX)),
+            .filter(
+              (specifier) =>
+                isBareImport(specifier) && !specifier.startsWith(INTERNAL_PREFIX) && !isRendererImport(specifier),
+            ),
         ),
       ];
       const fromPackage = await Promise.all(
@@ -206,7 +211,7 @@ export default function grokDigest({ dataDir = "data" }: GrokDigestOptions = {})
         }
         for (const name of await staleOverrides(root)) {
           logger.warn(
-            `${CUSTOM_DIR}/components/${name}.astro was ejected from an older ${name}. Run "grok-digest merge" to bring in the new default.`,
+            `${CUSTOM_DIR}/components/${componentFile(name)} was ejected from an older ${name}. Run "grok-digest merge" to bring in the new default.`,
           );
         }
       },

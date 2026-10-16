@@ -11,6 +11,7 @@ A site owner (or their Grok bot) changes the page from a `custom/` folder next t
 - `config-review-size` sets how many bookmarks Today brings back.
 - `theme` overrides the color variables, in light and dark.
 - `eject` copies `Header`, `Footer` or `BookmarkCard` into `custom/components/`, where edits show on the page.
+- `eject-controls` copies a part of the controls (`ControlsLayout`, `ViewTabs`, `SearchField`, `TopicChips`, `DetailControl`, `StatusLine`, `KeyboardHints`, `UndoToast`) as a `.tsx` file. The controls keep working with any of them ejected.
 - `merge` brings a newer default into an ejected component (covered by `test/custom.test.ts`, which simulates an older release).
 
 ## How to get to it (user POV)
@@ -26,6 +27,7 @@ Preconditions:
 
 - **Write the customization.** From `$RUN/site`, run `node <checkout>/src/cli.ts eject BookmarkCard`, change `Open on X` to `Read on X` in `custom/components/BookmarkCard.astro`, write `custom/theme.css` with `:root { --brand: oklch(0.6 0.2 250); }` and `.dark { --brand: oklch(0.7 0.18 250); }`, and write `custom/config.json` with `{"title":"Reading Room","defaultView":"all","detail":{"phone":"points"},"swipeMode":false}`.
 - **Phone.** `$V open "$RUN" / --viewport mobile --fresh`. The status reads `15 bookmarks` with `All 15` pressed and no `?view=`, the header and `document.title` read `Reading Room`, cards start at `data-depth="points"`, the tab bar has four buttons and no `Swipe through cards`, and cards link `Read on X`. `$V swipe "$RUN" --card 0` still marks the card done (`grok-digest:/:done`), and `$V key "$RUN" s` opens no dialog.
+- **Controls.** From `$RUN/site`, eject every control part, change `Today` to `Review` in `custom/components/ViewTabs.tsx`'s labels and drop `<KeyboardHints controls={controls} />` from `custom/components/ControlsLayout.tsx`. On a phone the first tab reads `Review`, and views, topic chips, search (`Search bookmarks`, then `type`), the `Detail` button and slider, Done, and `Undo` all work as before. On desktop the shortcut hint is gone and `j`, `e`, `u`, `/` still work.
 - **Desktop.** `$V open "$RUN" / --viewport desktop --fresh`. Cards start at `full`, and the keyboard hint has no `s swipe`.
 - **Theme.** Read `getComputedStyle(document.documentElement).getPropertyValue("--brand")`. It is the `.dark` value when the page is dark, otherwise the `:root` one.
 

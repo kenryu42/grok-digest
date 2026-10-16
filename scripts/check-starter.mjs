@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { OVERRIDABLE_COMPONENTS } from "../dist/lib/custom.js";
 import { TOPICS } from "../dist/schema.js";
 
 const ORIGIN = "https://example.github.io";
@@ -84,7 +85,7 @@ try {
   expect(feed.includes(`href="${ORIGIN}${BASE_PATH}/rss.xml"`), "rss.xml does not name its own address");
   expect(feed.includes(`${ORIGIN}${BASE_PATH}/#b-`), "rss.xml items do not link cards under the base path");
 
-  for (const component of ["Header", "Footer", "BookmarkCard"]) {
+  for (const component of OVERRIDABLE_COMPONENTS) {
     execFileSync("bunx", ["grok-digest", "eject", component], { cwd: siteDir, stdio: "inherit" });
   }
   writeFileSync(path.join(siteDir, "custom/config.json"), JSON.stringify({ title: "Starter Check" }));

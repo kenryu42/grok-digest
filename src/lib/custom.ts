@@ -8,9 +8,23 @@ export const CONFIG_FILE = "config.json";
 export const THEME_FILE = "theme.css";
 export const COMPONENTS_DIR = "components";
 export const EJECTED_DIR = ".ejected";
-export const OVERRIDABLE_COMPONENTS = ["Header", "Footer", "BookmarkCard"] as const;
+const PAGE_COMPONENTS = ["Header", "Footer", "BookmarkCard"] as const;
+const CONTROL_COMPONENTS = [
+  "ControlsLayout",
+  "ViewTabs",
+  "SearchField",
+  "TopicChips",
+  "DetailControl",
+  "StatusLine",
+  "KeyboardHints",
+  "UndoToast",
+] as const;
+export const OVERRIDABLE_COMPONENTS = [...PAGE_COMPONENTS, ...CONTROL_COMPONENTS] as const;
 
 export type OverridableComponent = (typeof OVERRIDABLE_COMPONENTS)[number];
+
+export const componentFile = (name: OverridableComponent): string =>
+  `${name}${PAGE_COMPONENTS.some((page) => page === name) ? ".astro" : ".tsx"}`;
 
 export const DEFAULT_TITLE = "Grok Digest";
 const MAX_REVIEW_SIZE = 20;
