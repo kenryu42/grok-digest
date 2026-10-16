@@ -1,45 +1,46 @@
-import { ChevronsDownUpIcon, ChevronsUpDownIcon, SearchIcon } from "lucide-react";
+import { PlayIcon, SearchIcon } from "lucide-react";
 import { cn } from "cn";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { DepthControl } from "./DepthControl.tsx";
+import { ReadMode } from "./ReadMode.tsx";
 import { Button } from "./ui/button.tsx";
 import { Input } from "./ui/input.tsx";
-import { NARROW_SCREEN_QUERY, startsCollapsed } from "../lib/collapse.ts";
+import { DEPTHS, isDepth, NARROW_SCREEN_QUERY, startingDepth, tappedDepth, type Depth } from "../lib/depth.ts";
 import { filterSearch, parseFilter, VIEWS, type Filter, type View } from "../lib/filter.ts";
+import { morph, prefersReducedMotion, stopMotion, type Anchor } from "../lib/morph.ts";
 import { dailyReview, localDay, type ReviewPick } from "../lib/review.ts";
 import { matchingIds, type SearchEntry } from "../lib/search.ts";
-import { swipeAxis, swipeCommits, swipeOffset, type SwipeAxis } from "../lib/swipe.ts";
+import { readStored, STORAGE_PREFIX, writeStored } from "../lib/storage.ts";
+import {
+  flyOffMs,
+  swipeAxis,
+  swipeCommits,
+  swipeOffset,
+  swipeVelocity,
+  type SwipeAxis,
+  type SwipeSample,
+} from "../lib/swipe.ts";
 import { TOPIC_LABELS, TOPICS, type Topic } from "../lib/topics.ts";
 
 type Props = {
   entries: SearchEntry[];
 };
 
-const STORAGE_PREFIX = `grok-digest:${import.meta.env.BASE_URL}:`;
 const DONE_KEY = `${STORAGE_PREFIX}done`;
 const REVIEW_KEY = `${STORAGE_PREFIX}review`;
-const COLLAPSED_KEY = `${STORAGE_PREFIX}cards-collapsed`;
+const DEPTH_KEY = `${STORAGE_PREFIX}cards-depth`;
 const UNDO_MS = 5000;
-const SWIPE_SETTLE_MS = 150;
 const SWIPE_CLICK_GUARD_MS = 400;
+const SWIPE_SAMPLES = 6;
+const SPRING_BACK = "transform 500ms var(--ease-spring)";
+const FLY_OFF_EASING = "cubic-bezier(0.25, 0.4, 0.5, 1)";
+const TOUCH_PRESS_DELAY_MS = 80;
+const PRESS_SHOWN_MS = 120;
+const ANCHOR_GAP = 12;
 
 const VIEW_LABELS: Record<View, string> = { today: "Today", inbox: "Inbox", done: "Done", all: "All" };
 const FORM_FIELDS = "input, textarea, select, [contenteditable]";
-
-function readStored(key: string): unknown {
-  try {
-    const raw = window.localStorage.getItem(key);
-    return raw === null ? null : JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function writeStored(key: string, value: unknown): void {
-  try {
-    window.localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
-}
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
@@ -96,8 +97,20 @@ function cards(): HTMLElement[] {
 
 function focusCard(card: HTMLElement | undefined): void {
   if (card === undefined) return;
-  card.querySelector("summary")?.focus({ preventScroll: true });
+  card.querySelector<HTMLElement>("[data-card-toggle]")?.focus({ preventScroll: true });
   card.scrollIntoView({ block: "start" });
+}
+
+function showDepths(listDepth: Depth, opened: ReadonlyMap<string, Depth>): void {
+  for (const card of cards()) {
+    const shown = opened.get(card.dataset["bookmarkId"] ?? "") ?? listDepth;
+    card.dataset["depth"] = shown;
+    card.querySelector("[data-card-toggle]")?.setAttribute("aria-expanded", String(shown === "full"));
+  }
+}
+
+function surfaceOffset(surface: HTMLElement): number {
+  return new DOMMatrixReadOnly(getComputedStyle(surface).transform).m41;
 }
 
 const COPY_LABEL = "Copy";
@@ -126,10 +139,6 @@ function copyFrom(button: HTMLElement | null | undefined): void {
   );
 }
 
-function prefersReducedMotion(): boolean {
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
 function plural(count: number, noun: string): string {
   return `${count} ${count === 1 ? noun : `${noun}s`}`;
 }
@@ -139,16 +148,19 @@ export function BookmarkControls({ entries }: Props) {
   const reviewIsEmpty = review.length === 0;
   const [filter, setFilter] = useState(() => initialFilter(reviewIsEmpty));
   const [done, setDone] = useState(storedDone);
-  const [collapsed, setCollapsed] = useState(() =>
-    startsCollapsed(readStored(COLLAPSED_KEY), window.matchMedia(NARROW_SCREEN_QUERY).matches),
+  const [depth, setDepth] = useState(() =>
+    startingDepth(readStored(DEPTH_KEY), window.matchMedia(NARROW_SCREEN_QUERY).matches),
   );
   const [undo, setUndo] = useState<{ id: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [reading, setReading] = useState<{ cards: HTMLElement[]; start: number; depth: Depth } | null>(null);
   const searchRef = useRef<HTMLInputElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const chipsRef = useRef<HTMLFieldSetElement>(null);
   const doneRef = useRef(done);
   const undoRef = useRef(undo);
+  const depthRef = useRef(depth);
+  const openedRef = useRef(new Map<string, Depth>());
 
   const { query, topic, view } = filter;
   const searching = query.trim() !== "";
@@ -170,10 +182,12 @@ export function BookmarkControls({ entries }: Props) {
     all: entries.length,
   };
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    doneRef.current = done;
     const showReasons = view === "today" && !searching;
     for (const card of cards()) {
       const id = card.dataset["bookmarkId"] ?? "";
+      stopMotion(card);
       card.hidden = !visible.has(id);
       card.toggleAttribute("data-done", done.has(id));
       card.querySelector("[data-done-toggle]")?.setAttribute("aria-pressed", String(done.has(id)));
@@ -183,22 +197,18 @@ export function BookmarkControls({ entries }: Props) {
         reason.hidden = text === undefined;
         reason.textContent = text ?? "";
       }
-      if (card.hasAttribute("data-swiped")) {
+      if (card.hasAttribute("data-swiped") && !card.hidden) {
         card.removeAttribute("data-swiped");
         const surface = card.querySelector<HTMLElement>("[data-swipe-surface]");
-        if (surface !== null) surface.style.transform = "";
+        if (surface !== null) {
+          surface.style.transition = prefersReducedMotion() ? "" : SPRING_BACK;
+          surface.style.transform = "";
+        }
       }
     }
   }, [visible, done, reasons, view, searching]);
 
   useEffect(() => {
-    for (const details of document.querySelectorAll<HTMLDetailsElement>("[data-bookmark-id] details")) {
-      details.open = !collapsed;
-    }
-  }, [collapsed]);
-
-  useEffect(() => {
-    doneRef.current = done;
     writeStored(DONE_KEY, [...done]);
   }, [done]);
 
@@ -209,7 +219,7 @@ export function BookmarkControls({ entries }: Props) {
     return () => clearTimeout(timer);
   }, [undo]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const bar = barRef.current;
     if (bar === null) return undefined;
     const publishHeight = (): void => {
@@ -237,62 +247,169 @@ export function BookmarkControls({ entries }: Props) {
     if (current !== next) window.history.replaceState(null, "", next);
   }, [filter, reviewIsEmpty]);
 
-  useEffect(() => {
-    document.querySelector("[data-bookmark-list]")?.toggleAttribute("data-ready", true);
+  const coveredTop = useCallback(
+    (): number => Math.max(barRef.current?.getBoundingClientRect().bottom ?? 0, 0) + ANCHOR_GAP,
+    [],
+  );
+
+  const anchorAt = useCallback(
+    (card: HTMLElement | undefined): Anchor | undefined =>
+      card === undefined ? undefined : { element: card, top: Math.max(card.getBoundingClientRect().top, coveredTop()) },
+    [coveredTop],
+  );
+
+  const topCard = useCallback((): HTMLElement | undefined => {
+    const top = coveredTop() - ANCHOR_GAP;
+    const shown = cards().filter((card) => !card.hidden && !card.inert && card.getBoundingClientRect().bottom > top);
+    return shown.find((card) => card.getBoundingClientRect().top >= top) ?? shown[0];
+  }, [coveredTop]);
+
+  const changeDepth = useCallback(
+    (next: Depth): void => {
+      if (next === depthRef.current) return;
+      depthRef.current = next;
+      openedRef.current.clear();
+      writeStored(DEPTH_KEY, next);
+      void morph(() => {
+        flushSync(() => setDepth(next));
+        showDepths(next, openedRef.current);
+      }, anchorAt(topCard()));
+    },
+    [anchorAt, topCard],
+  );
+
+  const toggleCard = useCallback(
+    (card: HTMLElement): void => {
+      const id = card.dataset["bookmarkId"] ?? "";
+      const shown = card.dataset["depth"];
+      const next = tappedDepth(isDepth(shown) ? shown : depthRef.current, depthRef.current);
+      if (next === depthRef.current) openedRef.current.delete(id);
+      else openedRef.current.set(id, next);
+      void morph(() => showDepths(depthRef.current, openedRef.current), anchorAt(card));
+    },
+    [anchorAt],
+  );
+
+  const toggleDone = useCallback((id: string): Promise<void> => {
+    const marking = !doneRef.current.has(id);
+    return morph(() =>
+      flushSync(() => {
+        setDone((previous) => {
+          const next = new Set(previous);
+          if (marking) next.add(id);
+          else next.delete(id);
+          return next;
+        });
+        setUndo(marking ? { id } : null);
+      }),
+    );
+  }, []);
+
+  const undoDone = useCallback((): void => {
+    const pending = undoRef.current;
+    if (pending === null) return;
+    void morph(() =>
+      flushSync(() => {
+        setDone((previous) => {
+          const next = new Set(previous);
+          next.delete(pending.id);
+          return next;
+        });
+        setUndo(null);
+      }),
+    );
+  }, []);
+
+  const openReader = useCallback((): void => {
+    const shown = cards().filter((card) => !card.hidden && !card.inert);
+    if (shown.length === 0) return;
+    const top = topCard();
+    setReading({
+      cards: shown,
+      start: top === undefined ? 0 : Math.max(shown.indexOf(top), 0),
+      depth: depthRef.current,
+    });
+  }, [topCard]);
+
+  const closeReader = useCallback((last: HTMLElement | undefined): void => {
+    setReading(null);
+    if (last !== undefined && !last.hidden) last.scrollIntoView({ block: "start" });
+  }, []);
+
+  useLayoutEffect(() => {
     const linked = linkedCard();
-    linked?.querySelector("details")?.setAttribute("open", "");
+    if (linked !== null) openedRef.current.set(linked.dataset["bookmarkId"] ?? "", "full");
+    showDepths(depthRef.current, openedRef.current);
+    document.querySelector("[data-bookmark-list]")?.toggleAttribute("data-ready", true);
     linked?.scrollIntoView({ block: "start" });
   }, []);
 
   useEffect(() => {
-    const toggleDone = (card: HTMLElement): void => {
-      const id = card.dataset["bookmarkId"] ?? "";
-      const marking = !doneRef.current.has(id);
-      setDone((previous) => {
-        const next = new Set(previous);
-        if (marking) next.add(id);
-        else next.delete(id);
-        return next;
-      });
-      setUndo(marking ? { id } : null);
-    };
-
-    const undoDone = (): void => {
-      const pending = undoRef.current;
-      if (pending === null) return;
-      setDone((previous) => {
-        const next = new Set(previous);
-        next.delete(pending.id);
-        return next;
-      });
-      setUndo(null);
-    };
-
     let swipe: {
       card: HTMLElement;
       surface: HTMLElement;
       pointerId: number;
       startX: number;
       startY: number;
+      origin: number;
       axis: SwipeAxis;
       dx: number;
+      samples: SwipeSample[];
     } | null = null;
+    let press: { card: HTMLElement; pointerId: number; timer: ReturnType<typeof setTimeout> } | null = null;
     let clicksBlockedUntil = 0;
 
+    const releasePress = (shown: boolean): void => {
+      if (press === null) return;
+      const { card, timer } = press;
+      press = null;
+      clearTimeout(timer);
+      if (!shown) {
+        card.removeAttribute("data-pressed");
+        return;
+      }
+      card.toggleAttribute("data-pressed", true);
+      setTimeout(() => card.removeAttribute("data-pressed"), PRESS_SHOWN_MS);
+    };
+
+    const springBack = (surface: HTMLElement): void => {
+      surface.style.transition = prefersReducedMotion() ? "" : SPRING_BACK;
+      surface.style.transform = "";
+    };
+
     const onPointerDown = (event: PointerEvent): void => {
-      if (event.pointerType !== "touch" || !event.isPrimary || !(event.target instanceof Element)) return;
+      if (!event.isPrimary || !(event.target instanceof Element)) return;
       const card = event.target.closest<HTMLElement>("[data-bookmark-id]");
       const surface = card?.querySelector<HTMLElement>("[data-swipe-surface]");
       if (card === null || card === undefined || surface === null || surface === undefined) return;
+      if (card.hasAttribute("data-swiped")) return;
+      if (event.target.closest("[data-card-head]") !== null) {
+        const pressed = card;
+        press = {
+          card,
+          pointerId: event.pointerId,
+          timer: setTimeout(
+            () => pressed.toggleAttribute("data-pressed", true),
+            event.pointerType === "touch" ? TOUCH_PRESS_DELAY_MS : 0,
+          ),
+        };
+      }
+      if (event.pointerType !== "touch") return;
+      const origin = Math.min(surfaceOffset(surface), 0);
+      surface.style.transition = "none";
+      surface.style.transform = origin === 0 ? "" : `translateX(${origin}px)`;
       swipe = {
         card,
         surface,
         pointerId: event.pointerId,
         startX: event.clientX,
         startY: event.clientY,
-        axis: "undecided",
+        origin,
+        axis: origin === 0 ? "undecided" : "horizontal",
         dx: 0,
+        samples: [{ x: event.clientX, time: event.timeStamp }],
       };
+      if (origin !== 0) card.toggleAttribute("data-swiping", true);
     };
 
     const onPointerMove = (event: PointerEvent): void => {
@@ -300,6 +417,7 @@ export function BookmarkControls({ entries }: Props) {
       const dx = event.clientX - swipe.startX;
       if (swipe.axis === "undecided") {
         swipe.axis = swipeAxis(dx, event.clientY - swipe.startY);
+        if (swipe.axis !== "undecided") releasePress(false);
         if (swipe.axis === "vertical") {
           swipe = null;
           return;
@@ -308,24 +426,30 @@ export function BookmarkControls({ entries }: Props) {
       }
       if (swipe.axis !== "horizontal") return;
       swipe.dx = dx;
-      swipe.surface.style.transform = `translateX(${swipeOffset(dx)}px)`;
+      swipe.samples = [...swipe.samples, { x: event.clientX, time: event.timeStamp }].slice(-SWIPE_SAMPLES);
+      swipe.surface.style.transform = `translateX(${swipeOffset(swipe.origin + dx, swipe.card.offsetWidth)}px)`;
     };
 
     const endSwipe = (event: PointerEvent): void => {
+      if (press?.pointerId === event.pointerId) releasePress(event.type === "pointerup");
       if (swipe === null || swipe.pointerId !== event.pointerId) return;
-      const { card, surface, axis, dx } = swipe;
+      const { card, surface, axis, dx, origin, samples } = swipe;
       swipe = null;
       if (axis !== "horizontal") return;
       clicksBlockedUntil = event.timeStamp + SWIPE_CLICK_GUARD_MS;
-      const commits = event.type === "pointerup" && swipeCommits(dx, card.offsetWidth);
       card.removeAttribute("data-swiping");
+      const width = card.offsetWidth;
+      const velocity = swipeVelocity([...samples, { x: event.clientX, time: event.timeStamp }]);
+      const commits = event.type === "pointerup" && swipeCommits(origin + dx, width, velocity);
       if (!commits) {
-        surface.style.transform = "";
+        springBack(surface);
         return;
       }
       card.toggleAttribute("data-swiped", true);
+      const ms = prefersReducedMotion() ? 0 : flyOffMs(width + swipeOffset(origin + dx, width), velocity);
+      surface.style.transition = ms === 0 ? "" : `transform ${ms}ms ${FLY_OFF_EASING}`;
       surface.style.transform = "translateX(-100%)";
-      setTimeout(() => toggleDone(card), prefersReducedMotion() ? 0 : SWIPE_SETTLE_MS);
+      setTimeout(() => void toggleDone(card.dataset["bookmarkId"] ?? ""), ms);
     };
 
     const blockClickAfterSwipe = (event: MouseEvent): void => {
@@ -338,12 +462,15 @@ export function BookmarkControls({ entries }: Props) {
       if (!(event.target instanceof Element)) return;
       if (event.target.closest("[data-undo]") !== null) undoDone();
       copyFrom(event.target.closest<HTMLElement>("[data-copy]"));
-      const card = event.target.closest<HTMLElement>("[data-done-toggle]")?.closest<HTMLElement>("[data-bookmark-id]");
-      if (card !== null && card !== undefined) toggleDone(card);
+      const card = event.target.closest<HTMLElement>("[data-bookmark-id]");
+      if (card === null) return;
+      if (event.target.closest("[data-done-toggle]") !== null) void toggleDone(card.dataset["bookmarkId"] ?? "");
+      if (event.target.closest("[data-card-head]") !== null) toggleCard(card);
     };
 
     const onKeyDown = (event: KeyboardEvent): void => {
       if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+      if (document.querySelector("dialog[open]") !== null) return;
       if (event.target instanceof HTMLElement && event.target.closest(FORM_FIELDS) !== null) {
         if (event.key === "Escape") event.target.blur();
         return;
@@ -361,10 +488,10 @@ export function BookmarkControls({ entries }: Props) {
         case "e": {
           if (current === null) return;
           const neighbor = shown[index + 1] ?? shown[index - 1];
-          toggleDone(current);
-          setTimeout(() => {
-            if (current.hidden) focusCard(neighbor);
-          });
+          const settled = toggleDone(current.dataset["bookmarkId"] ?? "");
+          if (!current.hidden && !current.inert) break;
+          neighbor?.querySelector<HTMLElement>("[data-card-toggle]")?.focus({ preventScroll: true });
+          void settled.then(() => focusCard(neighbor));
           break;
         }
         case "c":
@@ -381,6 +508,15 @@ export function BookmarkControls({ entries }: Props) {
         case "/":
           flushSync(() => setSearchOpen(true));
           searchRef.current?.focus();
+          break;
+        case "p":
+          openReader();
+          break;
+        case "1":
+        case "2":
+        case "3":
+        case "4":
+          changeDepth(DEPTHS[Number(event.key) - 1] ?? depthRef.current);
           break;
         default:
           return;
@@ -404,7 +540,7 @@ export function BookmarkControls({ entries }: Props) {
       document.removeEventListener("pointerup", endSwipe);
       document.removeEventListener("pointercancel", endSwipe);
     };
-  }, []);
+  }, [changeDepth, openReader, toggleCard, toggleDone, undoDone]);
 
   const update = (change: Partial<Filter>): void => setFilter((previous) => ({ ...previous, ...change }));
 
@@ -416,11 +552,6 @@ export function BookmarkControls({ entries }: Props) {
   const closeSearch = (): void => {
     setSearchOpen(false);
     update({ query: "" });
-  };
-
-  const toggleCollapsed = (): void => {
-    setCollapsed(!collapsed);
-    writeStored(COLLAPSED_KEY, !collapsed);
   };
 
   return (
@@ -500,6 +631,10 @@ export function BookmarkControls({ entries }: Props) {
             />
           ))}
         </fieldset>
+
+        <div className="sm:w-96">
+          <DepthControl depth={depth} onChange={changeDepth} />
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
@@ -516,17 +651,37 @@ export function BookmarkControls({ entries }: Props) {
         <div className="flex items-center gap-3">
           <p className="hidden text-xs text-muted-foreground sm:pointer-fine:block">
             <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>e</kbd> done · <kbd>u</kbd> undo · <kbd>c</kbd> copy · <kbd>o</kbd>{" "}
-            open · <kbd>/</kbd> search
+            open · <kbd>1</kbd>–<kbd>4</kbd> detail · <kbd>p</kbd> play · <kbd>/</kbd> search
           </p>
-          <Button type="button" variant="ghost" size="sm" onClick={toggleCollapsed} className="max-sm:h-9">
-            {collapsed ? <ChevronsUpDownIcon aria-hidden="true" /> : <ChevronsDownUpIcon aria-hidden="true" />}
-            {collapsed ? "Expand all" : "Collapse all"}
-          </Button>
         </div>
         <p className="hidden w-full text-xs text-muted-foreground pointer-coarse:block">
-          Swipe a card left to mark it done.
+          Tap a card to open it. Swipe it left to mark it done.
         </p>
       </div>
+
+      {visible.size > 0 && (
+        <Button
+          type="button"
+          size="icon"
+          onClick={openReader}
+          aria-label="Play cards one at a time"
+          title="Play cards one at a time (p)"
+          className="fixed right-[max(--spacing(4),env(safe-area-inset-right))] bottom-[max(--spacing(4),env(safe-area-inset-bottom))] z-20 size-14 rounded-full shadow-lg transition-[scale] duration-500 ease-spring active:scale-90 active:duration-150"
+        >
+          <PlayIcon className="size-6 fill-current" aria-hidden="true" />
+        </Button>
+      )}
+
+      {reading !== null && (
+        <ReadMode
+          cards={reading.cards}
+          start={reading.start}
+          depth={reading.depth}
+          done={done}
+          onToggleDone={toggleDone}
+          onClose={closeReader}
+        />
+      )}
 
       <output className="pointer-events-none fixed inset-x-0 bottom-[max(--spacing(4),env(safe-area-inset-bottom))] z-20 flex justify-center px-4">
         {undo !== null && (

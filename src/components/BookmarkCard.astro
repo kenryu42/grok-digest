@@ -28,7 +28,8 @@ const posted = dateFormat.format(postedAt);
   data-bookmark-id={id}
   data-url={url}
   data-topic={topic}
-  class="group/bookmark relative touch-pan-y touch-pinch-zoom scroll-mt-6 max-sm:scroll-mt-[calc(var(--controls-height,0px)+--spacing(3))]"
+  data-depth="full"
+  class="group/bookmark relative touch-pan-y touch-pinch-zoom scroll-mt-6 transition-[scale] duration-500 ease-spring data-pressed:scale-[0.98] data-pressed:duration-150 max-sm:scroll-mt-[calc(var(--controls-height,0px)+--spacing(3))]"
 >
   <span
     aria-hidden="true"
@@ -41,13 +42,15 @@ const posted = dateFormat.format(postedAt);
   </span>
   <Card
     data-swipe-surface
-    className="relative gap-0 motion-safe:transition-transform motion-safe:duration-150 group-data-[swiping]/bookmark:transition-none py-0 shadow-xs before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-topic before:transition-opacity group-data-[done]/bookmark:before:opacity-55 ring-foreground/8 [--card-spacing:--spacing(5)] has-[summary:focus-visible]:ring-2 has-[summary:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
+    className="relative gap-0 py-0 shadow-xs before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-topic before:transition-opacity group-data-[done]/bookmark:before:opacity-55 ring-foreground/8 [--card-spacing:--spacing(5)] has-[[data-card-toggle]:focus-visible]:ring-2 has-[[data-card-toggle]:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
   >
-    <details open class="group/details transition-opacity group-data-[done]/bookmark:opacity-55">
-      <summary class="flex cursor-pointer list-none flex-col gap-2 px-(--card-spacing) pt-(--card-spacing) pb-4 outline-none [&::-webkit-details-marker]:hidden">
+    <div class="flex flex-col transition-opacity group-data-[depth=gist]/bookmark:pb-1 group-data-[depth=headline]/bookmark:pb-1 group-data-[done]/bookmark:opacity-55">
+      <div data-card-head class="flex cursor-pointer flex-col gap-2 px-(--card-spacing) pt-(--card-spacing) pb-4">
         <span class="flex items-baseline justify-between gap-3 text-sm">
           <span class="flex min-w-0 items-baseline gap-x-1.5">
-            <span class="min-w-0 truncate font-medium text-foreground">{author.name}</span>
+            <span data-author class="min-w-0 truncate font-medium text-foreground">
+              {author.name}
+            </span>
             <span class="min-w-0 shrink-[3] truncate text-muted-foreground">@{author.handle}</span>
           </span>
           <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
@@ -62,33 +65,54 @@ const posted = dateFormat.format(postedAt);
         </span>
         <span data-review-reason class="text-xs font-medium tracking-wide text-brand-ink uppercase" hidden></span>
         <span class="flex items-start justify-between gap-3">
-          <h2 class="font-heading text-xl leading-snug font-semibold text-balance text-foreground sm:text-[1.375rem]">
-            {tldr}
+          <h2 class="min-w-0 flex-1 font-heading text-xl leading-snug font-semibold text-balance text-foreground sm:text-[1.375rem]">
+            <button
+              type="button"
+              data-card-toggle
+              aria-expanded="true"
+              class="block w-full cursor-pointer text-left text-balance outline-none"
+            >
+              {tldr}
+            </button>
           </h2>
           <ChevronDownIcon
-            className="mt-1.5 size-4 shrink-0 text-muted-foreground transition-transform group-open/details:rotate-180"
+            className="mt-1.5 size-4 shrink-0 text-muted-foreground transition-transform duration-500 ease-spring group-data-[depth=full]/bookmark:rotate-180"
             aria-hidden="true"
           />
         </span>
-        {action !== "" && (
-          <span class="flex items-start gap-2 rounded-lg bg-brand-soft px-3 py-2 text-sm leading-relaxed text-foreground">
-            <ZapIcon className="mt-1 size-3.5 shrink-0 fill-brand text-brand-ink" aria-hidden="true" />
-            <span class="text-pretty">
-              <span class="font-medium text-brand-ink">Try:</span> {action}
-            </span>
-          </span>
-        )}
-      </summary>
+      </div>
 
-      <div class="flex flex-col gap-4 px-(--card-spacing) pb-4 [contain-intrinsic-size:auto_24rem] [content-visibility:auto]">
-        <p class="font-serif text-[1.0625rem] leading-relaxed text-pretty text-foreground/90">{summary}</p>
-        {keyPoints.length > 0 && (
-          <ul class="flex flex-col gap-2 border-l-2 border-border pl-4 text-[0.9375rem] leading-relaxed text-foreground/85">
-            {keyPoints.map((point) => (
-              <li class="text-pretty">{point}</li>
-            ))}
-          </ul>
-        )}
+      <p
+        data-level="gist"
+        data-read-summary
+        class="px-(--card-spacing) pb-4 font-serif text-[1.0625rem] leading-relaxed text-pretty text-foreground/90"
+      >
+        {summary}
+      </p>
+
+      {(keyPoints.length > 0 || action !== "") && (
+        <div data-level="points" class="flex flex-col gap-4 px-(--card-spacing) pb-4">
+          {keyPoints.length > 0 && (
+            <ul class="flex flex-col gap-2 border-l-2 border-border pl-4 text-[0.9375rem] leading-relaxed text-foreground/85">
+              {keyPoints.map((point) => (
+                <li data-read-point class="text-pretty">
+                  {point}
+                </li>
+              ))}
+            </ul>
+          )}
+          {action !== "" && (
+            <p class="flex items-start gap-2 rounded-lg bg-brand-soft px-3 py-2 text-sm leading-relaxed text-foreground">
+              <ZapIcon className="mt-1 size-3.5 shrink-0 fill-brand text-brand-ink" aria-hidden="true" />
+              <span class="text-pretty">
+                <span class="font-medium text-brand-ink">Try:</span> <span data-read-action>{action}</span>
+              </span>
+            </p>
+          )}
+        </div>
+      )}
+
+      <div data-level="full" class="flex flex-col gap-4 px-(--card-spacing) pb-4">
         {links.length > 0 && (
           <ul class="flex flex-col gap-1.5 text-sm" aria-label="Links in the post">
             {links.map((link) => (
@@ -115,7 +139,9 @@ const posted = dateFormat.format(postedAt);
             <blockquote class="flex flex-col gap-3 text-sm leading-relaxed text-pretty text-foreground/80">
               {post.map((part) =>
                 part.kind === "text" ? (
-                  <p class="whitespace-pre-wrap">{part.text}</p>
+                  <p data-read-post class="whitespace-pre-wrap">
+                    {part.text}
+                  </p>
                 ) : (
                   <ul
                     class:list={["grid max-w-md gap-2", { "grid-cols-2": part.images.length > 1 }]}
@@ -160,9 +186,12 @@ const posted = dateFormat.format(postedAt);
           </p>
         )}
       </div>
-    </details>
+    </div>
 
-    <div class="flex flex-col gap-3 px-(--card-spacing) pb-(--card-spacing) sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-2">
+    <div
+      data-level="points"
+      class="flex flex-col gap-3 px-(--card-spacing) pb-(--card-spacing) sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-2"
+    >
       <div class="flex flex-wrap items-center gap-1.5">
         <Badge className="bg-topic-soft text-topic">{TOPIC_LABELS[topic]}</Badge>
         {shelfLife === "news" && (

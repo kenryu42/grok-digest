@@ -8,6 +8,36 @@
 
 @custom-variant dark (&:is(.dark *));
 
+@theme {
+  --ease-spring: linear(
+    0,
+    0.042,
+    0.143,
+    0.275,
+    0.415,
+    0.55,
+    0.671,
+    0.774,
+    0.857,
+    0.922,
+    0.969,
+    1.001,
+    1.022,
+    1.033,
+    1.038,
+    1.038,
+    1.035,
+    1.03,
+    1.025,
+    1.02,
+    1.015,
+    1.011,
+    1.007,
+    1.004,
+    1
+  );
+}
+
 @theme inline {
   --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Source Serif 4 Variable", ui-serif, Georgia, serif;
@@ -161,4 +191,10 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+[data-depth="headline"] :is([data-level="gist"], [data-level="points"], [data-level="full"]),
+[data-depth="gist"] :is([data-level="points"], [data-level="full"]),
+[data-depth="points"] [data-level="full"] {
+  display: none;
 }

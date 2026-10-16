@@ -22,8 +22,8 @@ const CDP_CALL_TIMEOUT_MS = 30_000;
 const DRIVER_REPLY_TIMEOUT_MS = 120_000;
 const STOP_GRACE_MS = 10_000;
 const SETTLE_MS = 200;
-const SWIPE_STEPS = 8;
-const SWIPE_STEP_MS = 16;
+const SWIPE_FRAME_MS = 16;
+const SWIPE_DURATION_MS = 128;
 const SWIPE_SETTLE_MS = 500;
 const VIEWPORTS = {
   mobile: { width: 375, height: 812, deviceScaleFactor: 2, mobile: true, touch: true },
@@ -44,6 +44,11 @@ const NAMED_KEYS = {
   Tab: { code: "Tab", windowsVirtualKeyCode: 9 },
   Backspace: { code: "Backspace", windowsVirtualKeyCode: 8 },
   "/": { code: "Slash", text: "/" },
+  Space: { key: " ", code: "Space", windowsVirtualKeyCode: 32, text: " " },
+  ArrowLeft: { code: "ArrowLeft", windowsVirtualKeyCode: 37 },
+  ArrowUp: { code: "ArrowUp", windowsVirtualKeyCode: 38 },
+  ArrowRight: { code: "ArrowRight", windowsVirtualKeyCode: 39 },
+  ArrowDown: { code: "ArrowDown", windowsVirtualKeyCode: 40 },
 };
 const SKIPPED_AX_ROLES = new Set(["generic", "none", "InlineTextBox", "LineBreak"]);
 
@@ -52,10 +57,12 @@ const USAGE = `Usage: verify.mjs <command> [run-dir] [options]
   launch [--data <dir>] [--viewport mobile|desktop]   Start a dev server and headless Chrome; prints RUN=<dir>.
   doctor <run>                                        Read-only health check of that run.
   open <run> [path] [--viewport v] [--fresh]          Load a page; --fresh clears the site's storage first.
-  click <run> (--name <text> | --selector <css>) [--card <n>] [--nth <n>]
+  click <run> (--name <text> | --selector <css>) [--card <n>] [--nth <n>] [--across <0-1>]
+                                                      Tap the element's middle, or --across that share of its width.
   type <run> <text>                                   Type into the focused element.
-  key <run> <key>                                     Press one key, such as e, j, u, / or Escape.
-  swipe <run> --card <n> [--distance <px>]            Drag a visible card left with a touch (default 160).
+  key <run> <key>                                     Press one key, such as e, j, 1, /, Space, ArrowRight or Escape.
+  swipe <run> --card <n> [--distance <px>] [--duration <ms>]
+                                                      Drag a visible card left with a touch (default 160px in 128ms, a flick).
   wait <run> --selector <css> [--gone]                Wait until an element is shown, or gone.
   eval <run> <expression>                             Read page state; prints JSON.
   screenshot <run> <name> [--full]                    Save evidence/<name>.png.
@@ -72,7 +79,9 @@ const { positionals, values } = parseArgs({
     selector: { type: "string" },
     card: { type: "string" },
     nth: { type: "string" },
+    across: { type: "string" },
     distance: { type: "string" },
+    duration: { type: "string" },
     gone: { type: "boolean" },
     full: { type: "boolean" },
   },
@@ -425,10 +434,12 @@ async function driver(run) {
       await settle();
       return pageSummary();
     },
-    click: async (options) => {
+    click: async ({ across, ...options }) => {
       const target = await locate(options);
       await settle(50);
-      await tap(target);
+      await tap(
+        across === undefined ? target : { x: target.left + (target.right - target.left) * across, y: target.y },
+      );
       await settle();
       return { clicked: target.name, input: viewport.touch ? "touch" : "mouse", page: await pageSummary() };
     },
@@ -450,26 +461,27 @@ async function driver(run) {
         page: await pageSummary(),
       };
     },
-    swipe: async ({ card, distance = 160 }) => {
+    swipe: async ({ card, distance = 160, duration = SWIPE_DURATION_MS }) => {
       if (!viewport.touch) throw new Error("Swiping needs touch input. Open the page with --viewport mobile.");
       const heading = await locate({ selector: "h2", card });
       const startX = heading.right - 24;
       const { y } = heading;
+      const steps = Math.max(2, Math.round(duration / SWIPE_FRAME_MS));
       await settle(50);
       await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: startX, y }] });
       const drag = async (step) => {
-        if (step > SWIPE_STEPS) return;
+        if (step > steps) return;
         await cdp.send("Input.dispatchTouchEvent", {
           type: "touchMove",
-          touchPoints: [{ x: startX - (distance * step) / SWIPE_STEPS, y: y + 1 }],
+          touchPoints: [{ x: startX - (distance * step) / steps, y: y + 1 }],
         });
-        await sleep(SWIPE_STEP_MS);
+        await sleep(duration / steps - SWIPE_FRAME_MS);
         await drag(step + 1);
       };
       await drag(1);
       await cdp.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
       await settle(SWIPE_SETTLE_MS);
-      return { swiped: heading.name, distance, page: await pageSummary() };
+      return { swiped: heading.name, distance, duration, page: await pageSummary() };
     },
     wait: async ({ selector, gone }) => {
       const query = `[...document.querySelectorAll(${JSON.stringify(selector)})].some((element) => element.checkVisibility())`;
@@ -720,6 +732,7 @@ async function main() {
           selector: values.selector,
           card: integer(values.card),
           nth: integer(values.nth),
+          across: values.across === undefined ? undefined : Number(values.across),
         }),
       );
     case "type":
@@ -728,7 +741,11 @@ async function main() {
       return print(await ask(needsRun(), "key", { key: args[0] }));
     case "swipe":
       return print(
-        await ask(needsRun(), "swipe", { card: integer(values.card) ?? 0, distance: integer(values.distance) }),
+        await ask(needsRun(), "swipe", {
+          card: integer(values.card) ?? 0,
+          distance: integer(values.distance),
+          duration: integer(values.duration),
+        }),
       );
     case "wait":
       return print(await ask(needsRun(), "wait", { selector: values.selector, gone: values.gone }));
