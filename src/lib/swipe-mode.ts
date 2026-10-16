@@ -16,7 +16,7 @@ import { swipeAxis, swipeCommits, swipeOffset, swipeVelocity, type SwipeAxis, ty
 import { TOPICS, type Topic } from "./topics.ts";
 
 const SPEED_KEY = `${STORAGE_PREFIX}speed-reading-wpm`;
-export const SPEED = { min: 200, max: 900, step: 25, start: 350 };
+export const SPEED = { min: 200, max: 600, step: 25, start: 250 };
 const START_DELAY_MS = 350;
 const DONE_ADVANCE_MS = 300;
 const UNDO_MS = 5000;
@@ -302,6 +302,12 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Opti
     if (pager === null) return;
     const line = pager.scrollTop + pager.clientHeight * CURRENT_LINE;
     const sections = [...pager.children].filter((child): child is HTMLElement => child instanceof HTMLElement);
+    const viewBottom = pager.scrollTop + pager.clientHeight;
+    for (const section of sections) {
+      const offScreen = section.offsetTop >= viewBottom || section.offsetTop + section.offsetHeight <= pager.scrollTop;
+      const content = section.lastElementChild;
+      if (offScreen && content !== null && content.scrollTop !== 0) content.scrollTop = 0;
+    }
     const index = sections.findLastIndex((section) => section.offsetTop <= line);
     if (index < 0 || index === current) return;
     setCurrent(index);

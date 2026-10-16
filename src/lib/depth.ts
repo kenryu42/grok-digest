@@ -11,7 +11,7 @@ export const DEPTH_LABELS: Record<Depth, string> = {
 
 export const NARROW_SCREEN_QUERY = "(width < 40rem)";
 
-export function isDepth(value: unknown): value is Depth {
+function isDepth(value: unknown): value is Depth {
   return DEPTHS.some((depth) => depth === value);
 }
 

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import type { PageSettings } from "./custom.ts";
-import { DEPTHS, isDepth, NARROW_SCREEN_QUERY, startingDepth, tappedDepth, type Depth } from "./depth.ts";
+import { DEPTHS, NARROW_SCREEN_QUERY, startingDepth, tappedDepth, type Depth } from "./depth.ts";
 import { filterSearch, parseFilter, type Filter, type View } from "./filter.ts";
 import { morph, prefersReducedMotion, stopMotion, type Anchor } from "./morph.ts";
 import { dailyReview, localDay, type ReviewPick } from "./review.ts";
@@ -315,8 +315,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
   const toggleCard = useCallback(
     (card: HTMLElement): void => {
       const id = card.dataset["bookmarkId"] ?? "";
-      const shown = card.dataset["depth"];
-      const next = tappedDepth(isDepth(shown) ? shown : depthRef.current, depthRef.current);
+      const next = tappedDepth(openedRef.current.get(id) ?? depthRef.current, depthRef.current);
       if (next === depthRef.current) openedRef.current.delete(id);
       else openedRef.current.set(id, next);
       void morph(() => showDepths(depthRef.current, openedRef.current), anchorAt(card));

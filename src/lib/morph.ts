@@ -1,13 +1,14 @@
 const REDUCED_MOTION_QUERY = "(prefers-reduced-motion: reduce)";
 const NEAR_VIEWPORT = { above: 0.25, below: 1 };
-const RESIZE = { transition: "500ms var(--ease-spring)", ms: 500 };
-const EXIT = { transition: "280ms cubic-bezier(0.2, 0, 0, 1)", ms: 280 };
+const EASE_OUT = "cubic-bezier(0.2, 0, 0, 1)";
+const RESIZE = { transition: `400ms ${EASE_OUT}`, ms: 400 };
+const EXIT = { transition: `280ms ${EASE_OUT}`, ms: 280 };
 const MOVED_PROPERTIES = ["height", "margin-bottom", "opacity"];
 const UNCHANGED_HEIGHT = 1;
 
 export type Anchor = { element: HTMLElement; top: number };
 
-type Motion = { timer: ReturnType<typeof setTimeout>; leaving: boolean };
+type Motion = { timer: ReturnType<typeof setTimeout>; leaving: boolean; settledDepth: string | undefined };
 
 type Frame = { height: string; marginBottom: string; opacity: string };
 
@@ -39,14 +40,22 @@ export function stopMotion(card: HTMLElement): void {
   Object.assign(card.style, { height: "", marginBottom: "", opacity: "", overflow: "", transition: "" });
   card.inert = false;
   if (motion.leaving) card.hidden = true;
+  if (motion.settledDepth !== undefined) card.dataset["depth"] = motion.settledDepth;
 }
 
-function move(card: HTMLElement, from: Frame, to: Frame, timing: typeof RESIZE, leaving: boolean): void {
+function move(
+  card: HTMLElement,
+  from: Frame,
+  to: Frame,
+  timing: typeof RESIZE,
+  leaving: boolean,
+  settledDepth?: string,
+): void {
   Object.assign(card.style, { ...from, overflow: "clip", transition: "none" });
   card.getBoundingClientRect();
   card.style.transition = MOVED_PROPERTIES.map((property) => `${property} ${timing.transition}`).join(", ");
   Object.assign(card.style, to);
-  moving.set(card, { timer: setTimeout(() => stopMotion(card), timing.ms), leaving });
+  moving.set(card, { timer: setTimeout(() => stopMotion(card), timing.ms), leaving, settledDepth });
 }
 
 export function morph(update: () => void, anchor?: Anchor): Promise<void> {
@@ -66,6 +75,7 @@ export function morph(update: () => void, anchor?: Anchor): Promise<void> {
       .map((card) => [card, card.getBoundingClientRect().height]),
   );
   for (const card of moving.keys()) stopMotion(card);
+  const depthBefore = new Map([...before.keys()].map((card) => [card, card.dataset["depth"]]));
   apply();
   const gap = `${-listGap()}px`;
   const all = cardsInList();
@@ -102,12 +112,17 @@ export function morph(update: () => void, anchor?: Anchor): Promise<void> {
     }
     const height = card.getBoundingClientRect().height;
     if (Math.abs(height - was) <= UNCHANGED_HEIGHT) return;
+    const depth = card.dataset["depth"];
+    const shownDepth = depthBefore.get(card);
+    const collapsing = height < was && shownDepth !== undefined && shownDepth !== depth;
+    if (collapsing) card.dataset["depth"] = shownDepth;
     move(
       card,
       { height: `${was}px`, marginBottom: "0px", opacity: "1" },
       { height: `${height}px`, marginBottom: "0px", opacity: "1" },
       RESIZE,
       false,
+      collapsing ? depth : undefined,
     );
     longest = Math.max(longest, RESIZE.ms);
   });
