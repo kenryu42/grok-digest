@@ -34,6 +34,7 @@ const FLY_OFF = "transform 250ms ease-in";
 const FLY_OFF_RESET_MS = 900;
 const SPRING_BACK_MS = 500;
 const CARD_DEPTH: Depth = "points";
+const KEYBOARD_CLICK = 0;
 
 type BlockKind = "headline" | "summary" | "point" | "action" | "post";
 
@@ -289,7 +290,7 @@ export function SwipeMode({ cards, start, done, onToggleDone, onClose }: Props) 
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     if (!event.isPrimary || event.button !== 0) return;
-    if (event.target instanceof Element && event.target.closest("button, a") !== null) return;
+    if (event.target instanceof Element && event.target.closest("button:not([data-swipe-peek]), a") !== null) return;
     gestureRef.current = {
       pointerId: event.pointerId,
       touch: event.pointerType === "touch",
@@ -462,7 +463,6 @@ export function SwipeMode({ cards, start, done, onToggleDone, onClose }: Props) 
         className="relative min-h-0 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain outline-none [scrollbar-width:none]"
       >
         {pages.map((p, index) => {
-          const level = expanded.has(p.id) ? "full" : CARD_DEPTH;
           const isCurrent = index === current;
           return (
             <section
@@ -487,7 +487,7 @@ export function SwipeMode({ cards, start, done, onToggleDone, onClose }: Props) 
               </span>
               <div
                 ref={isCurrent ? moverRef : undefined}
-                className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-background px-safe-5 pt-3 pb-8"
+                className="relative flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto bg-background px-safe-5 pt-3 pb-8"
               >
                 <article data-topic={p.topic} className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4">
                   <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -515,7 +515,7 @@ export function SwipeMode({ cards, start, done, onToggleDone, onClose }: Props) 
                   ) : (
                     <div className="flex flex-col gap-4">
                       {p.blocks
-                        .filter((block) => shows(level, block.level))
+                        .filter((block) => shows(CARD_DEPTH, block.level))
                         .map((block) => (
                           <p key={block.key} className={BLOCK_STYLES[block.kind]}>
                             {block.kind === "action" && <span className="font-medium text-brand-ink">Try: </span>}
@@ -523,22 +523,11 @@ export function SwipeMode({ cards, start, done, onToggleDone, onClose }: Props) 
                           </p>
                         ))}
                       {p.blocks.some((block) => !shows(CARD_DEPTH, block.level)) && (
-                        <div className="sticky -bottom-8 -mb-4 bg-linear-to-t from-background from-60% to-transparent pt-6 pb-4">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            aria-expanded={expanded.has(p.id)}
-                            onClick={() => toggleExpanded(p.id)}
-                            className="h-10 rounded-full bg-background px-4"
-                          >
-                            {expanded.has(p.id) ? (
-                              <ChevronUpIcon aria-hidden="true" />
-                            ) : (
-                              <ChevronDownIcon aria-hidden="true" />
-                            )}
-                            {expanded.has(p.id) ? "Hide original post" : "Show original post"}
-                          </Button>
-                        </div>
+                        <OriginalPost
+                          blocks={p.blocks.filter((block) => !shows(CARD_DEPTH, block.level))}
+                          open={expanded.has(p.id)}
+                          onToggle={() => toggleExpanded(p.id)}
+                        />
                       )}
                     </div>
                   )}
@@ -706,4 +695,54 @@ function BlockWords({ tokens, step }: { tokens: ReadToken[]; step: number }) {
       {token.text}
     </span>
   ));
+}
+
+const POST_LABEL = "text-xs font-medium text-muted-foreground";
+
+function OriginalPost({ blocks, open, onToggle }: { blocks: Block[]; open: boolean; onToggle: () => void }) {
+  if (!open) {
+    return (
+      <button
+        type="button"
+        data-swipe-peek
+        aria-expanded="false"
+        onClick={(event) => {
+          if (event.detail === KEYBOARD_CLICK) onToggle();
+        }}
+        className="flex flex-col gap-1 rounded-md text-left outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      >
+        <span className={cn(POST_LABEL, "flex items-center gap-1")}>
+          Original post
+          <ChevronDownIcon className="size-3.5" aria-hidden="true" />
+        </span>
+        <span
+          className={cn(
+            BLOCK_STYLES.post,
+            "line-clamp-2 [mask-image:linear-gradient(to_bottom,black_30%,transparent)]",
+          )}
+        >
+          {blocks.map(({ text }) => text).join(" ")}
+        </span>
+      </button>
+    );
+  }
+  return (
+    <section aria-label="Original post" className="flex flex-col gap-2">
+      <h3 className={POST_LABEL}>Original post</h3>
+      {blocks.map((block) => (
+        <p key={block.key} className={BLOCK_STYLES[block.kind]}>
+          {block.text}
+        </p>
+      ))}
+      <button
+        type="button"
+        aria-expanded="true"
+        onClick={onToggle}
+        className="flex items-center gap-1 self-start rounded-md py-2 text-sm font-medium text-muted-foreground outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+      >
+        <ChevronUpIcon className="size-4" aria-hidden="true" />
+        Show less
+      </button>
+    </section>
+  );
 }
