@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="6 31 88 70"><defs><radialGradient id="mascot-ghost" cx="30%" cy="22%" r="85%"><stop offset="0" stop-color="#fffdf9"/><stop offset=".55" stop-color="#ece5da"/><stop offset="1" stop-color="#bfb5a8"/></radialGradient></defs>
+<circle cx="50" cy="64" r="31" fill="url(#mascot-ghost)"/>
+<ellipse cx="46" cy="52" rx="4" ry="7.5" transform="rotate(14 46 52)" fill="#2b2622"/><ellipse cx="61" cy="49" rx="4" ry="7.5" transform="rotate(14 61 49)" fill="#2b2622"/>
+<rect x="8" y="62" width="84" height="37" rx="11" fill="#e8a54b"/>
+<rect x="20" y="74" width="40" height="5" rx="2.5" fill="#2b2622" opacity=".35"/>
+<rect x="20" y="84" width="28" height="5" rx="2.5" fill="#2b2622" opacity=".35"/>
+<path d="M68 62 h10 v16 l-5 -3.5 l-5 3.5z" fill="#2b2622"/></svg>
