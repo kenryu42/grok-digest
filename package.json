@@ -21,6 +21,7 @@
   "files": [
     "dist",
     "BOT.md",
+    "CUSTOMIZING.md",
     "LICENSE-THIRD-PARTY"
   ],
   "type": "module",
