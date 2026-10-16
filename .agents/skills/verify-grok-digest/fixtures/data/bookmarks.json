@@ -1,0 +1,405 @@
+[
+  {
+    "id": "1000000000000000100",
+    "url": "https://x.com/sakuralabs_eng/status/1000000000000000100",
+    "author": {
+      "name": "Sakura Labs Engineering Team",
+      "handle": "sakuralabs_eng"
+    },
+    "posted_at": "2026-10-14",
+    "saved_at": "2026-10-16T08:12:00+09:00",
+    "topic": "ai-agents",
+    "shelf_life": "evergreen",
+    "tldr": "Make the coding agent plan before it edits — and why reviewers should see the plan before any file changes land",
+    "text": "We let the agent write a plan, and then we wait. It cannot edit a file until someone says yes. This post is fake. It ships with the template so the page has something to show.",
+    "summary": "Verification fixture. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
+    "key_points": [
+      "The agent writes a short plan, then waits for approval.",
+      "Small, checkable steps beat one large change.",
+      "This post does not exist. The link goes nowhere useful."
+    ],
+    "action": "Ask your coding agent for a plan and approve it before it edits anything.",
+    "links": [
+      {
+        "title": "Example: plan-first agent workflow (sample link)",
+        "url": "https://example.com/plan-first"
+      }
+    ],
+    "media": [
+      {
+        "url": "https://pbs.twimg.com/media/Sample1000.jpg"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000101",
+    "url": "https://x.com/ann/status/1000000000000000101",
+    "author": {
+      "name": "Ann Lee",
+      "handle": "ann"
+    },
+    "posted_at": "2026-10-13",
+    "saved_at": "2026-10-15T08:12:00+09:00",
+    "topic": "models-releases",
+    "shelf_life": "news",
+    "tldr": "サンプル: a Tokyo meetup on local-first apps",
+    "text": "東京でローカルファーストの勉強会を開きました（という設定です）。この投稿は実在しません。",
+    "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
+    "key_points": [
+      "Search matches Japanese text too. Try typing 東京.",
+      "東京のミートアップ (fictional)."
+    ],
+    "action": "",
+    "links": []
+  },
+  {
+    "id": "1000000000000000102",
+    "url": "https://x.com/longname_prod/status/1000000000000000102",
+    "author": {
+      "name": "Very Long Display Name Productions",
+      "handle": "longname_prod"
+    },
+    "posted_at": "2026-10-12",
+    "saved_at": "2026-10-14T08:12:00+09:00",
+    "topic": "dev-tools",
+    "shelf_life": "evergreen",
+    "tldr": "A short sample card with no key points",
+    "text": "",
+    "summary": "Sample entry with no key points and no post text, to show how a short card renders. Remove it along with the other samples.",
+    "key_points": [],
+    "action": "",
+    "links": [],
+    "media": [
+      {
+        "url": "https://pbs.twimg.com/media/Sample1020.jpg"
+      },
+      {
+        "url": "https://pbs.twimg.com/media/Sample1021.jpg"
+      },
+      {
+        "url": "https://pbs.twimg.com/media/Sample1022.jpg"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000103",
+    "url": "https://x.com/sakuralabs_eng/status/1000000000000000103",
+    "author": {
+      "name": "Sakura Labs Engineering Team",
+      "handle": "sakuralabs_eng"
+    },
+    "posted_at": "2026-10-11",
+    "saved_at": "2026-10-13T08:12:00+09:00",
+    "topic": "startups-business",
+    "shelf_life": "evergreen",
+    "tldr": "Make the coding agent plan before it edits — and why reviewers should see the plan before any file changes land",
+    "text": "We let the agent write a plan, and then we wait. It cannot edit a file until someone says yes. This post is fake. It ships with the template so the page has something to show.",
+    "summary": "Verification fixture. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
+    "key_points": [
+      "The agent writes a short plan, then waits for approval.",
+      "Small, checkable steps beat one large change.",
+      "This post does not exist. The link goes nowhere useful."
+    ],
+    "action": "Ask your coding agent for a plan and approve it before it edits anything.",
+    "links": [
+      {
+        "title": "Example: plan-first agent workflow (sample link)",
+        "url": "https://example.com/plan-first"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000104",
+    "url": "https://x.com/ann/status/1000000000000000104",
+    "author": {
+      "name": "Ann Lee",
+      "handle": "ann"
+    },
+    "posted_at": "2026-10-10",
+    "saved_at": "2026-10-12T08:12:00+09:00",
+    "topic": "japan-tech",
+    "shelf_life": "evergreen",
+    "tldr": "サンプル: a Tokyo meetup on local-first apps",
+    "text": "東京でローカルファーストの勉強会を開きました（という設定です）。この投稿は実在しません。",
+    "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
+    "key_points": [
+      "Search matches Japanese text too. Try typing 東京.",
+      "東京のミートアップ (fictional)."
+    ],
+    "action": "",
+    "links": [],
+    "media": [
+      {
+        "url": "https://pbs.twimg.com/media/Sample1040.jpg"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000105",
+    "url": "https://x.com/longname_prod/status/1000000000000000105",
+    "author": {
+      "name": "Very Long Display Name Productions",
+      "handle": "longname_prod"
+    },
+    "posted_at": "2026-10-09",
+    "saved_at": "2026-10-11T08:12:00+09:00",
+    "topic": "design",
+    "shelf_life": "news",
+    "tldr": "A short sample card with no key points",
+    "text": "",
+    "summary": "Sample entry with no key points and no post text, to show how a short card renders. Remove it along with the other samples.",
+    "key_points": [],
+    "action": "",
+    "links": []
+  },
+  {
+    "id": "1000000000000000106",
+    "url": "https://x.com/sakuralabs_eng/status/1000000000000000106",
+    "author": {
+      "name": "Sakura Labs Engineering Team",
+      "handle": "sakuralabs_eng"
+    },
+    "posted_at": "2026-10-08",
+    "saved_at": "2026-10-10T08:12:00+09:00",
+    "topic": "other",
+    "shelf_life": "evergreen",
+    "tldr": "Make the coding agent plan before it edits — and why reviewers should see the plan before any file changes land",
+    "text": "We let the agent write a plan, and then we wait. It cannot edit a file until someone says yes. This post is fake. It ships with the template so the page has something to show.",
+    "summary": "Verification fixture. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
+    "key_points": [
+      "The agent writes a short plan, then waits for approval.",
+      "Small, checkable steps beat one large change.",
+      "This post does not exist. The link goes nowhere useful."
+    ],
+    "action": "Ask your coding agent for a plan and approve it before it edits anything.",
+    "links": [
+      {
+        "title": "Example: plan-first agent workflow (sample link)",
+        "url": "https://example.com/plan-first"
+      }
+    ],
+    "media": [
+      {
+        "url": "https://pbs.twimg.com/media/Sample1060.jpg"
+      },
+      {
+        "url": "https://pbs.twimg.com/media/Sample1061.jpg"
+      },
+      {
+        "url": "https://pbs.twimg.com/media/Sample1062.jpg"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000107",
+    "url": "https://x.com/ann/status/1000000000000000107",
+    "author": {
+      "name": "Ann Lee",
+      "handle": "ann"
+    },
+    "posted_at": "2026-10-07",
+    "saved_at": "2026-10-09T08:12:00+09:00",
+    "topic": "ai-agents",
+    "shelf_life": "evergreen",
+    "tldr": "サンプル: a Tokyo meetup on local-first apps",
+    "text": "東京でローカルファーストの勉強会を開きました（という設定です）。この投稿は実在しません。",
+    "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
+    "key_points": [
+      "Search matches Japanese text too. Try typing 東京.",
+      "東京のミートアップ (fictional)."
+    ],
+    "action": "",
+    "links": []
+  },
+  {
+    "id": "1000000000000000108",
+    "url": "https://x.com/longname_prod/status/1000000000000000108",
+    "author": {
+      "name": "Very Long Display Name Productions",
+      "handle": "longname_prod"
+    },
+    "posted_at": "2026-10-06",
+    "saved_at": "2026-10-08T08:12:00+09:00",
+    "topic": "models-releases",
+    "shelf_life": "evergreen",
+    "tldr": "A short sample card with no key points",
+    "text": "",
+    "summary": "Sample entry with no key points and no post text, to show how a short card renders. Remove it along with the other samples.",
+    "key_points": [],
+    "action": "",
+    "links": [],
+    "media": [
+      {
+        "url": "https://pbs.twimg.com/media/Sample1080.jpg"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000109",
+    "url": "https://x.com/sakuralabs_eng/status/1000000000000000109",
+    "author": {
+      "name": "Sakura Labs Engineering Team",
+      "handle": "sakuralabs_eng"
+    },
+    "posted_at": "2026-10-05",
+    "saved_at": "2026-10-07T08:12:00+09:00",
+    "topic": "dev-tools",
+    "shelf_life": "news",
+    "tldr": "Make the coding agent plan before it edits — and why reviewers should see the plan before any file changes land",
+    "text": "We let the agent write a plan, and then we wait. It cannot edit a file until someone says yes. This post is fake. It ships with the template so the page has something to show.",
+    "summary": "Verification fixture. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
+    "key_points": [
+      "The agent writes a short plan, then waits for approval.",
+      "Small, checkable steps beat one large change.",
+      "This post does not exist. The link goes nowhere useful."
+    ],
+    "action": "Ask your coding agent for a plan and approve it before it edits anything.",
+    "links": [
+      {
+        "title": "Example: plan-first agent workflow (sample link)",
+        "url": "https://example.com/plan-first"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000110",
+    "url": "https://x.com/ann/status/1000000000000000110",
+    "author": {
+      "name": "Ann Lee",
+      "handle": "ann"
+    },
+    "posted_at": "2026-10-04",
+    "saved_at": "2026-10-06T08:12:00+09:00",
+    "topic": "startups-business",
+    "shelf_life": "evergreen",
+    "tldr": "サンプル: a Tokyo meetup on local-first apps",
+    "text": "東京でローカルファーストの勉強会を開きました（という設定です）。この投稿は実在しません。",
+    "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
+    "key_points": [
+      "Search matches Japanese text too. Try typing 東京.",
+      "東京のミートアップ (fictional)."
+    ],
+    "action": "",
+    "links": [],
+    "media": [
+      {
+        "url": "https://pbs.twimg.com/media/Sample1100.jpg"
+      },
+      {
+        "url": "https://pbs.twimg.com/media/Sample1101.jpg"
+      },
+      {
+        "url": "https://pbs.twimg.com/media/Sample1102.jpg"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000111",
+    "url": "https://x.com/longname_prod/status/1000000000000000111",
+    "author": {
+      "name": "Very Long Display Name Productions",
+      "handle": "longname_prod"
+    },
+    "posted_at": "2026-10-03",
+    "saved_at": "2026-10-05T08:12:00+09:00",
+    "topic": "japan-tech",
+    "shelf_life": "evergreen",
+    "tldr": "A short sample card with no key points",
+    "text": "",
+    "summary": "Sample entry with no key points and no post text, to show how a short card renders. Remove it along with the other samples.",
+    "key_points": [],
+    "action": "",
+    "links": []
+  },
+  {
+    "id": "1000000000000000112",
+    "url": "https://x.com/sakuralabs_eng/status/1000000000000000112",
+    "author": {
+      "name": "Sakura Labs Engineering Team",
+      "handle": "sakuralabs_eng"
+    },
+    "posted_at": "2026-10-02",
+    "saved_at": "2026-10-04T08:12:00+09:00",
+    "topic": "design",
+    "shelf_life": "evergreen",
+    "tldr": "Make the coding agent plan before it edits — and why reviewers should see the plan before any file changes land",
+    "text": "We let the agent write a plan, and then we wait. It cannot edit a file until someone says yes. This post is fake. It ships with the template so the page has something to show.",
+    "summary": "Verification fixture. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
+    "key_points": [
+      "The agent writes a short plan, then waits for approval.",
+      "Small, checkable steps beat one large change.",
+      "This post does not exist. The link goes nowhere useful."
+    ],
+    "action": "",
+    "links": [
+      {
+        "title": "Example: plan-first agent workflow (sample link)",
+        "url": "https://example.com/plan-first"
+      }
+    ],
+    "media": [
+      {
+        "url": "https://pbs.twimg.com/media/Sample1120.jpg"
+      }
+    ]
+  },
+  {
+    "id": "1000000000000000113",
+    "url": "https://x.com/ann/status/1000000000000000113",
+    "author": {
+      "name": "Ann Lee",
+      "handle": "ann"
+    },
+    "posted_at": "2026-10-01",
+    "saved_at": "2026-10-03T08:12:00+09:00",
+    "topic": "other",
+    "shelf_life": "news",
+    "tldr": "サンプル: a Tokyo meetup on local-first apps",
+    "text": "東京でローカルファーストの勉強会を開きました（という設定です）。この投稿は実在しません。",
+    "summary": "サンプル投稿です。A fictional note about a Tokyo meetup on local-first apps, included to show how mixed Japanese and English text looks on a card.",
+    "key_points": [
+      "Search matches Japanese text too. Try typing 東京.",
+      "東京のミートアップ (fictional)."
+    ],
+    "action": "",
+    "links": []
+  },
+  {
+    "id": "1000000000000000200",
+    "url": "https://x.com/thread_lab/status/1000000000000000200",
+    "author": {
+      "name": "Thread Lab",
+      "handle": "thread_lab"
+    },
+    "posted_at": "2026-09-30",
+    "saved_at": "2026-10-02T09:00:00+09:00",
+    "topic": "design",
+    "shelf_life": "evergreen",
+    "tldr": "A dashboard redesign told across a three-post thread",
+    "text": "Post one: we rebuilt the dashboard.\n\nIt took a month. https://t.co/Aaaaaaaaa1\n\nPost two has no photo.\n\nPost three shows the new chart. https://t.co/Bbbbbbbbb2",
+    "summary": "Verification fixture. A made-up thread about letting a coding agent plan its work before it edits any files. Delete this entry once your bot adds real bookmarks.",
+    "key_points": [
+      "The agent writes a short plan, then waits for approval.",
+      "Small, checkable steps beat one large change.",
+      "This post does not exist. The link goes nowhere useful."
+    ],
+    "action": "",
+    "links": [],
+    "media": [
+      {
+        "url": "https://pbs.twimg.com/media/VerifyThread1.jpg",
+        "alt": "The old dashboard",
+        "link": "https://t.co/Aaaaaaaaa1"
+      },
+      {
+        "url": "https://pbs.twimg.com/media/VerifyThread2.jpg",
+        "link": "https://t.co/Aaaaaaaaa1"
+      },
+      {
+        "url": "https://pbs.twimg.com/media/VerifyThread3.jpg",
+        "alt": "The new chart",
+        "link": "https://t.co/Bbbbbbbbb2"
+      }
+    ]
+  }
+]
