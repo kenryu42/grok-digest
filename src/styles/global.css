@@ -198,3 +198,18 @@
 [data-depth="points"] [data-level="full"] {
   display: none;
 }
+
+@keyframes word-flash {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  82% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}

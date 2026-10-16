@@ -6,7 +6,7 @@ This directory is the maintained source for verifying what Grok Digest users see
 
 - `$V launch` with the default fixture: 15 bookmarks across all 7 topics, four marked `News`, one thread (`A dashboard redesign told across a three-post thread`, author `@thread_lab`, id `1000000000000000200`) whose images sit between its posts, and five entries titled `サンプル: a Tokyo meetup on local-first apps`.
 - `$V doctor "$RUN"` prints only `✓` lines.
-- Start every recipe with `$V open "$RUN" <path> --viewport <mobile|desktop> --fresh`, so no done marks, cached Today picks, detail level or reading speed carry over.
+- Start every recipe with `$V open "$RUN" <path> --viewport <mobile|desktop> --fresh`, so no done marks, cached Today picks, detail level or speed-reading settings carry over.
 - Never drive a server this run did not start.
 
 ## Driving conventions
@@ -30,9 +30,9 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 ## Features
 
 - [Mark bookmarks done](./mark-done.md): views, the Done button, swipes and flicks, keyboard triage and Undo.
-- [Search and filter](./search-and-filter.md): the search field, mobile search icon, `/` key, topic chips and the URL.
-- [Read a card](./read-a-card.md): the Detail slider, tap-to-open, the headline-on-phones default, the post's images and links, Copy, Open on X and linked cards.
-- [Read mode](./read-mode.md): playing cards one at a time with paced highlighting, skip, pause, done, speed, Listen and close.
+- [Search and filter](./search-and-filter.md): the search field, mobile search icon, `/` key, topic chips, the pinned top row and the URL.
+- [Read a card](./read-a-card.md): the Detail slider (`Minimal`, `Light`, `Deep`, `Full`), tap-to-open, the Minimal-on-phones default, the post's images and links, Copy, Open on X and linked cards.
+- [Swipe mode](./swipe-mode.md): one card per screen with vertical swipes, swipe-left to done, Undo, tap to expand, speed reading and close.
 - [RSS feeds](./feeds.md): the all-bookmarks feed and one feed per topic.
 - [Validate data files](./validate-data.md): `grok-digest validate` on good and bad data.
 

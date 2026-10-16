@@ -1,12 +1,29 @@
-import { PlayIcon, SearchIcon } from "lucide-react";
+import {
+  CalendarCheckIcon,
+  CheckCheckIcon,
+  GalleryVerticalEndIcon,
+  InboxIcon,
+  LibraryIcon,
+  Rows3Icon,
+  SearchIcon,
+  type LucideIcon,
+} from "lucide-react";
 import { cn } from "cn";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { DepthControl } from "./DepthControl.tsx";
-import { ReadMode } from "./ReadMode.tsx";
+import { SwipeMode } from "./SwipeMode.tsx";
 import { Button } from "./ui/button.tsx";
 import { Input } from "./ui/input.tsx";
-import { DEPTHS, isDepth, NARROW_SCREEN_QUERY, startingDepth, tappedDepth, type Depth } from "../lib/depth.ts";
+import {
+  DEPTH_LABELS,
+  DEPTHS,
+  isDepth,
+  NARROW_SCREEN_QUERY,
+  startingDepth,
+  tappedDepth,
+  type Depth,
+} from "../lib/depth.ts";
 import { filterSearch, parseFilter, VIEWS, type Filter, type View } from "../lib/filter.ts";
 import { morph, prefersReducedMotion, stopMotion, type Anchor } from "../lib/morph.ts";
 import { dailyReview, localDay, type ReviewPick } from "../lib/review.ts";
@@ -40,6 +57,18 @@ const PRESS_SHOWN_MS = 120;
 const ANCHOR_GAP = 12;
 
 const VIEW_LABELS: Record<View, string> = { today: "Today", inbox: "Inbox", done: "Done", all: "All" };
+const VIEW_ICONS: Record<View, LucideIcon> = {
+  today: CalendarCheckIcon,
+  inbox: InboxIcon,
+  done: CheckCheckIcon,
+  all: LibraryIcon,
+};
+const TAB_ORDER: Record<View, string> = {
+  today: "max-sm:order-1",
+  inbox: "max-sm:order-2",
+  done: "max-sm:order-4",
+  all: "max-sm:order-5",
+};
 const FORM_FIELDS = "input, textarea, select, [contenteditable]";
 
 function isStringArray(value: unknown): value is string[] {
@@ -153,7 +182,8 @@ export function BookmarkControls({ entries }: Props) {
   );
   const [undo, setUndo] = useState<{ id: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [reading, setReading] = useState<{ cards: HTMLElement[]; start: number; depth: Depth } | null>(null);
+  const [swiping, setSwiping] = useState<{ cards: HTMLElement[]; start: number; depth: Depth } | null>(null);
+  const [depthOpen, setDepthOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const chipsRef = useRef<HTMLFieldSetElement>(null);
@@ -320,19 +350,19 @@ export function BookmarkControls({ entries }: Props) {
     );
   }, []);
 
-  const openReader = useCallback((): void => {
+  const openSwipe = useCallback((): void => {
     const shown = cards().filter((card) => !card.hidden && !card.inert);
     if (shown.length === 0) return;
     const top = topCard();
-    setReading({
+    setSwiping({
       cards: shown,
       start: top === undefined ? 0 : Math.max(shown.indexOf(top), 0),
       depth: depthRef.current,
     });
   }, [topCard]);
 
-  const closeReader = useCallback((last: HTMLElement | undefined): void => {
-    setReading(null);
+  const closeSwipe = useCallback((last: HTMLElement | undefined): void => {
+    setSwiping(null);
     if (last !== undefined && !last.hidden) last.scrollIntoView({ block: "start" });
   }, []);
 
@@ -509,8 +539,8 @@ export function BookmarkControls({ entries }: Props) {
           flushSync(() => setSearchOpen(true));
           searchRef.current?.focus();
           break;
-        case "p":
-          openReader();
+        case "s":
+          openSwipe();
           break;
         case "1":
         case "2":
@@ -540,7 +570,16 @@ export function BookmarkControls({ entries }: Props) {
       document.removeEventListener("pointerup", endSwipe);
       document.removeEventListener("pointercancel", endSwipe);
     };
-  }, [changeDepth, openReader, toggleCard, toggleDone, undoDone]);
+  }, [changeDepth, openSwipe, toggleCard, toggleDone, undoDone]);
+
+  useEffect(() => {
+    if (!depthOpen) return undefined;
+    const closeOutside = (event: PointerEvent): void => {
+      if (event.target instanceof Node && barRef.current?.contains(event.target) !== true) setDepthOpen(false);
+    };
+    document.addEventListener("pointerdown", closeOutside);
+    return () => document.removeEventListener("pointerdown", closeOutside);
+  }, [depthOpen]);
 
   const update = (change: Partial<Filter>): void => setFilter((previous) => ({ ...previous, ...change }));
 
@@ -556,9 +595,54 @@ export function BookmarkControls({ entries }: Props) {
 
   return (
     <div className="flex flex-col gap-4 max-sm:contents">
+      <nav
+        aria-label="Views"
+        className="max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-20 max-sm:grid max-sm:grid-cols-5 max-sm:items-center max-sm:border-t max-sm:bg-background/90 max-sm:px-safe-2 max-sm:pt-1.5 max-sm:pb-safe-2 max-sm:backdrop-blur-md sm:flex sm:items-center sm:gap-3"
+      >
+        <fieldset
+          aria-label="Choose a view"
+          className="max-sm:contents sm:flex sm:w-fit sm:flex-wrap sm:gap-1 sm:rounded-full sm:bg-muted sm:p-1"
+        >
+          {VIEWS.map((v) => {
+            const Icon = VIEW_ICONS[v];
+            return (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={view === v && !searching}
+                aria-label={`${VIEW_LABELS[v]} ${counts[v]}`}
+                onClick={() => update({ view: v, query: "" })}
+                className={cn(
+                  "inline-flex min-w-0 items-center justify-center rounded-full text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:text-foreground max-sm:h-13 max-sm:flex-col max-sm:gap-0.5 max-sm:text-[0.6875rem] sm:h-8 sm:gap-1.5 sm:px-3.5 sm:aria-pressed:bg-card sm:aria-pressed:shadow-xs",
+                  TAB_ORDER[v],
+                )}
+              >
+                <Icon className="size-5 in-aria-pressed:text-brand-ink sm:hidden" aria-hidden="true" />
+                <span className="flex items-baseline gap-1">
+                  {VIEW_LABELS[v]}
+                  <span className="text-muted-foreground tabular-nums in-aria-pressed:font-semibold in-aria-pressed:text-brand-ink sm:text-xs">
+                    {counts[v]}
+                  </span>
+                </span>
+              </button>
+            );
+          })}
+        </fieldset>
+        <Button
+          type="button"
+          onClick={openSwipe}
+          aria-label="Swipe through cards"
+          title="Swipe through cards (s)"
+          className="max-sm:order-3 max-sm:size-12 max-sm:justify-self-center max-sm:rounded-full max-sm:shadow-md max-sm:transition-[scale] max-sm:duration-500 max-sm:ease-spring max-sm:active:scale-90 max-sm:active:duration-150 sm:h-9 sm:rounded-full sm:px-4"
+        >
+          <GalleryVerticalEndIcon className="max-sm:size-5" aria-hidden="true" />
+          <span className="max-sm:sr-only">Swipe</span>
+        </Button>
+      </nav>
+
       <div
         ref={barRef}
-        className="flex flex-col gap-4 max-sm:sticky max-sm:top-0 max-sm:z-10 max-sm:-mx-4 max-sm:gap-3 max-sm:border-b max-sm:bg-background/90 max-sm:px-4 max-sm:pt-safe-2 max-sm:pb-3 max-sm:backdrop-blur-md"
+        className="flex flex-col gap-4 max-sm:sticky max-sm:top-0 max-sm:z-10 max-sm:-mx-4 max-sm:gap-2 max-sm:border-b max-sm:bg-background/90 max-sm:px-4 max-sm:pt-safe-2 max-sm:pb-2 max-sm:backdrop-blur-md"
       >
         <div className={cn("flex items-center gap-2", !showSearch && "max-sm:hidden")}>
           <div className="relative flex-1">
@@ -581,58 +665,47 @@ export function BookmarkControls({ entries }: Props) {
           </Button>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className={cn("flex items-center gap-2", showSearch && "max-sm:hidden")}>
           <fieldset
-            aria-label="Choose a view"
-            className="grid min-w-0 flex-1 grid-cols-4 gap-1 rounded-full bg-muted p-1 sm:flex sm:w-fit sm:flex-none sm:flex-wrap"
+            ref={chipsRef}
+            aria-label="Filter by topic"
+            className="relative flex min-w-0 flex-1 gap-2 max-sm:-ml-4 max-sm:snap-x max-sm:scroll-px-4 max-sm:overflow-x-auto max-sm:pr-6 max-sm:pl-4 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] max-sm:[scrollbar-width:none] sm:flex-wrap"
           >
-            {VIEWS.map((v) => (
-              <button
-                key={v}
-                type="button"
-                aria-pressed={view === v && !searching}
-                onClick={() => update({ view: v, query: "" })}
-                className="inline-flex h-9 min-w-0 items-center justify-center gap-1 rounded-full px-1 text-sm font-medium text-muted-foreground transition-colors outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50 aria-pressed:bg-card aria-pressed:text-foreground aria-pressed:shadow-xs sm:h-8 sm:gap-1.5 sm:px-3.5"
-              >
-                {VIEW_LABELS[v]}
-                <span className="text-xs text-muted-foreground tabular-nums in-aria-pressed:font-semibold in-aria-pressed:text-brand-ink">
-                  {counts[v]}
-                </span>
-              </button>
+            <TopicChip label="All topics" pressed={topic === null} onClick={() => update({ topic: null })} />
+            {topicsInUse.map((t) => (
+              <TopicChip
+                key={t}
+                topic={t}
+                label={TOPIC_LABELS[t]}
+                pressed={topic === t}
+                onClick={() => update({ topic: topic === t ? null : t })}
+              />
             ))}
           </fieldset>
-          {!showSearch && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={openSearch}
-              aria-label="Search bookmarks"
-              className="size-11 rounded-full sm:hidden"
-            >
-              <SearchIcon className="size-5" aria-hidden="true" />
-            </Button>
-          )}
+          <Button
+            type="button"
+            variant="outline"
+            aria-expanded={depthOpen}
+            aria-label={`Detail: ${DEPTH_LABELS[depth]}`}
+            onClick={() => setDepthOpen(!depthOpen)}
+            className="h-9 shrink-0 rounded-full px-3 sm:hidden"
+          >
+            <Rows3Icon aria-hidden="true" />
+            {DEPTH_LABELS[depth]}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={openSearch}
+            aria-label="Search bookmarks"
+            className="size-9 shrink-0 rounded-full sm:hidden"
+          >
+            <SearchIcon className="size-5" aria-hidden="true" />
+          </Button>
         </div>
 
-        <fieldset
-          ref={chipsRef}
-          aria-label="Filter by topic"
-          className="relative flex min-w-0 gap-2 max-sm:-mx-4 max-sm:snap-x max-sm:scroll-px-4 max-sm:overflow-x-auto max-sm:pr-10 max-sm:pl-4 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2.5rem),transparent)] max-sm:[scrollbar-width:none] sm:flex-wrap"
-        >
-          <TopicChip label="All topics" pressed={topic === null} onClick={() => update({ topic: null })} />
-          {topicsInUse.map((t) => (
-            <TopicChip
-              key={t}
-              topic={t}
-              label={TOPIC_LABELS[t]}
-              pressed={topic === t}
-              onClick={() => update({ topic: topic === t ? null : t })}
-            />
-          ))}
-        </fieldset>
-
-        <div className="sm:w-96">
+        <div className={cn("sm:w-96", !depthOpen && "max-sm:hidden")}>
           <DepthControl depth={depth} onChange={changeDepth} />
         </div>
       </div>
@@ -651,7 +724,7 @@ export function BookmarkControls({ entries }: Props) {
         <div className="flex items-center gap-3">
           <p className="hidden text-xs text-muted-foreground sm:pointer-fine:block">
             <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>e</kbd> done · <kbd>u</kbd> undo · <kbd>c</kbd> copy · <kbd>o</kbd>{" "}
-            open · <kbd>1</kbd>–<kbd>4</kbd> detail · <kbd>p</kbd> play · <kbd>/</kbd> search
+            open · <kbd>1</kbd>–<kbd>4</kbd> detail · <kbd>s</kbd> swipe · <kbd>/</kbd> search
           </p>
         </div>
         <p className="hidden w-full text-xs text-muted-foreground pointer-coarse:block">
@@ -659,31 +732,18 @@ export function BookmarkControls({ entries }: Props) {
         </p>
       </div>
 
-      {visible.size > 0 && (
-        <Button
-          type="button"
-          size="icon"
-          onClick={openReader}
-          aria-label="Play cards one at a time"
-          title="Play cards one at a time (p)"
-          className="fixed right-[max(--spacing(4),env(safe-area-inset-right))] bottom-[max(--spacing(4),env(safe-area-inset-bottom))] z-20 size-14 rounded-full shadow-lg transition-[scale] duration-500 ease-spring active:scale-90 active:duration-150"
-        >
-          <PlayIcon className="size-6 fill-current" aria-hidden="true" />
-        </Button>
-      )}
-
-      {reading !== null && (
-        <ReadMode
-          cards={reading.cards}
-          start={reading.start}
-          depth={reading.depth}
+      {swiping !== null && (
+        <SwipeMode
+          cards={swiping.cards}
+          start={swiping.start}
+          depth={swiping.depth}
           done={done}
           onToggleDone={toggleDone}
-          onClose={closeReader}
+          onClose={closeSwipe}
         />
       )}
 
-      <output className="pointer-events-none fixed inset-x-0 bottom-[max(--spacing(4),env(safe-area-inset-bottom))] z-20 flex justify-center px-4">
+      <output className="pointer-events-none fixed inset-x-0 bottom-[max(--spacing(4),env(safe-area-inset-bottom))] z-20 flex justify-center px-4 max-sm:bottom-[calc(env(safe-area-inset-bottom)+--spacing(20))]">
         {undo !== null && (
           <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-foreground py-1.5 pr-1.5 pl-4 text-sm text-background shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
             Marked done

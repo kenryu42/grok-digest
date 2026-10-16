@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readingPlan, speechLang, speechRate, spokenText, wordMs } from "../src/lib/reading.ts";
+import { focusIndex, graphemes, readingPlan, stepMs } from "../src/lib/reading.ts";
 
 const joined = (tokens: { text: string }[]) => tokens.map(({ text }) => text).join("");
 
@@ -10,10 +10,21 @@ describe("readingPlan", () => {
     expect(blocks.map(joined)).toEqual(texts);
   });
 
-  it("gives one step to each word", () => {
-    const { weights, blocks } = readingPlan(["Delete most comments"]);
-    expect(weights).toHaveLength(3);
-    expect(blocks[0]?.filter(({ word }) => word).map(({ step }) => step)).toEqual([0, 1, 2]);
+  it("flashes one word at a time, keeping its punctuation with it", () => {
+    const { words } = readingPlan(['Agents copy code, so "stale" comments spread.']);
+    expect(words.map(({ text }) => text)).toEqual(["Agents", "copy", "code,", "so", '"stale"', "comments", "spread."]);
+  });
+
+  it("knows which block each word comes from", () => {
+    const { words } = readingPlan(["Plan first", "Then edit"]);
+    expect(words.map(({ block }) => block)).toEqual([0, 0, 1, 1]);
+  });
+
+  it("keeps the focus letter on the word itself, not on leading punctuation", () => {
+    const { words } = readingPlan(["(fictional)"]);
+    const [word] = words;
+    expect(word?.text).toBe("(fictional)");
+    expect(graphemes(word?.text ?? "")[word?.focus ?? 0]).toBe("c");
   });
 
   it("pauses longer after a sentence than after a comma", () => {
@@ -28,6 +39,11 @@ describe("readingPlan", () => {
     expect(weights[1]).toBeGreaterThan(weights[0] ?? 0);
   });
 
+  it("gives long words a little more time", () => {
+    const { weights } = readingPlan(["a understanding b"]);
+    expect(weights[1]).toBeGreaterThan(weights[0] ?? 0);
+  });
+
   it("times Japanese by its characters", () => {
     const { weights } = readingPlan(["東京で開きます"]);
     expect(weights.length).toBeGreaterThan(1);
@@ -37,31 +53,29 @@ describe("readingPlan", () => {
   });
 });
 
-describe("wordMs", () => {
-  it("reads a plain word in one beat at the chosen speed", () => {
-    expect(wordMs(1, 300)).toBe(200);
-    expect(wordMs(2, 300)).toBe(400);
+describe("focusIndex", () => {
+  it("puts the focus letter about a third into a word", () => {
+    expect(focusIndex("a")).toBe(0);
+    expect(focusIndex("code")).toBe(1);
+    expect(focusIndex("comments")).toBe(2);
+    expect(focusIndex("understanding")).toBe(3);
+  });
+
+  it("centers Japanese words", () => {
+    expect(focusIndex("東京")).toBe(0);
+    expect(focusIndex("ミートアップ")).toBe(2);
   });
 });
 
-describe("spokenText", () => {
-  it("speaks from the chosen word and knows where each word starts", () => {
-    const plan = readingPlan(["Plan first.", "Then edit"]);
-    const { text, starts } = spokenText(plan, 1);
-    expect(text).toBe("first.\nThen edit");
-    expect(starts.map((start) => text.slice(start).split(/\W/)[0])).toEqual(["first", "Then", "edit"]);
-  });
-});
-
-describe("speech", () => {
-  it("speaks Japanese posts in Japanese and the rest in English", () => {
-    expect(speechLang("東京でミートアップ")).toBe("ja-JP");
-    expect(speechLang("Plan before editing")).toBe("en-US");
+describe("stepMs", () => {
+  it("shows a plain word for one beat at the chosen speed once up to speed", () => {
+    const plan = readingPlan(["one two three four five six"]);
+    expect(stepMs(plan, 4, 600)).toBe(100);
   });
 
-  it("speeds speech up and down with the reading speed, within what voices allow", () => {
-    expect(speechRate(380)).toBeGreaterThan(speechRate(190));
-    expect(speechRate(2000)).toBe(2);
-    expect(speechRate(20)).toBe(0.5);
+  it("starts slower and ramps up over the first words", () => {
+    const plan = readingPlan(["one two three four five six"]);
+    expect(stepMs(plan, 0, 600)).toBeGreaterThan(stepMs(plan, 2, 600));
+    expect(stepMs(plan, 2, 600)).toBeGreaterThan(stepMs(plan, 4, 600));
   });
 });

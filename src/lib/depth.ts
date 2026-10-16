@@ -3,9 +3,9 @@ export const DEPTHS = ["headline", "gist", "points", "full"] as const;
 export type Depth = (typeof DEPTHS)[number];
 
 export const DEPTH_LABELS: Record<Depth, string> = {
-  headline: "Headline",
-  gist: "Gist",
-  points: "Points",
+  headline: "Minimal",
+  gist: "Light",
+  points: "Deep",
   full: "Full",
 };
 

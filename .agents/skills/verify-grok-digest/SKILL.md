@@ -7,7 +7,7 @@ description: "Use in the grok-digest repository to prove a change works in the r
 
 Grok Digest is one static page of bookmark cards (an Astro page with a React island for the controls), plus RSS feeds and a `grok-digest` CLI. Users touch three surfaces:
 
-- **The page** (primary): search, views (Today, Inbox, Done, All), topic chips, a `Detail` slider that sets how much each card shows, cards that open with a tap and carry Copy, Done and Open on X, swipe-to-done on touch, a full-screen read mode that plays cards one at a time, and keyboard shortcuts on desktop.
+- **The page** (primary): search, views (Today, Inbox, Done, All; a bottom tab bar on phones), topic chips, a `Detail` slider (`Minimal`, `Light`, `Deep`, `Full`) that sets how much each card shows, cards that open with a tap and carry Copy, Done and Open on X, swipe-to-done on touch, a full-screen swipe mode with optional speed reading, and keyboard shortcuts on desktop.
 - **The feeds**: `/rss.xml` and `/rss/<topic>.xml`.
 - **The CLI**: `grok-digest validate`, `build`, `dev` and `preview`.
 
@@ -58,37 +58,39 @@ $V open "$RUN" "/?view=inbox" --viewport mobile --fresh
 $V click "$RUN" --name "Inbox"                # a view button; names match exactly, then by prefix
 $V click "$RUN" --card 0 --name Done          # scoped to the first visible card
 $V click "$RUN" --name "Search bookmarks"     # mobile search icon; on desktop this names the input
+$V click "$RUN" --name Detail                # phones: open the detail slider from the top row
 $V type "$RUN" tokyo                          # types into whatever has focus
 $V key "$RUN" j                               # also e, u, c, o, p, 1-4, /, =, -, Space, Escape, Enter, Tab, ArrowRight…
-$V click "$RUN" --selector '[data-depth-stop="points"]'   # a Detail slider stop
-$V click "$RUN" --selector "[data-read-pager]" --across 0.9  # tap the right side of the read mode card
+$V click "$RUN" --selector '[data-depth-stop="points"]'   # a Detail slider stop (Deep)
+$V swipe "$RUN" --selector "[data-swipe-pager]" --up --distance 300   # next card in swipe mode
 $V swipe "$RUN" --card 0                      # a flick: 160px left in 128ms
 $V swipe "$RUN" --card 0 --distance 60 --duration 600     # a short, slow drag
 $V wait "$RUN" --selector "[data-undo]"       # or --gone
 $V eval "$RUN" 'document.querySelector("output").textContent'
 ```
 
-- `open [path] [--viewport mobile|desktop] [--fresh]` always does a full page load, even when only the `#hash` differs (it passes through `about:blank`), and waits until the island has hydrated (`[data-bookmark-list][data-ready]`). `--fresh` clears the site's storage first: done marks, the cached Today picks, the detail level and the reading speed. Always use `--fresh` to start a recipe, and to see the first-visit defaults. Changing the viewport only takes effect on the `open`, so cards start at `Headline` only when a phone-sized page loads.
+- `open [path] [--viewport mobile|desktop] [--fresh]` always does a full page load, even when only the `#hash` differs (it passes through `about:blank`), and waits until the island has hydrated (`[data-bookmark-list][data-ready]`). `--fresh` clears the site's storage first: done marks, the cached Today picks, the detail level and the speed-reading settings. Always use `--fresh` to start a recipe, and to see the first-visit defaults. Changing the viewport only takes effect on the `open`, so cards start at `Minimal` only when a phone-sized page loads.
 - `click` finds a visible `button, a, summary, input, label` by accessible name (the `aria-label`, otherwise its text, whitespace collapsed). `--selector <css>` changes the candidate set, `--card <n>` scopes to the n-th visible card (0-based), `--nth` picks among several matches, and `--across <0-1>` taps at that share of the element's width instead of its middle. On a miss it lists the visible names, so read the error rather than guessing.
+- `swipe` drags the n-th card left from near its right edge. `--selector <css>` drags from the middle of any element instead, `--up` drags upward (a vertical swipe), `--distance=-<px>` (with `=`) drags the other way, and `--duration <ms>` sets the speed. Each touch step costs about 17ms, so very short durations are capped by that.
 - If Chrome dies, the driver exits too, and every command fails with `did not answer … Run doctor.` instead of hanging. Each command gives up after 2 minutes.
 - `eval` is for **reading** state (it runs as an async REPL, so `await` works). Never use it to perform the user action under test. Click, type, key and swipe are the user path.
 
 Stable handles in this app:
 
-| What         | Handle                                                                                      |
-| ------------ | ------------------------------------------------------------------------------------------- |
-| A card       | `li[data-bookmark-id]`, id `b-<bookmark id>`; hidden cards have the `hidden` attribute      |
-| Card state   | `data-done` and `data-depth` (`headline`, `gist`, `points`, `full`) on the `li`             |
-| Card title   | `h2` holding a button (`data-card-toggle`) with `aria-expanded`; tapping the header opens   |
-| Detail       | range input named `Detail`, `aria-valuetext` = level; tap stops `[data-depth-stop=<level>]` |
-| Read mode    | button `Play cards one at a time`; `dialog` named `Read mode`, pager `[data-read-pager]`    |
-| Read buttons | `Close read mode`, `Pause` or `Play`, `Done` (`aria-pressed`), `Listen`, `Speed` slider     |
-| View buttons | group `Choose a view`, buttons named `Today 5`, `Inbox 14` and so on, with `aria-pressed`   |
-| Topic chips  | group `Filter by topic`, buttons `All topics`, `AI agents` and so on, with `aria-pressed`   |
-| Card buttons | `Copy` (`data-copy`), `Done` (`data-done-toggle`, `aria-pressed`), link `Open on X`         |
-| Undo toast   | the `output` element, button `Undo` (`data-undo`)                                           |
-| Status line  | `p[aria-live]`                                                                              |
-| Stored state | `localStorage` keys `grok-digest:/:done`, `:review`, `:cards-depth`, `:read-speed`          |
+| What         | Handle                                                                                                                                                                   |
+| ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| A card       | `li[data-bookmark-id]`, id `b-<bookmark id>`; hidden cards have the `hidden` attribute                                                                                   |
+| Card state   | `data-done` and `data-depth` (`headline`, `gist`, `points`, `full` = Minimal, Light, Deep, Full) on the `li`                                                             |
+| Card title   | `h2` holding a button (`data-card-toggle`) with `aria-expanded`; tapping the header opens                                                                                |
+| Detail       | phone button `Detail: <level>` (`aria-expanded`); range input `Detail`; stops `[data-depth-stop=<level>]`                                                                |
+| Swipe mode   | button `Swipe through cards`; `dialog` named `Swipe mode`, pager `[data-swipe-pager]`, current page `[data-swipe-page][data-current]`, counter `[data-swipe-counter]`    |
+| Swipe inside | `Close swipe mode`, `Speed read` (`aria-pressed`), `Play`/`Pause`/`Read again`, `Copy`, `Done`, `Open on X`; word `[data-speed-word]`, paused text `[data-speed-paused]` |
+| View buttons | `nav[aria-label=Views]` (bottom tab bar on phones), group `Choose a view`, buttons named `Today 5`, `Inbox 14` and so on, with `aria-pressed`                            |
+| Topic chips  | group `Filter by topic`, buttons `All topics`, `AI agents` and so on, with `aria-pressed`                                                                                |
+| Card buttons | `Copy` (`data-copy`), `Done` (`data-done-toggle`, `aria-pressed`), link `Open on X`                                                                                      |
+| Undo toast   | the `output` element, button `Undo` (`data-undo`)                                                                                                                        |
+| Status line  | `p[aria-live]`                                                                                                                                                           |
+| Stored state | `localStorage` keys `grok-digest:/:done`, `:review`, `:cards-depth`, `:speed-reading`, `:speed-reading-wpm`                                                              |
 
 ## Evidence
 

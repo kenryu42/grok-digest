@@ -61,8 +61,8 @@ const USAGE = `Usage: verify.mjs <command> [run-dir] [options]
                                                       Tap the element's middle, or --across that share of its width.
   type <run> <text>                                   Type into the focused element.
   key <run> <key>                                     Press one key, such as e, j, 1, /, Space, ArrowRight or Escape.
-  swipe <run> --card <n> [--distance <px>] [--duration <ms>]
-                                                      Drag a visible card left with a touch (default 160px in 128ms, a flick).
+  swipe <run> (--card <n> | --selector <css>) [--distance <px>] [--duration <ms>] [--up]
+                                                      Drag left (or up with --up) with a touch; default 160px in 128ms, a flick.
   wait <run> --selector <css> [--gone]                Wait until an element is shown, or gone.
   eval <run> <expression>                             Read page state; prints JSON.
   screenshot <run> <name> [--full]                    Save evidence/<name>.png.
@@ -83,6 +83,7 @@ const { positionals, values } = parseArgs({
     distance: { type: "string" },
     duration: { type: "string" },
     gone: { type: "boolean" },
+    up: { type: "boolean" },
     full: { type: "boolean" },
   },
 });
@@ -461,19 +462,21 @@ async function driver(run) {
         page: await pageSummary(),
       };
     },
-    swipe: async ({ card, distance = 160, duration = SWIPE_DURATION_MS }) => {
+    swipe: async ({ card, selector, up, distance = 160, duration = SWIPE_DURATION_MS }) => {
       if (!viewport.touch) throw new Error("Swiping needs touch input. Open the page with --viewport mobile.");
-      const heading = await locate({ selector: "h2", card });
-      const startX = heading.right - 24;
-      const { y } = heading;
+      const heading = await locate(selector === undefined ? { selector: "h2", card } : { selector });
+      const across = selector === undefined ? heading.right - 24 : heading.x + distance / 2;
+      const startX = up === true ? heading.x : across;
+      const startY = up === true ? heading.y + distance / 2 : heading.y;
       const steps = Math.max(2, Math.round(duration / SWIPE_FRAME_MS));
       await settle(50);
-      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: startX, y }] });
+      await cdp.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x: startX, y: startY }] });
       const drag = async (step) => {
         if (step > steps) return;
+        const moved = (distance * step) / steps;
         await cdp.send("Input.dispatchTouchEvent", {
           type: "touchMove",
-          touchPoints: [{ x: startX - (distance * step) / steps, y: y + 1 }],
+          touchPoints: [up === true ? { x: startX + 1, y: startY - moved } : { x: startX - moved, y: startY + 1 }],
         });
         await sleep(duration / steps - SWIPE_FRAME_MS);
         await drag(step + 1);
@@ -743,6 +746,8 @@ async function main() {
       return print(
         await ask(needsRun(), "swipe", {
           card: integer(values.card) ?? 0,
+          selector: values.selector,
+          up: values.up,
           distance: integer(values.distance),
           duration: integer(values.duration),
         }),
