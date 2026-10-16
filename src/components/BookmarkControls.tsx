@@ -212,9 +212,11 @@ export function BookmarkControls({ entries }: Props) {
   useEffect(() => {
     const bar = barRef.current;
     if (bar === null) return undefined;
-    const observer = new ResizeObserver(() => {
+    const publishHeight = (): void => {
       document.documentElement.style.setProperty("--controls-height", `${bar.offsetHeight}px`);
-    });
+    };
+    publishHeight();
+    const observer = new ResizeObserver(publishHeight);
     observer.observe(bar);
     return () => observer.disconnect();
   }, []);
