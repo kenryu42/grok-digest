@@ -1,6 +1,7 @@
 import {
   ArrowUpRightIcon,
   CheckIcon,
+  InboxIcon,
   CopyIcon,
   PauseIcon,
   PlayIcon,
@@ -19,8 +20,7 @@ import { swipeAxis, swipeCommits, swipeOffset, swipeVelocity, type SwipeAxis, ty
 import { TOPIC_LABELS, TOPICS, type Topic } from "../lib/topics.ts";
 
 const SPEED_KEY = `${STORAGE_PREFIX}speed-reading-wpm`;
-const SPEED_ON_KEY = `${STORAGE_PREFIX}speed-reading`;
-const SPEED = { min: 200, max: 900, step: 25, start: 450 };
+const SPEED = { min: 200, max: 900, step: 25, start: 350 };
 const START_DELAY_MS = 350;
 const DONE_ADVANCE_MS = 300;
 const UNDO_MS = 5000;
@@ -30,6 +30,7 @@ const SWIPE_SAMPLES = 6;
 const SPRING_BACK = "transform 500ms var(--ease-spring)";
 const FLY_OFF = "transform 250ms ease-in";
 const FLY_OFF_RESET_MS = 900;
+const SPRING_BACK_MS = 500;
 
 type BlockKind = "headline" | "summary" | "point" | "action" | "post";
 
@@ -108,10 +109,17 @@ function pageFrom(card: HTMLElement): Page {
   };
 }
 
-function moveArticle(article: HTMLElement | null, transform: string, transition: string): void {
-  if (article === null) return;
-  article.style.transition = prefersReducedMotion() ? "" : transition;
-  article.style.transform = transform;
+function moveCard(mover: HTMLElement | null, transform: string, transition: string): void {
+  if (mover === null) return;
+  mover.style.transition = prefersReducedMotion() ? "" : transition;
+  mover.style.transform = transform;
+}
+
+function showSwipeAction(mover: HTMLElement | null, action: "done" | "inbox" | null): void {
+  const page = mover?.parentElement;
+  if (page === null || page === undefined) return;
+  if (action === null) delete page.dataset["swiping"];
+  else page.dataset["swiping"] = action;
 }
 
 function storedSpeed(): number {
@@ -123,12 +131,12 @@ export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: 
   const pages = useMemo(() => cards.map(pageFrom), [cards]);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pagerRef = useRef<HTMLDivElement>(null);
-  const articleRef = useRef<HTMLElement>(null);
+  const moverRef = useRef<HTMLDivElement>(null);
   const gestureRef = useRef<Gesture | null>(null);
   const keysRef = useRef<(event: KeyboardEvent) => void>(() => {});
   const [current, setCurrent] = useState(start);
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(new Set());
-  const [speedOn, setSpeedOn] = useState(() => readStored(SPEED_ON_KEY) === true);
+  const [speedOn, setSpeedOn] = useState(false);
   const [speed, setSpeed] = useState(storedSpeed);
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -155,7 +163,6 @@ export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: 
 
   const toggleSpeed = (): void => {
     setSpeedOn(!speedOn);
-    writeStored(SPEED_ON_KEY, !speedOn);
     setStep(0);
     setPlaying(false);
     setStartSoon(true);
@@ -299,29 +306,39 @@ export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: 
     if (gesture.axis !== "horizontal" || !gesture.touch) return;
     gesture.dx = dx;
     gesture.samples = [...gesture.samples, { x: event.clientX, time: event.timeStamp }].slice(-SWIPE_SAMPLES);
-    moveArticle(articleRef.current, `translateX(${swipeOffset(dx, event.currentTarget.clientWidth)}px)`, "none");
+    showSwipeAction(moverRef.current, page !== undefined && done.has(page.id) ? "inbox" : "done");
+    moveCard(moverRef.current, `translateX(${swipeOffset(dx, event.currentTarget.clientWidth)}px)`, "none");
   };
 
   const endGesture = (event: PointerEvent<HTMLDivElement>): void => {
     const gesture = gestureRef.current;
     if (gesture === null || gesture.pointerId !== event.pointerId) return;
     gestureRef.current = null;
-    const article = articleRef.current;
+    const mover = moverRef.current;
+    const springBack = (): void => {
+      moveCard(mover, "", SPRING_BACK);
+      setTimeout(() => {
+        if (gestureRef.current === null) showSwipeAction(mover, null);
+      }, SPRING_BACK_MS);
+    };
     if (event.type !== "pointerup") {
-      moveArticle(article, "", SPRING_BACK);
+      springBack();
       return;
     }
     if (gesture.axis === "horizontal" && gesture.touch) {
       const velocity = swipeVelocity([...gesture.samples, { x: event.clientX, time: event.timeStamp }]);
       const commits = page !== undefined && swipeCommits(gesture.dx, event.currentTarget.clientWidth, velocity);
       if (!commits || done.has(page.id)) {
-        moveArticle(article, "", SPRING_BACK);
+        springBack();
         if (commits) toggleCurrentDone();
         return;
       }
-      moveArticle(article, "translateX(-110%)", FLY_OFF);
+      moveCard(mover, "translateX(-110%)", FLY_OFF);
       toggleCurrentDone();
-      setTimeout(() => moveArticle(article, "", ""), FLY_OFF_RESET_MS);
+      setTimeout(() => {
+        moveCard(mover, "", "");
+        showSwipeAction(mover, null);
+      }, FLY_OFF_RESET_MS);
       return;
     }
     if (gesture.axis !== "undecided" || page === undefined) return;
@@ -449,48 +466,63 @@ export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: 
               key={p.id}
               data-swipe-page={p.id}
               data-current={isCurrent || undefined}
-              className="flex min-h-full snap-start snap-always flex-col px-safe-5 pt-3 pb-8 touch-pan-y"
+              className="group/page relative flex min-h-full snap-start snap-always flex-col touch-pan-y"
             >
-              <article
-                ref={isCurrent ? articleRef : undefined}
-                data-topic={p.topic}
-                className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4"
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 hidden items-center justify-end gap-2 bg-done px-8 text-lg font-medium text-done-foreground group-data-[swiping=done]/page:flex"
               >
-                <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-topic" />
-                  <span className="min-w-0 truncate">
-                    {p.topic === undefined ? p.author : `${TOPIC_LABELS[p.topic]} · ${p.author}`}
-                  </span>
-                  {done.has(p.id) && (
-                    <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-done px-2 py-0.5 text-xs font-medium text-done-foreground">
-                      <CheckIcon className="size-3" aria-hidden="true" />
-                      Done
+                <CheckIcon className="size-5" />
+                Done
+              </span>
+              <span
+                aria-hidden="true"
+                className="absolute inset-0 hidden items-center justify-end gap-2 bg-muted px-8 text-lg font-medium text-foreground group-data-[swiping=inbox]/page:flex"
+              >
+                <InboxIcon className="size-5" />
+                Back to inbox
+              </span>
+              <div
+                ref={isCurrent ? moverRef : undefined}
+                className="relative flex flex-1 flex-col bg-background px-safe-5 pt-3 pb-8"
+              >
+                <article data-topic={p.topic} className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4">
+                  <p className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-topic" />
+                    <span className="min-w-0 truncate">
+                      {p.topic === undefined ? p.author : `${TOPIC_LABELS[p.topic]} · ${p.author}`}
                     </span>
+                    {done.has(p.id) && (
+                      <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-done px-2 py-0.5 text-xs font-medium text-done-foreground">
+                        <CheckIcon className="size-3" aria-hidden="true" />
+                        Done
+                      </span>
+                    )}
+                  </p>
+                  <h2 className={BLOCK_STYLES.headline}>{p.headline}</h2>
+                  {isCurrent && reading ? (
+                    <SpeedStage
+                      plan={plan}
+                      step={step}
+                      playing={playing}
+                      starting={startSoon}
+                      speed={speed}
+                      labels={shown}
+                    />
+                  ) : (
+                    <div className="flex flex-col gap-4">
+                      {p.blocks
+                        .filter((block) => shows(level, block.level))
+                        .map((block) => (
+                          <p key={block.key} className={BLOCK_STYLES[block.kind]}>
+                            {block.kind === "action" && <span className="font-medium text-brand-ink">Try: </span>}
+                            {block.text}
+                          </p>
+                        ))}
+                    </div>
                   )}
-                </p>
-                <h2 className={BLOCK_STYLES.headline}>{p.headline}</h2>
-                {isCurrent && reading ? (
-                  <SpeedStage
-                    plan={plan}
-                    step={step}
-                    playing={playing}
-                    starting={startSoon}
-                    speed={speed}
-                    labels={shown}
-                  />
-                ) : (
-                  <div className="flex flex-col gap-4">
-                    {p.blocks
-                      .filter((block) => shows(level, block.level))
-                      .map((block) => (
-                        <p key={block.key} className={BLOCK_STYLES[block.kind]}>
-                          {block.kind === "action" && <span className="font-medium text-brand-ink">Try: </span>}
-                          {block.text}
-                        </p>
-                      ))}
-                  </div>
-                )}
-              </article>
+                </article>
+              </div>
             </section>
           );
         })}

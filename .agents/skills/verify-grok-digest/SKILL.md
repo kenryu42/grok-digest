@@ -90,7 +90,7 @@ Stable handles in this app:
 | Card buttons | `Copy` (`data-copy`), `Done` (`data-done-toggle`, `aria-pressed`), link `Open on X`                                                                                      |
 | Undo toast   | the `output` element, button `Undo` (`data-undo`)                                                                                                                        |
 | Status line  | `p[aria-live]`                                                                                                                                                           |
-| Stored state | `localStorage` keys `grok-digest:/:done`, `:review`, `:cards-depth`, `:speed-reading`, `:speed-reading-wpm`                                                              |
+| Stored state | `localStorage` keys `grok-digest:/:done`, `:review`, `:cards-depth`, `:speed-reading-wpm`                                                                                |
 
 ## Evidence
 
