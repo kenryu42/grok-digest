@@ -83,4 +83,18 @@ describe("dailyReview", () => {
     const due = Array.from({ length: 8 }, (_, year) => savedOn(`y${year}`, `${2018 + year}-10-15T12:00:00+09:00`));
     expect(review(due)).toHaveLength(REVIEW_SIZE);
   });
+
+  it("picks as many as the site asks for, due bookmarks first", () => {
+    const due = [savedOn("week", "2026-10-08T09:00:00+09:00"), savedOn("month", "2026-09-15T09:00:00+09:00")];
+    const backlog = Array.from({ length: 20 }, (_, day) =>
+      savedOn(`old-${day}`, new Date(Date.UTC(2026, 3, 1 + day, 3)).toISOString()),
+    );
+    const bookmarks = [...due, ...backlog];
+    const ids = (size: number) =>
+      dailyReview({ bookmarks, done: new Set(), today: TODAY, timeZone: TOKYO, size }).map(({ id }) => id);
+
+    expect(ids(1)).toEqual(["month"]);
+    expect(ids(12)).toHaveLength(12);
+    expect(ids(12).slice(0, 2)).toEqual(["month", "week"]);
+  });
 });

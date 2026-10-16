@@ -1,27 +1,22 @@
 ---
-import Mascot from "../assets/mascot.svg";
-import BookmarkCard from "../components/BookmarkCard.astro";
+import BookmarkCard from "virtual:grok-digest/components/BookmarkCard.astro";
+import Footer from "virtual:grok-digest/components/Footer.astro";
+import Header from "virtual:grok-digest/components/Header.astro";
 import { BookmarkControls } from "../components/BookmarkControls";
-import { ThemeToggle } from "../components/ThemeToggle";
 import Layout from "../layouts/Layout.astro";
 import { bookmarks } from "../lib/load-bookmarks";
+import { siteHref } from "../lib/paths";
 import { toSearchEntry } from "../lib/search";
+import { siteConfig } from "../lib/site-config";
 
 const entries = bookmarks.map(toSearchEntry);
-const base = import.meta.env.BASE_URL.endsWith("/") ? import.meta.env.BASE_URL : `${import.meta.env.BASE_URL}/`;
-const feedHref = `${base}rss.xml`;
-const designFeedHref = `${base}rss/design.xml`;
+const { title, defaultView, reviewSize, detail, swipeMode } = siteConfig;
+const settings = { defaultView, reviewSize, detail, swipeMode };
 ---
 
-<Layout title="Grok Digest" description="Posts saved from X, summarized and sorted by topic." feedHref={feedHref}>
+<Layout title={title} description="Posts saved from X, summarized and sorted by topic." feedHref={siteHref("rss.xml")}>
   <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-safe-4 max-sm:pb-[calc(env(safe-area-inset-bottom)+--spacing(18))] sm:px-safe-6">
-    <header class="flex items-start justify-between gap-4 pt-safe-6 pb-4 sm:pt-safe-16 sm:pb-8">
-      <div class="flex flex-col gap-2 sm:gap-3">
-        <Mascot aria-hidden="true" class="h-9 w-11.25 sm:h-11 sm:w-13.75" />
-        <h1 class="font-heading text-lg font-semibold tracking-tight sm:text-xl">Grok Digest</h1>
-      </div>
-      <ThemeToggle client:load />
-    </header>
+    <Header title={title} />
 
     <noscript>
       <style is:inline>
@@ -34,7 +29,7 @@ const designFeedHref = `${base}rss/design.xml`;
     <main class="flex flex-1 flex-col gap-6 pb-16">
       {bookmarks.length > 0 ? (
         <>
-          <BookmarkControls client:only="react" entries={entries} />
+          <BookmarkControls client:only="react" entries={entries} settings={settings} />
           <ul data-bookmark-list class="flex flex-col gap-4 not-data-ready:invisible sm:gap-5">
             {bookmarks.map((bookmark) => (
               <BookmarkCard bookmark={bookmark} />
@@ -46,19 +41,6 @@ const designFeedHref = `${base}rss/design.xml`;
       )}
     </main>
 
-    <footer class="flex flex-col gap-2 border-t pt-8 pb-safe-8 text-sm text-muted-foreground">
-      <p>
-        <a class="underline decoration-border underline-offset-4 hover:decoration-brand" href={feedHref}>
-          Follow new bookmarks
-        </a>{" "}
-        in a feed reader. Each topic has its own feed, such as{" "}
-        <a class="underline decoration-border underline-offset-4 hover:decoration-brand" href={designFeedHref}>
-          Design
-        </a>
-        .
-      </p>
-      <p>This page is unlisted, not private. Anyone with the link can see it.</p>
-      <p class="text-xs">Unofficial. Summaries created with Grok.</p>
-    </footer>
+    <Footer />
   </div>
 </Layout>

@@ -44,11 +44,13 @@ export function dailyReview({
   done,
   today,
   timeZone,
+  size = REVIEW_SIZE,
 }: {
   bookmarks: readonly Saved[];
   done: ReadonlySet<string>;
   today: string;
   timeZone?: string;
+  size?: number;
 }): ReviewPick[] {
   const candidates = bookmarks
     .filter(({ id }) => !done.has(id))
@@ -68,13 +70,13 @@ export function dailyReview({
   const due = candidates
     .flatMap(({ id, age, reason }) => (reason === undefined ? [] : [{ id, age, reason }]))
     .toSorted((a, b) => b.age - a.age)
-    .slice(0, REVIEW_SIZE)
+    .slice(0, size)
     .map(({ id, reason }) => ({ id, reason }));
 
   const backlog = candidates
     .filter(({ news, reason }) => !news && reason === undefined)
     .toSorted((a, b) => hash(`${today}:${a.id}`) - hash(`${today}:${b.id}`))
-    .slice(0, REVIEW_SIZE - due.length)
+    .slice(0, size - due.length)
     .map(({ id }) => ({ id, reason: BACKLOG_REASON }));
 
   return [...due, ...backlog];

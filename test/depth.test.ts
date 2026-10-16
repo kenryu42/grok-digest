@@ -12,6 +12,13 @@ describe("startingDepth", () => {
     expect(startingDepth("gist", false)).toBe("gist");
   });
 
+  it("starts at the levels the site chose until the reader picks one", () => {
+    const site = { phone: "points", desktop: "gist" } as const;
+    expect(startingDepth(null, true, site)).toBe("points");
+    expect(startingDepth(null, false, site)).toBe("gist");
+    expect(startingDepth("full", true, site)).toBe("full");
+  });
+
   it("ignores a stored value that is not a level", () => {
     expect(startingDepth(true, true)).toBe("headline");
     expect(startingDepth("everything", false)).toBe("full");

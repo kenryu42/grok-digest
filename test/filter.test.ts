@@ -20,12 +20,23 @@ describe("parseFilter", () => {
     expect(parseFilter("?view=today", { reviewIsEmpty: true }).view).toBe("today");
     expect(parseFilter("?view=done", { reviewIsEmpty: true }).view).toBe("done");
   });
+
+  it("opens the view the site chose, whether or not today's review is empty", () => {
+    expect(parseFilter("", { view: "all" }).view).toBe("all");
+    expect(parseFilter("", { view: "all", reviewIsEmpty: true }).view).toBe("all");
+    expect(parseFilter("?view=today", { view: "all" }).view).toBe("today");
+  });
 });
 
 describe("filterSearch", () => {
   it("omits empty parts and the default view", () => {
     expect(filterSearch({ query: "  ", topic: null, view: "today" })).toBe("");
     expect(filterSearch({ query: "tokyo", topic: "design", view: "inbox" })).toBe("?q=tokyo&topic=design&view=inbox");
+  });
+
+  it("omits the view the site chose and names today when it is not the default", () => {
+    expect(filterSearch({ query: "", topic: null, view: "all" }, { view: "all" })).toBe("");
+    expect(filterSearch({ query: "", topic: null, view: "today" }, { view: "all" })).toBe("?view=today");
   });
 
   it("leaves the inbox out of the address when it is the page's default", () => {

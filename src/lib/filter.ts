@@ -6,10 +6,10 @@ export type View = (typeof VIEWS)[number];
 
 export type Filter = { query: string; topic: Topic | null; view: View };
 
-type Defaults = { reviewIsEmpty?: boolean };
+type Defaults = { view?: View; reviewIsEmpty?: boolean };
 
-function defaultView({ reviewIsEmpty = false }: Defaults): View {
-  return reviewIsEmpty ? "inbox" : "today";
+function defaultView({ view = "today", reviewIsEmpty = false }: Defaults): View {
+  return view === "today" && reviewIsEmpty ? "inbox" : view;
 }
 
 export function isTopic(value: string | null | undefined): value is Topic {

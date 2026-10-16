@@ -15,9 +15,13 @@ export function isDepth(value: unknown): value is Depth {
   return DEPTHS.some((depth) => depth === value);
 }
 
-export function startingDepth(stored: unknown, narrowScreen: boolean): Depth {
+type StartingDepths = { phone: Depth; desktop: Depth };
+
+const STARTING_DEPTHS: StartingDepths = { phone: "headline", desktop: "full" };
+
+export function startingDepth(stored: unknown, narrowScreen: boolean, starting = STARTING_DEPTHS): Depth {
   if (isDepth(stored)) return stored;
-  return narrowScreen ? "headline" : "full";
+  return narrowScreen ? starting.phone : starting.desktop;
 }
 
 export function tappedDepth(shown: Depth, listDepth: Depth): Depth {

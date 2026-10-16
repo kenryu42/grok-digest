@@ -6,6 +6,7 @@
     "src/cli.ts",
     "src/pages/**/*.{astro,ts}",
     "src/routes/**/*.ts",
+    "src/styles/theme.css",
     "scripts/*.{mjs,js}"
   ],
   "project": ["src/**/*.{ts,tsx,astro,css}", "test/**/*.ts", "scripts/**/*.mjs"],

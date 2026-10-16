@@ -1,6 +1,9 @@
+import { DEFAULT_TITLE } from "../lib/custom.ts";
+import { siteConfig } from "../lib/site-config.ts";
+
 const manifest = {
-  name: "Grok Digest",
-  short_name: "Digest",
+  name: siteConfig.title,
+  short_name: siteConfig.title === DEFAULT_TITLE ? "Digest" : siteConfig.title,
   start_url: "./",
   scope: "./",
   display: "standalone",

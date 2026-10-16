@@ -1,6 +1,7 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseBookmarks } from "../src/lib/bookmarks.ts";
+import { OVERRIDABLE_COMPONENTS, siteConfigSchema } from "../src/lib/custom.ts";
 import { TOPIC_LABELS, TOPICS } from "../src/lib/topics.ts";
 
 const manual = readFileSync(new URL("../BOT.md", import.meta.url), "utf8");
@@ -20,5 +21,18 @@ describe("BOT.md", () => {
       expect(manual).toContain(`| \`${topic}\``);
       expect(manual).toContain(TOPIC_LABELS[topic]);
     }
+  });
+
+  it("lists every page setting and shows an example the build accepts", () => {
+    const settings = Object.entries(siteConfigSchema.parse({})).flatMap(([key, value]) =>
+      typeof value === "object" ? Object.keys(value).map((inner) => `${key}.${inner}`) : [key],
+    );
+    for (const setting of settings) expect(manual).toContain(`| \`${setting}\``);
+    const example = /### Settings[\s\S]*?```json\n([\s\S]*?)\n```/.exec(manual)?.[1];
+    expect(siteConfigSchema.safeParse(JSON.parse(example ?? "")).success).toBe(true);
+  });
+
+  it("lists every component a site can eject", () => {
+    for (const name of OVERRIDABLE_COMPONENTS) expect(manual).toContain(`| \`${name}\``);
   });
 });

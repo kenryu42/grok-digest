@@ -31,6 +31,10 @@ Each deploy builds with the newest `grok-digest`. `package.json` asks for `"late
 
 To stay on one version, set `"grok-digest"` in `package.json` to that exact version, such as `"0.1.3"`, then run `bun install` and commit `package.json` and `bun.lock`. Set it back to `"latest"` the same way to follow releases again.
 
+## Change the page
+
+Ask the Grok bot. It changes the page from a `custom/` folder in this repository: settings such as the title, the view the page opens on, and how many bookmarks Today brings back go in `custom/config.json`, colors and fonts in `custom/theme.css`, and a reworked header, footer, or card in `custom/components/`. Everything else keeps updating with each release, and the bot carries new releases into the parts it changed. Delete `custom/` to go back to the page as released.
+
 ## Data files
 
 The page reads `data/bookmarks.json` only. `data/processed.json` and `data/removed.json` are arrays of id strings for the bot. `bun run validate` checks whichever of the three are present, against schema version 1.

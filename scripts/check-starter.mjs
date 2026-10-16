@@ -83,6 +83,26 @@ try {
   expect(feed.includes(`<link>${ORIGIN}${BASE_PATH}/</link>`), "rss.xml does not link the site under the base path");
   expect(feed.includes(`href="${ORIGIN}${BASE_PATH}/rss.xml"`), "rss.xml does not name its own address");
   expect(feed.includes(`${ORIGIN}${BASE_PATH}/#b-`), "rss.xml items do not link cards under the base path");
+
+  for (const component of ["Header", "Footer", "BookmarkCard"]) {
+    execFileSync("bunx", ["grok-digest", "eject", component], { cwd: siteDir, stdio: "inherit" });
+  }
+  writeFileSync(path.join(siteDir, "custom/config.json"), JSON.stringify({ title: "Starter Check" }));
+  execFileSync("bun", ["run", "validate"], { cwd: siteDir, stdio: "inherit" });
+  execFileSync("bun", ["run", "build"], {
+    cwd: siteDir,
+    stdio: "inherit",
+    env: { ...process.env, SITE_URL: ORIGIN, BASE_PATH },
+  });
+  const customized = read("index.html");
+  expect(customized.includes("<title>Starter Check</title>"), "custom/config.json did not rename the page");
+  expect(
+    customized.includes("Unofficial. Summaries created with Grok.") && customized.includes('<li id="b-'),
+    "the page built from ejected components lacks the footer or the cards",
+  );
+  for (const [, url] of customized.matchAll(/(?:component-url|renderer-url)="([^"]+)"/g)) {
+    expect(existsSync(path.join(dist, url.slice(BASE_PATH.length))), `the ejected page's island ${url} was not built`);
+  }
 } finally {
   cleanUp();
 }

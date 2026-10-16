@@ -38,9 +38,11 @@ import {
   type SwipeSample,
 } from "../lib/swipe.ts";
 import { TOPIC_LABELS, TOPICS, type Topic } from "../lib/topics.ts";
+import type { PageSettings } from "../lib/custom.ts";
 
 type Props = {
   entries: SearchEntry[];
+  settings: PageSettings;
 };
 
 const DONE_KEY = `${STORAGE_PREFIX}done`;
@@ -97,14 +99,14 @@ function storedDone(): Set<string> {
   return new Set(isStringArray(stored) ? stored : []);
 }
 
-function todaysReview(entries: readonly SearchEntry[], done: ReadonlySet<string>): ReviewPick[] {
+function todaysReview(entries: readonly SearchEntry[], done: ReadonlySet<string>, size: number): ReviewPick[] {
   const today = localDay(new Date());
   const stored = readStored(REVIEW_KEY);
   if (isStoredReview(stored) && stored.day === today) {
     const ids = new Set(entries.map(({ id }) => id));
     return stored.picks.filter(({ id }) => ids.has(id));
   }
-  const picks = dailyReview({ bookmarks: entries, done, today });
+  const picks = dailyReview({ bookmarks: entries, done, today, size });
   writeStored(REVIEW_KEY, { day: today, picks });
   return picks;
 }
@@ -114,8 +116,8 @@ function linkedCard(): HTMLElement | null {
   return target === "" ? null : document.querySelector<HTMLElement>(`[data-bookmark-id][id="${CSS.escape(target)}"]`);
 }
 
-function initialFilter(reviewIsEmpty: boolean): Filter {
-  const filter = parseFilter(window.location.search, { reviewIsEmpty });
+function initialFilter(defaults: { view: View; reviewIsEmpty: boolean }): Filter {
+  const filter = parseFilter(window.location.search, defaults);
   return linkedCard() === null ? filter : { ...filter, view: "all" };
 }
 
@@ -171,13 +173,17 @@ function plural(count: number, noun: string): string {
   return `${count} ${count === 1 ? noun : `${noun}s`}`;
 }
 
-export function BookmarkControls({ entries }: Props) {
-  const [review] = useState(() => todaysReview(entries, storedDone()));
+export function BookmarkControls({ entries, settings }: Props) {
+  const [review] = useState(() => todaysReview(entries, storedDone(), settings.reviewSize));
   const reviewIsEmpty = review.length === 0;
-  const [filter, setFilter] = useState(() => initialFilter(reviewIsEmpty));
+  const viewDefaults = useMemo(
+    () => ({ view: settings.defaultView, reviewIsEmpty }),
+    [settings.defaultView, reviewIsEmpty],
+  );
+  const [filter, setFilter] = useState(() => initialFilter(viewDefaults));
   const [done, setDone] = useState(storedDone);
   const [depth, setDepth] = useState(() =>
-    startingDepth(readStored(DEPTH_KEY), window.matchMedia(NARROW_SCREEN_QUERY).matches),
+    startingDepth(readStored(DEPTH_KEY), window.matchMedia(NARROW_SCREEN_QUERY).matches, settings.detail),
   );
   const [undo, setUndo] = useState<{ id: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -271,10 +277,10 @@ export function BookmarkControls({ entries }: Props) {
   }, [topic]);
 
   useEffect(() => {
-    const next = `${window.location.pathname}${filterSearch(filter, { reviewIsEmpty })}${window.location.hash}`;
+    const next = `${window.location.pathname}${filterSearch(filter, viewDefaults)}${window.location.hash}`;
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (current !== next) window.history.replaceState(null, "", next);
-  }, [filter, reviewIsEmpty]);
+  }, [filter, viewDefaults]);
 
   const coveredTop = useCallback(
     (): number => Math.max(barRef.current?.getBoundingClientRect().bottom ?? 0, 0) + ANCHOR_GAP,
@@ -350,6 +356,7 @@ export function BookmarkControls({ entries }: Props) {
   }, []);
 
   const openSwipe = useCallback((): void => {
+    if (!settings.swipeMode) return;
     const shown = cards().filter((card) => !card.hidden && !card.inert);
     if (shown.length === 0) return;
     const top = topCard();
@@ -357,7 +364,7 @@ export function BookmarkControls({ entries }: Props) {
       cards: shown,
       start: top === undefined ? 0 : Math.max(shown.indexOf(top), 0),
     });
-  }, [topCard]);
+  }, [settings.swipeMode, topCard]);
 
   const closeSwipe = useCallback((last: HTMLElement | undefined): void => {
     setSwiping(null);
@@ -595,7 +602,10 @@ export function BookmarkControls({ entries }: Props) {
     <div className="flex flex-col gap-4 max-sm:contents">
       <nav
         aria-label="Views"
-        className="max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-20 max-sm:grid max-sm:grid-cols-5 max-sm:items-center max-sm:border-t max-sm:bg-background/90 max-sm:px-safe-2 max-sm:pt-1.5 max-sm:pb-safe-2 max-sm:backdrop-blur-md sm:flex sm:items-center sm:gap-3"
+        className={cn(
+          "max-sm:fixed max-sm:inset-x-0 max-sm:bottom-0 max-sm:z-20 max-sm:grid max-sm:items-center max-sm:border-t max-sm:bg-background/90 max-sm:px-safe-2 max-sm:pt-1.5 max-sm:pb-safe-2 max-sm:backdrop-blur-md sm:flex sm:items-center sm:gap-3",
+          settings.swipeMode ? "max-sm:grid-cols-5" : "max-sm:grid-cols-4",
+        )}
       >
         <fieldset
           aria-label="Choose a view"
@@ -626,16 +636,18 @@ export function BookmarkControls({ entries }: Props) {
             );
           })}
         </fieldset>
-        <Button
-          type="button"
-          onClick={openSwipe}
-          aria-label="Swipe through cards"
-          title="Swipe through cards (s)"
-          className="max-sm:order-3 max-sm:size-12 max-sm:justify-self-center max-sm:rounded-full max-sm:shadow-md max-sm:transition-[scale] max-sm:duration-500 max-sm:ease-spring max-sm:active:scale-90 max-sm:active:duration-150 sm:h-9 sm:rounded-full sm:px-4"
-        >
-          <GalleryVerticalEndIcon className="max-sm:size-5" aria-hidden="true" />
-          <span className="max-sm:sr-only">Swipe</span>
-        </Button>
+        {settings.swipeMode && (
+          <Button
+            type="button"
+            onClick={openSwipe}
+            aria-label="Swipe through cards"
+            title="Swipe through cards (s)"
+            className="max-sm:order-3 max-sm:size-12 max-sm:justify-self-center max-sm:rounded-full max-sm:shadow-md max-sm:transition-[scale] max-sm:duration-500 max-sm:ease-spring max-sm:active:scale-90 max-sm:active:duration-150 sm:h-9 sm:rounded-full sm:px-4"
+          >
+            <GalleryVerticalEndIcon className="max-sm:size-5" aria-hidden="true" />
+            <span className="max-sm:sr-only">Swipe</span>
+          </Button>
+        )}
       </nav>
 
       <div
@@ -722,7 +734,13 @@ export function BookmarkControls({ entries }: Props) {
         <div className="flex items-center gap-3">
           <p className="hidden text-xs text-muted-foreground sm:pointer-fine:block">
             <kbd>j</kbd>/<kbd>k</kbd> move · <kbd>e</kbd> done · <kbd>u</kbd> undo · <kbd>c</kbd> copy · <kbd>o</kbd>{" "}
-            open · <kbd>1</kbd>–<kbd>4</kbd> detail · <kbd>s</kbd> swipe · <kbd>/</kbd> search
+            open · <kbd>1</kbd>–<kbd>4</kbd> detail ·{" "}
+            {settings.swipeMode && (
+              <>
+                <kbd>s</kbd> swipe ·{" "}
+              </>
+            )}
+            <kbd>/</kbd> search
           </p>
         </div>
         <p className="hidden w-full text-xs text-muted-foreground pointer-coarse:block">

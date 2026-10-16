@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { parseArgs } from "node:util";
 import { z } from "zod";
 import { SCHEMA_VERSION } from "./lib/bookmarks.ts";
+import { isOverridable, OVERRIDABLE_COMPONENTS } from "./lib/custom.ts";
+import { displayPath, ejectComponent, mergeOverrides } from "./lib/eject.ts";
 import { defaultDataFiles, validateFiles } from "./lib/validate.ts";
 import type { SiteCommand } from "./site.ts";
 
@@ -14,7 +16,12 @@ Commands:
   preview              Serve the site built in dist/.
   validate [file ...]  Check data files against schema version ${SCHEMA_VERSION}. With no
                        file, checks <dir>/bookmarks.json and, when present,
-                       <dir>/processed.json and <dir>/removed.json.
+                       <dir>/processed.json, <dir>/removed.json and
+                       custom/config.json.
+  eject <component>    Copy a component into custom/components/ to change it.
+                       Components: ${OVERRIDABLE_COMPONENTS.join(", ")}.
+  merge                Bring each ejected component up to the installed
+                       version, keeping your changes.
 
 Options:
   --data-dir <dir>  The folder that holds the data files. Defaults to "data".
@@ -64,6 +71,40 @@ if (values.version === true) {
     else console.error(`✖ ${report.error}`);
   }
   if (reports.some((report) => !report.ok)) process.exitCode = 1;
+} else if (command === "eject") {
+  const [name = ""] = files;
+  if (isOverridable(name)) {
+    const cwd = process.cwd();
+    try {
+      const file = await ejectComponent({ root: cwd, name });
+      console.log(`✓ Copied ${name} to ${displayPath(cwd, file)}. Edit that file to change it.`);
+    } catch (error) {
+      console.error(`✖ ${error instanceof Error ? error.message : String(error)}`);
+      process.exitCode = 1;
+    }
+  } else {
+    const named = name === "" ? "Name a component to eject." : `"${name}" is not a component you can eject.`;
+    console.error(`${named} Components: ${OVERRIDABLE_COMPONENTS.join(", ")}.`);
+    process.exitCode = 1;
+  }
+} else if (command === "merge") {
+  try {
+    const reports = await mergeOverrides(process.cwd());
+    if (reports.length === 0) console.log("No ejected components to merge.");
+    for (const report of reports) {
+      if (report.outcome === "conflicts") {
+        console.error(
+          `✖ ${report.file}: ${report.conflicts} conflicting change${report.conflicts === 1 ? "" : "s"}. Resolve each <<<<<<< block, then build.`,
+        );
+        process.exitCode = 1;
+      } else {
+        console.log(`✓ ${report.file}: ${report.outcome}`);
+      }
+    }
+  } catch (error) {
+    console.error(`✖ ${error instanceof Error ? error.message : String(error)}`);
+    process.exitCode = 1;
+  }
 } else if (isSiteCommand(command)) {
   process.env["NODE_ENV"] ??= NODE_ENV_FOR_SITE_COMMAND[command];
   const { runSite } = await import("./site.ts");

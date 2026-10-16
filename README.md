@@ -26,6 +26,7 @@ A site repository contains:
 | `data/bookmarks.json`          | The bookmarks. The Grok bot appends to it.                                        |
 | `data/processed.json`          | Optional. Ids the bot has handled.                                                |
 | `data/removed.json`            | Optional. Ids the bot has removed.                                                |
+| `custom/`                      | Optional. The owner's changes to the page, described below.                       |
 | `package.json`                 | Depends on `"grok-digest": "latest"` and maps the scripts to the CLI below.       |
 | `bun.lock`                     | The lockfile.                                                                     |
 | `.github/workflows/deploy.yml` | Validates the data, builds with the newest `grok-digest`, and publishes to Pages. |
@@ -38,13 +39,30 @@ To hold a site on one version, set the dependency to that exact version, such as
 
 If a release fails a site's build, the deploy stops and the page that was live stays live.
 
+## Customize a site
+
+A site changes its page from `custom/`, and keeps every release for the parts it leaves alone. A site without `custom/` gets the page exactly as released. The owner asks the Grok bot for a change; [`BOT.md`](BOT.md) tells it how, under "Change the page".
+
+| Path                                  | Changes                                                                                                                        |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `custom/config.json`                  | Settings: `title`, `defaultView`, `reviewSize`, `detail.phone`, `detail.desktop`, and `swipeMode`. `validate` checks the file. |
+| `custom/theme.css`                    | Plain CSS loaded after the page's own: the color variables, fonts, and any selector.                                           |
+| `custom/components/<Component>.astro` | Replaces `Header`, `Footer`, or `BookmarkCard`. Tailwind classes in it work.                                                   |
+| `custom/components/.ejected/`         | Written by `eject` and `merge`. The component as the site last took it from the package.                                       |
+
+`grok-digest eject <Component>` copies the package's component into `custom/components/`, with its imports pointed at `grok-digest/internal/…`, the package's own modules. When a release changes that component, the build warns, and `grok-digest merge` runs `git merge-file` to apply the change to the site's copy. A change that conflicts with the site's own leaves conflict markers and makes `merge` exit with 1, and the build refuses the file until they are resolved.
+
+The page finds cards and their parts by `data-` attributes, so an ejected `BookmarkCard` keeps them. `Header` and `Footer` carry none.
+
 ## CLI
 
 ```text
 grok-digest build                Build the site into dist/.
 grok-digest dev                  Serve the site at http://localhost:4321 and reload on changes.
 grok-digest preview              Serve the site built in dist/.
-grok-digest validate [file ...]  Check the data files.
+grok-digest validate [file ...]  Check the data files and custom/config.json.
+grok-digest eject <component>    Copy Header, Footer, or BookmarkCard into custom/components/.
+grok-digest merge                Bring ejected components up to the installed version.
 
 --data-dir <dir>  The folder that holds the data files. Defaults to "data".
 --host            With dev or preview, also serve on this machine's network address.
@@ -54,7 +72,7 @@ grok-digest validate [file ...]  Check the data files.
 
 `build`, `dev`, and `preview` read two environment variables. `SITE_URL` is the site's origin, such as `https://<your-username>.github.io`, and becomes Astro's `site`. `BASE_PATH` is the path the site is served under, such as `/<repository-name>`, and becomes Astro's `base`, so links on a `github.io/<repository-name>/` site stay under that path. The deploy workflow sets both from GitHub Pages.
 
-`validate` with no file checks `data/bookmarks.json` and whichever of `data/processed.json` and `data/removed.json` exist. It prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`, and fails naming the entry and the field of an invalid file.
+`validate` with no file checks `data/bookmarks.json` and whichever of `data/processed.json`, `data/removed.json`, and `custom/config.json` exist. It prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`, and fails naming the entry and the field of an invalid file.
 
 The site needs no Astro config. The package depends on the Astro version it was tested with and runs it.
 
@@ -78,7 +96,7 @@ Every site takes every release, so every release reads every data file an earlie
 
 ## The page
 
-The page title is "Grok Digest". The footer reads "Unofficial. Summaries created with Grok." Every page sends `<meta name="robots" content="noindex,nofollow">` and `<meta name="referrer" content="no-referrer">`. `robots.txt` disallows all crawlers. Feeds live at `rss.xml` and `rss/<topic-id>.xml`. Card anchors are `#b-<id>`.
+The page title is "Grok Digest" unless `custom/config.json` sets `title`. The footer reads "Unofficial. Summaries created with Grok." Every page sends `<meta name="robots" content="noindex,nofollow">` and `<meta name="referrer" content="no-referrer">`. `robots.txt` disallows all crawlers. Feeds live at `rss.xml` and `rss/<topic-id>.xml`. Card anchors are `#b-<id>`.
 
 The page opens on Today, a daily review of up to five bookmarks, and has Inbox, Done, and All views. Search, topic, and view are `?q=`, `?topic=`, and `?view=` on the page address. The behavior is documented in `template/README.md`.
 
