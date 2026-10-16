@@ -4,14 +4,13 @@ import {
   GalleryVerticalEndIcon,
   InboxIcon,
   LibraryIcon,
-  Rows3Icon,
   SearchIcon,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "cn";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { flushSync } from "react-dom";
-import { DepthControl } from "./DepthControl.tsx";
+import { DepthControl, DepthIcon } from "./DepthControl.tsx";
 import { SwipeMode } from "./SwipeMode.tsx";
 import { Button } from "./ui/button.tsx";
 import { Input } from "./ui/input.tsx";
@@ -689,7 +688,7 @@ export function BookmarkControls({ entries }: Props) {
             onClick={() => setDepthOpen(!depthOpen)}
             className="h-9 shrink-0 rounded-full px-3 sm:hidden"
           >
-            <Rows3Icon aria-hidden="true" />
+            <DepthIcon depth={depth} />
             {DEPTH_LABELS[depth]}
           </Button>
           <Button
