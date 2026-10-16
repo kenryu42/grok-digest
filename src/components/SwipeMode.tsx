@@ -31,6 +31,7 @@ const SPRING_BACK = "transform 500ms var(--ease-spring)";
 const FLY_OFF = "transform 250ms ease-in";
 const FLY_OFF_RESET_MS = 900;
 const SPRING_BACK_MS = 500;
+const CARD_DEPTH: Depth = "points";
 
 type BlockKind = "headline" | "summary" | "point" | "action" | "post";
 
@@ -84,7 +85,6 @@ type Gesture = {
 type Props = {
   cards: HTMLElement[];
   start: number;
-  depth: Depth;
   done: ReadonlySet<string>;
   onToggleDone: (id: string) => Promise<void>;
   onClose: (last: HTMLElement | undefined) => void;
@@ -127,7 +127,7 @@ function storedSpeed(): number {
   return typeof stored === "number" && stored >= SPEED.min && stored <= SPEED.max ? stored : SPEED.start;
 }
 
-export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: Props) {
+export function SwipeMode({ cards, start, done, onToggleDone, onClose }: Props) {
   const pages = useMemo(() => cards.map(pageFrom), [cards]);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pagerRef = useRef<HTMLDivElement>(null);
@@ -144,7 +144,8 @@ export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: 
   const [undo, setUndo] = useState<{ id: string; index: number } | null>(null);
   const [copied, setCopied] = useState(false);
   const page = pages[current];
-  const shown = useMemo(() => page?.blocks.filter(({ level }) => shows(depth, level)) ?? [], [page, depth]);
+  const pageDepth = page !== undefined && expanded.has(page.id) ? "full" : CARD_DEPTH;
+  const shown = useMemo(() => page?.blocks.filter(({ level }) => shows(pageDepth, level)) ?? [], [page, pageDepth]);
   const plan = useMemo(() => readingPlan(shown.map(({ text }) => text)), [shown]);
   const finished = step >= plan.words.length;
   const reading = speedOn && page !== undefined && !finished;
@@ -459,7 +460,7 @@ export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: 
         className="relative min-h-0 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain outline-none [scrollbar-width:none]"
       >
         {pages.map((p, index) => {
-          const level = expanded.has(p.id) ? "full" : depth;
+          const level = expanded.has(p.id) ? "full" : CARD_DEPTH;
           const isCurrent = index === current;
           return (
             <section

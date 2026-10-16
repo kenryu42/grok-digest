@@ -1,6 +1,6 @@
 # Swipe mode
 
-A reader can go through the cards in the current view one per screen, full screen, like a short-video feed. Swipe up for the next card and down for the previous one; swipe left to mark a card done, which moves on to the next. While a card is dragged left, a green `Done` panel shows behind it (a muted `Back to inbox` panel for a card already done), as in the list. Swiping right does nothing and springs back, so a stray sideways drag never acts. Each card shows at the list's detail level, and a tap opens it in full. `Speed read` flashes the card's text one word at a time in the center of the screen, fading each word in and out, at 350 words per minute by default. It starts off each time swipe mode opens. When a card's text ends, the whole card shows and the reader decides when to swipe on.
+A reader can go through the cards in the current view one per screen, full screen, like a short-video feed. Swipe up for the next card and down for the previous one; swipe left to mark a card done, which moves on to the next. While a card is dragged left, a green `Done` panel shows behind it (a muted `Back to inbox` panel for a card already done), as in the list. Swiping right does nothing and springs back, so a stray sideways drag never acts. Each card shows at `Deep` (summary, key points and the `Try:` action) whatever the list's `Detail` level, and a tap opens it in full with the original post. Leaving swipe mode keeps the list at its own level. `Speed read` flashes the card's text one word at a time in the center of the screen, fading each word in and out, at 350 words per minute by default. It starts off each time swipe mode opens. When a card's text ends, the whole card shows and the reader decides when to swipe on.
 
 ## Sub-features
 
@@ -27,11 +27,10 @@ A reader can go through the cards in the current view one per screen, full scree
 Preconditions:
 
 - A healthy run with the default fixture.
-- `$V open "$RUN" "/?view=inbox" --viewport mobile --fresh`. The list is at `Minimal`, so cards show only their titles and speed reading has no text. Set `Deep` first: `$V click "$RUN" --name Detail`, then `$V click "$RUN" --selector '[data-depth-stop="points"]'`.
+- `$V open "$RUN" "/?view=inbox" --viewport mobile --fresh`. The list starts at `Minimal`; swipe mode shows `Deep` anyway.
 
-- **Open.** Run `$V click "$RUN" --name "Swipe through cards"`. `dialog[open]` exists, named `Swipe mode`, and the counter (`[data-swipe-counter]`) reads `1 / 15`. Take `$V screenshot "$RUN" swipe-open`.
+- **Open.** Run `$V click "$RUN" --name "Swipe through cards"`. `dialog[open]` exists, named `Swipe mode`, and the counter (`[data-swipe-counter]`) reads `1 / 15`. The card shows its summary, key points and `Try:` line (`[data-swipe-page][data-current] article > div p` count is above 1) though the list is at `Minimal`. Take `$V screenshot "$RUN" swipe-open`.
 - **Next and back.** Run `$V swipe "$RUN" --selector "[data-swipe-pager]" --up --distance 300 --duration 150`. After about a second the counter reads `2 / 15`. `$V key "$RUN" k` goes back to `1 / 15`.
-- **Tall card.** Run `$V open "$RUN" "/?view=all"`, set `Full` (`--selector '[data-depth-stop="full"]'`), then `$V key "$RUN" s`. The first card overflows: `document.querySelector("[data-swipe-page][data-current] > div:not([aria-hidden])")` has `scrollHeight` above `clientHeight`. A flick (`$V swipe "$RUN" --selector "[data-swipe-page][data-current]" --up --distance 200 --duration 80`) scrolls that element to its end while the counter stays on `1 / 15`. A second flick moves to `2 / 15`.
 - **Expand.** Run `$V click "$RUN" --selector "[data-swipe-page][data-current] article"`. The card shows its original post too (`[data-swipe-page][data-current] article > div p` count grows).
 - **Done by swipe.** Before swiping, record the green panel: `$V eval "$RUN" 'window.seen = []; const page = document.querySelector("[data-swipe-page][data-current]"); new MutationObserver(() => seen.push(page.querySelector("span.bg-done").checkVisibility())).observe(page, { attributes: true }); 1'`. Run `$V swipe "$RUN" --selector "[data-swipe-page][data-current] article" --distance 120 --duration 80`. `seen` includes `true` (the green `Done` panel showed during the drag) and ends with `false`. `localStorage.getItem("grok-digest:/:done")` lists that card's id, the counter moves on, and the toast in `dialog output` reads `Marked done`.
 - **Undo.** Run `$V click "$RUN" --selector "dialog output button"`. The done list is empty again and the counter is back on that card.
@@ -40,8 +39,9 @@ Preconditions:
 - **Pause.** Run `$V click "$RUN" --selector "[data-swipe-page][data-current] article"`. `[data-speed-paused]` shows the section's text with one word highlighted (`.bg-brand-soft`). `$V click "$RUN" --name Play` resumes.
 - **Finish and wait.** Press `$V key "$RUN" =` 22 times (900 wpm). Within a few seconds `[data-speed-stage]` is gone, the card's full text shows, the round button is named `Read again`, and the counter has not moved.
 - **Next card reads.** Run `$V key "$RUN" j`. The counter moves on and a word shows in `[data-speed-word]` again.
-- **Close.** Run `$V key "$RUN" Escape`. No `dialog` remains and `document.documentElement.style.overflow` is `""`.
+- **Close.** Run `$V key "$RUN" Escape`. No `dialog` remains and `document.documentElement.style.overflow` is `""`. The list's cards are still at `headline` (`Minimal`): `[...new Set([...document.querySelectorAll("[data-bookmark-id]")].map((c) => c.dataset.depth))]` prints `["headline"]`.
 - **Speed read resets.** Open swipe mode again. `Speed read` has `aria-pressed="false"` and no `[data-speed-stage]` shows, while the slider keeps the speed set earlier once speed reading is turned on.
+- **Tall card.** Run `$V open "$RUN" "/?view=all"`, `$V key "$RUN" s`, then open the first card in full with `$V click "$RUN" --selector "[data-swipe-page][data-current] article"`. It overflows: `document.querySelector("[data-swipe-page][data-current] > div:not([aria-hidden])")` has `scrollHeight` above `clientHeight`. A flick (`$V swipe "$RUN" --selector "[data-swipe-page][data-current]" --up --distance 200 --duration 80`) scrolls that element to its end while the counter stays on `1 / 15`. A second flick moves to `2 / 15`.
 
 ## Gotchas
 

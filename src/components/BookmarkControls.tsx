@@ -182,7 +182,7 @@ export function BookmarkControls({ entries }: Props) {
   );
   const [undo, setUndo] = useState<{ id: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
-  const [swiping, setSwiping] = useState<{ cards: HTMLElement[]; start: number; depth: Depth } | null>(null);
+  const [swiping, setSwiping] = useState<{ cards: HTMLElement[]; start: number } | null>(null);
   const [depthOpen, setDepthOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
@@ -357,7 +357,6 @@ export function BookmarkControls({ entries }: Props) {
     setSwiping({
       cards: shown,
       start: top === undefined ? 0 : Math.max(shown.indexOf(top), 0),
-      depth: depthRef.current,
     });
   }, [topCard]);
 
@@ -736,7 +735,6 @@ export function BookmarkControls({ entries }: Props) {
         <SwipeMode
           cards={swiping.cards}
           start={swiping.start}
-          depth={swiping.depth}
           done={done}
           onToggleDone={toggleDone}
           onClose={closeSwipe}
