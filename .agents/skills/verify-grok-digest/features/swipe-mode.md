@@ -5,7 +5,7 @@ A reader can go through the cards in the current view one per screen, full scree
 ## Sub-features
 
 - `swipe-open` opens swipe mode from the round button in the middle of the bottom tab bar on phones (`Swipe through cards`), the `Swipe` button next to the views on desktop, or `s`. It starts at the card at the top of the list.
-- `swipe-navigate` moves to the next or previous card with a vertical swipe (or the mouse wheel, `j`/`k`, arrow keys). A card taller than the screen scrolls within itself first.
+- `swipe-navigate` moves to the next or previous card with a vertical swipe (or the mouse wheel, `j`/`k`, arrow keys). A card taller than the screen scrolls within itself first, so a flick stops at its end and the next swipe moves on.
 - `swipe-done` marks the current card done with a left swipe, the `Done` button or `e`, then moves on. A `Marked done` toast offers `Undo` for 5 seconds (also `u`), which unmarks it and goes back to it.
 - `swipe-right` does nothing: the card gives a little and springs back.
 - `swipe-expand` opens the current card in full with a tap (or Enter), and back with another.
@@ -31,6 +31,7 @@ Preconditions:
 
 - **Open.** Run `$V click "$RUN" --name "Swipe through cards"`. `dialog[open]` exists, named `Swipe mode`, and the counter (`[data-swipe-counter]`) reads `1 / 15`. Take `$V screenshot "$RUN" swipe-open`.
 - **Next and back.** Run `$V swipe "$RUN" --selector "[data-swipe-pager]" --up --distance 300 --duration 150`. After about a second the counter reads `2 / 15`. `$V key "$RUN" k` goes back to `1 / 15`.
+- **Tall card.** Run `$V open "$RUN" "/?view=all"`, set `Full` (`--selector '[data-depth-stop="full"]'`), then `$V key "$RUN" s`. The first card overflows: `document.querySelector("[data-swipe-page][data-current] > div:not([aria-hidden])")` has `scrollHeight` above `clientHeight`. A flick (`$V swipe "$RUN" --selector "[data-swipe-page][data-current]" --up --distance 200 --duration 80`) scrolls that element to its end while the counter stays on `1 / 15`. A second flick moves to `2 / 15`.
 - **Expand.** Run `$V click "$RUN" --selector "[data-swipe-page][data-current] article"`. The card shows its original post too (`[data-swipe-page][data-current] article > div p` count grows).
 - **Done by swipe.** Before swiping, record the green panel: `$V eval "$RUN" 'window.seen = []; const page = document.querySelector("[data-swipe-page][data-current]"); new MutationObserver(() => seen.push(page.querySelector("span.bg-done").checkVisibility())).observe(page, { attributes: true }); 1'`. Run `$V swipe "$RUN" --selector "[data-swipe-page][data-current] article" --distance 120 --duration 80`. `seen` includes `true` (the green `Done` panel showed during the drag) and ends with `false`. `localStorage.getItem("grok-digest:/:done")` lists that card's id, the counter moves on, and the toast in `dialog output` reads `Marked done`.
 - **Undo.** Run `$V click "$RUN" --selector "dialog output button"`. The done list is empty again and the counter is back on that card.

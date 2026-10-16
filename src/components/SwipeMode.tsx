@@ -51,10 +51,10 @@ const BLOCK_LABELS: Record<BlockKind, string> = {
 };
 
 const BLOCK_STYLES: Record<BlockKind, string> = {
-  headline: "font-heading text-2xl leading-snug font-semibold text-balance sm:text-3xl",
-  summary: "font-serif text-xl leading-relaxed text-pretty",
-  point: "border-l-2 border-border pl-4 text-lg leading-relaxed text-pretty",
-  action: "rounded-lg bg-brand-soft px-3 py-2 text-lg leading-relaxed text-pretty",
+  headline: "font-heading text-[1.375rem] leading-snug font-semibold text-balance sm:text-3xl",
+  summary: "font-serif text-lg leading-relaxed text-pretty sm:text-xl",
+  point: "border-l-2 border-border pl-4 text-base leading-relaxed text-pretty sm:text-lg",
+  action: "rounded-lg bg-brand-soft px-3 py-2 text-base leading-relaxed text-pretty sm:text-lg",
   post: "text-base leading-relaxed whitespace-pre-wrap text-foreground/85",
 };
 
@@ -466,7 +466,7 @@ export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: 
               key={p.id}
               data-swipe-page={p.id}
               data-current={isCurrent || undefined}
-              className="group/page relative flex min-h-full snap-start snap-always flex-col touch-pan-y"
+              className="group/page relative flex h-full snap-start snap-always flex-col touch-pan-y"
             >
               <span
                 aria-hidden="true"
@@ -484,7 +484,7 @@ export function SwipeMode({ cards, start, depth, done, onToggleDone, onClose }: 
               </span>
               <div
                 ref={isCurrent ? moverRef : undefined}
-                className="relative flex flex-1 flex-col bg-background px-safe-5 pt-3 pb-8"
+                className="relative flex min-h-0 flex-1 flex-col overflow-y-auto bg-background px-safe-5 pt-3 pb-8"
               >
                 <article data-topic={p.topic} className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4">
                   <p className="flex items-center gap-2 text-sm text-muted-foreground">
