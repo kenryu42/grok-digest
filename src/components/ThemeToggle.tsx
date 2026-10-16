@@ -19,7 +19,14 @@ function toggleTheme(): void {
 
 export function ThemeToggle() {
   return (
-    <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Toggle dark mode" title="Toggle dark mode">
+    <Button
+      variant="ghost"
+      size="icon"
+      className="max-sm:size-11"
+      onClick={toggleTheme}
+      aria-label="Toggle dark mode"
+      title="Toggle dark mode"
+    >
       <SunIcon className="hidden dark:block" />
       <MoonIcon className="dark:hidden" />
     </Button>

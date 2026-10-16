@@ -136,6 +136,19 @@
   --topic-chroma: 0.15;
 }
 
+@utility px-safe-* {
+  padding-left: max(--spacing(--value(integer)), env(safe-area-inset-left));
+  padding-right: max(--spacing(--value(integer)), env(safe-area-inset-right));
+}
+
+@utility pt-safe-* {
+  padding-top: max(--spacing(--value(integer)), env(safe-area-inset-top));
+}
+
+@utility pb-safe-* {
+  padding-bottom: max(--spacing(--value(integer)), env(safe-area-inset-bottom));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -143,6 +156,7 @@
   html {
     @apply font-sans antialiased;
     text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
   }
   body {
     @apply bg-background text-foreground;

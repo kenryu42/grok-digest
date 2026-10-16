@@ -1,5 +1,5 @@
 ---
-import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, LinkIcon, ZapIcon } from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, InboxIcon, LinkIcon, ZapIcon } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -20,23 +20,43 @@ const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
 const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
 const post = postParts(bookmark);
+const posted = dateFormat.format(postedAt);
 ---
 
-<li id={`b-${id}`} data-bookmark-id={id} data-url={url} data-topic={topic} class="group/bookmark scroll-mt-6">
-  <Card className="relative gap-0 py-0 shadow-xs before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-topic before:transition-opacity group-data-[done]/bookmark:before:opacity-55 ring-foreground/8 [--card-spacing:--spacing(5)] has-[summary:focus-visible]:ring-2 has-[summary:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]">
+<li
+  id={`b-${id}`}
+  data-bookmark-id={id}
+  data-url={url}
+  data-topic={topic}
+  class="group/bookmark relative touch-pan-y touch-pinch-zoom scroll-mt-6 max-sm:scroll-mt-[calc(var(--controls-height,0px)+--spacing(3))]"
+>
+  <span
+    aria-hidden="true"
+    class="absolute inset-0 hidden items-center justify-end gap-1.5 rounded-xl bg-done px-6 text-sm font-medium text-done-foreground group-data-[done]/bookmark:bg-muted group-data-[done]/bookmark:text-foreground group-data-[swiped]/bookmark:flex group-data-[swiping]/bookmark:flex"
+  >
+    <CheckIcon className="size-4 group-data-[done]/bookmark:hidden" />
+    <span class="group-data-[done]/bookmark:hidden">Done</span>
+    <InboxIcon className="hidden size-4 group-data-[done]/bookmark:block" />
+    <span class="hidden group-data-[done]/bookmark:inline">Back to inbox</span>
+  </span>
+  <Card
+    data-swipe-surface
+    className="relative gap-0 motion-safe:transition-transform motion-safe:duration-150 group-data-[swiping]/bookmark:transition-none py-0 shadow-xs before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-topic before:transition-opacity group-data-[done]/bookmark:before:opacity-55 ring-foreground/8 [--card-spacing:--spacing(5)] has-[summary:focus-visible]:ring-2 has-[summary:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
+  >
     <details open class="group/details transition-opacity group-data-[done]/bookmark:opacity-55">
       <summary class="flex cursor-pointer list-none flex-col gap-2 px-(--card-spacing) pt-(--card-spacing) pb-4 outline-none [&::-webkit-details-marker]:hidden">
-        <span class="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 text-sm">
-          <span class="flex min-w-0 flex-wrap items-baseline gap-x-1.5">
-            <span class="font-medium text-foreground">{author.name}</span>
-            <span class="text-muted-foreground">@{author.handle}</span>
+        <span class="flex items-baseline justify-between gap-3 text-sm">
+          <span class="flex min-w-0 items-baseline gap-x-1.5">
+            <span class="min-w-0 truncate font-medium text-foreground">{author.name}</span>
+            <span class="min-w-0 shrink-[3] truncate text-muted-foreground">@{author.handle}</span>
           </span>
           <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
-            Saved <time datetime={savedAt.toISOString()}>{dateFormat.format(savedAt)}</time>
+            <span class="max-sm:hidden">Saved </span>
+            <time datetime={savedAt.toISOString()}>{dateFormat.format(savedAt)}</time>
             {postedOtherDay && (
-              <>
-                {" · "}Posted <time datetime={isoDay(postedAt)}>{dateFormat.format(postedAt)}</time>
-              </>
+              <span class="max-sm:hidden">
+                {" · "}Posted <time datetime={isoDay(postedAt)}>{posted}</time>
+              </span>
             )}
           </span>
         </span>
@@ -60,7 +80,7 @@ const post = postParts(bookmark);
         )}
       </summary>
 
-      <div class="flex flex-col gap-4 px-(--card-spacing) pb-4">
+      <div class="flex flex-col gap-4 px-(--card-spacing) pb-4 [contain-intrinsic-size:auto_24rem] [content-visibility:auto]">
         <p class="font-serif text-[1.0625rem] leading-relaxed text-pretty text-foreground/90">{summary}</p>
         {keyPoints.length > 0 && (
           <ul class="flex flex-col gap-2 border-l-2 border-border pl-4 text-[0.9375rem] leading-relaxed text-foreground/85">
@@ -118,7 +138,12 @@ const post = postParts(bookmark);
                             alt={image.alt}
                             loading="lazy"
                             decoding="async"
-                            class="aspect-video w-full object-cover"
+                            class:list={[
+                              "w-full",
+                              part.images.length === 1
+                                ? "max-h-[32rem] min-h-24 object-contain"
+                                : "aspect-video object-cover",
+                            ]}
                           />
                         </a>
                       </li>
@@ -129,10 +154,15 @@ const post = postParts(bookmark);
             </blockquote>
           </figure>
         )}
+        {postedOtherDay && (
+          <p class="text-xs text-muted-foreground tabular-nums sm:hidden">
+            Posted <time datetime={isoDay(postedAt)}>{posted}</time>
+          </p>
+        )}
       </div>
     </details>
 
-    <div class="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 px-(--card-spacing) pb-(--card-spacing)">
+    <div class="flex flex-col gap-3 px-(--card-spacing) pb-(--card-spacing) sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-2">
       <div class="flex flex-wrap items-center gap-1.5">
         <Badge className="bg-topic-soft text-topic">{TOPIC_LABELS[topic]}</Badge>
         {shelfLife === "news" && (
@@ -141,14 +171,14 @@ const post = postParts(bookmark);
           </Badge>
         )}
       </div>
-      <div class="ml-auto flex items-center gap-3">
+      <div class="grid grid-cols-3 gap-2 sm:ml-auto sm:flex sm:items-center sm:gap-3">
         <Button
           type="button"
           variant="ghost"
           size="sm"
           data-copy={copyText(bookmark)}
           title="Copy for an AI assistant (c)"
-          className="rounded-full"
+          className="rounded-full max-sm:h-10"
         >
           <CopyIcon className="group-data-[copied]/button:hidden" aria-hidden="true" />
           <CheckIcon className="hidden group-data-[copied]/button:block" aria-hidden="true" />
@@ -163,7 +193,7 @@ const post = postParts(bookmark);
           data-done-toggle
           aria-pressed="false"
           title="Mark done (e)"
-          className="rounded-full aria-pressed:border-done aria-pressed:bg-done aria-pressed:text-done-foreground aria-pressed:hover:bg-done/85 aria-pressed:hover:text-done-foreground dark:aria-pressed:border-done dark:aria-pressed:bg-done dark:aria-pressed:hover:bg-done/85"
+          className="rounded-full max-sm:h-10 aria-pressed:border-done aria-pressed:bg-done aria-pressed:text-done-foreground aria-pressed:hover:bg-done/85 aria-pressed:hover:text-done-foreground dark:aria-pressed:border-done dark:aria-pressed:bg-done dark:aria-pressed:hover:bg-done/85"
         >
           <CheckIcon aria-hidden="true" />
           Done
@@ -172,7 +202,7 @@ const post = postParts(bookmark);
           href={url}
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center gap-1 rounded-sm text-sm font-medium whitespace-nowrap text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-brand focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+          class="inline-flex items-center justify-center gap-1 rounded-sm text-sm max-sm:h-10 max-sm:rounded-full font-medium whitespace-nowrap text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-brand focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
         >
           Open on X<ArrowUpRightIcon className="size-3.5" aria-hidden="true" />
         </a>

@@ -13,11 +13,13 @@ const designFeedHref = `${base}rss/design.xml`;
 ---
 
 <Layout title="Grok Digest" description="Posts saved from X, summarized and sorted by topic." feedHref={feedHref}>
-  <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-4 sm:px-6">
-    <header class="flex items-start justify-between gap-4 pt-10 pb-8 sm:pt-16">
+  <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-safe-4 sm:px-safe-6">
+    <header class="flex items-center justify-between gap-4 pt-safe-6 pb-4 sm:items-start sm:pt-safe-16 sm:pb-8">
       <div class="flex flex-col gap-2">
-        <h1 class="font-heading text-4xl font-semibold tracking-tight text-balance sm:text-5xl">Grok Digest</h1>
-        <p class="text-pretty text-muted-foreground">Posts saved from X, summarized and sorted by topic.</p>
+        <h1 class="font-heading text-3xl font-semibold tracking-tight text-balance sm:text-5xl">Grok Digest</h1>
+        <p class="hidden text-pretty text-muted-foreground sm:block">
+          Posts saved from X, summarized and sorted by topic.
+        </p>
       </div>
       <ThemeToggle client:load />
     </header>
@@ -45,7 +47,7 @@ const designFeedHref = `${base}rss/design.xml`;
       )}
     </main>
 
-    <footer class="flex flex-col gap-2 border-t py-8 text-sm text-muted-foreground">
+    <footer class="flex flex-col gap-2 border-t pt-8 pb-safe-8 text-sm text-muted-foreground">
       <p>
         <a class="underline decoration-border underline-offset-4 hover:decoration-brand" href={feedHref}>
           Follow new bookmarks
