@@ -1,6 +1,8 @@
 import {
   ArrowUpRightIcon,
   CheckIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
   InboxIcon,
   CopyIcon,
   PauseIcon,
@@ -520,6 +522,24 @@ export function SwipeMode({ cards, start, done, onToggleDone, onClose }: Props) 
                             {block.text}
                           </p>
                         ))}
+                      {p.blocks.some((block) => !shows(CARD_DEPTH, block.level)) && (
+                        <div className="sticky -bottom-8 -mb-4 bg-linear-to-t from-background from-60% to-transparent pt-6 pb-4">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            aria-expanded={expanded.has(p.id)}
+                            onClick={() => toggleExpanded(p.id)}
+                            className="h-10 rounded-full bg-background px-4"
+                          >
+                            {expanded.has(p.id) ? (
+                              <ChevronUpIcon aria-hidden="true" />
+                            ) : (
+                              <ChevronDownIcon aria-hidden="true" />
+                            )}
+                            {expanded.has(p.id) ? "Hide original post" : "Show original post"}
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </article>
