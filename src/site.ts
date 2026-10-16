@@ -7,7 +7,10 @@ const RUN = { build, dev, preview } satisfies Record<SiteCommand, (config: Astro
 
 const nonEmpty = (value: string | undefined): string | undefined => (value === "" ? undefined : value);
 
-export async function runSite(command: SiteCommand, { dataDir }: { dataDir: string }): Promise<void> {
+export async function runSite(
+  command: SiteCommand,
+  { dataDir, exposed }: { dataDir: string; exposed: boolean },
+): Promise<void> {
   const site = nonEmpty(process.env["SITE_URL"]);
   await RUN[command]({
     root: process.cwd(),
@@ -15,6 +18,7 @@ export async function runSite(command: SiteCommand, { dataDir }: { dataDir: stri
     ...(site === undefined ? {} : { site }),
     base: nonEmpty(process.env["BASE_PATH"]) ?? "/",
     trailingSlash: "ignore",
+    server: { host: exposed },
     integrations: [grokDigest({ dataDir })],
   });
 }

@@ -47,7 +47,10 @@ grok-digest preview              Serve the site built in dist/.
 grok-digest validate [file ...]  Check the data files.
 
 --data-dir <dir>  The folder that holds the data files. Defaults to "data".
+--host            With dev or preview, also serve on this machine's network address.
 ```
+
+`--host` lets a phone on the same Wi-Fi open the site: the command prints a `Network` address, such as `http://192.168.0.10:4321`, to open on the phone. Anyone on that network can reach it while it runs.
 
 `build`, `dev`, and `preview` read two environment variables. `SITE_URL` is the site's origin, such as `https://<your-username>.github.io`, and becomes Astro's `site`. `BASE_PATH` is the path the site is served under, such as `/<repository-name>`, and becomes Astro's `base`, so links on a `github.io/<repository-name>/` site stay under that path. The deploy workflow sets both from GitHub Pages.
 
@@ -93,7 +96,7 @@ You need Bun 1.4 and Node.js 22.12 or later.
 
 ```sh
 bun install
-bun run dev      # builds the package, then serves template/ at http://localhost:4321
+bun run dev      # builds the package, then serves template/ at http://localhost:4321 and the printed Network address
 bun run test
 bun run check    # typecheck, oxlint, oxfmt, comment lint, jscpd, knip, tests, starter build
 bun run format

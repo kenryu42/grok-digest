@@ -3,12 +3,13 @@ import { once } from "node:events";
 import { cp, mkdir, mkdtemp, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import samples from "../template/data/bookmarks.json";
 
 const REPOSITORY = path.resolve(".");
 const CLI = path.join(REPOSITORY, "src/cli.ts");
 const LOCAL_ADDRESS = /Local\s+(http:\/\/\S+?)\/?\s/;
+const NETWORK_ADDRESS = /Network\s+(http:\/\/\S+?)\/?\s/;
 const THREAD_ID = "3000000000000000001";
 const THREAD_TEXT = [
   "Post one: we rebuilt the dashboard.",
@@ -34,7 +35,7 @@ const PHOTOS = [
 let site = "";
 let server: ChildProcess | undefined;
 let origin = "";
-let serverOutput = "";
+let serverOutput = (): string => "";
 
 const localUrlsIn = (text: string): string[] =>
   [...text.matchAll(/(?:href|src|component-url|renderer-url)="(\/[^"]*)"|url\(\s*["']?(\/[^"')]+)/g)].map(
@@ -73,20 +74,30 @@ async function siteWithLinkedPackages(): Promise<string> {
   return root;
 }
 
-async function startDevServer(cwd: string): Promise<{ child: ChildProcess; address: string }> {
+async function startDevServer(
+  cwd: string,
+  args: string[] = [],
+): Promise<{ child: ChildProcess; address: string; output: () => string }> {
   const { VITEST: _vitest, ...env } = process.env;
-  const child = spawn(process.execPath, [CLI, "dev"], { cwd, env: { ...env, NO_COLOR: "1" } });
+  const child = spawn(process.execPath, [CLI, "dev", ...args], { cwd, env: { ...env, NO_COLOR: "1" } });
+  let output = "";
   const address = new Promise<string>((resolve, reject) => {
     const collect = (chunk: Buffer): void => {
-      serverOutput += chunk.toString();
-      const match = LOCAL_ADDRESS.exec(serverOutput);
+      output += chunk.toString();
+      const match = LOCAL_ADDRESS.exec(output);
       if (match?.[1] !== undefined) resolve(match[1]);
     };
     child.stdout.on("data", collect);
     child.stderr.on("data", collect);
-    child.once("exit", (code) => reject(new Error(`dev exited with ${code}:\n${serverOutput}`)));
+    child.once("exit", (code) => reject(new Error(`dev exited with ${code}:\n${output}`)));
   });
-  return { child, address: await address };
+  return { child, address: await address, output: () => output };
+}
+
+async function stop(child: ChildProcess | undefined): Promise<void> {
+  if (child === undefined || child.exitCode !== null) return;
+  child.kill();
+  await once(child, "exit");
 }
 
 beforeAll(async () => {
@@ -94,13 +105,11 @@ beforeAll(async () => {
   const started = await startDevServer(site);
   server = started.child;
   origin = started.address;
+  serverOutput = started.output;
 }, 60_000);
 
 afterAll(async () => {
-  if (server !== undefined && server.exitCode === null) {
-    server.kill();
-    await once(server, "exit");
-  }
+  await stop(server);
   await rm(site, { recursive: true, force: true });
 });
 
@@ -124,7 +133,7 @@ describe("dev", () => {
     await crawl(["/"]);
     expect(seen.size).toBeGreaterThan(1);
     expect(failures).toEqual([]);
-    expect(serverOutput).not.toContain("outside of Vite serving allow list");
+    expect(serverOutput()).not.toContain("outside of Vite serving allow list");
   }, 60_000);
 
   it("shows each image under the post it came from, in place of its short link", async () => {
@@ -146,6 +155,28 @@ describe("dev", () => {
       { src: PHOTOS[1]?.url, alt: "Image 2 of 4 from the post by @example_agents", lazy: true },
     ]);
   });
+
+  it("serves only this machine unless asked to serve the network", () => {
+    expect(new URL(origin).hostname).toBe("localhost");
+    expect(NETWORK_ADDRESS.exec(serverOutput())).toBeNull();
+  });
+
+  it("serves the site on the machine's network address with --host, so a phone on the same Wi-Fi can open it", async () => {
+    const exposed = await startDevServer(site, ["--host"]);
+    try {
+      const network = await vi.waitFor(() => {
+        const address = NETWORK_ADDRESS.exec(exposed.output())?.[1];
+        expect(address).toBeDefined();
+        return address ?? "";
+      });
+      expect(new URL(network).hostname).not.toBe("localhost");
+      const response = await fetch(network);
+      expect(response.ok).toBe(true);
+      expect(await response.text()).toContain('<li id="b-');
+    } finally {
+      await stop(exposed.child);
+    }
+  }, 60_000);
 
   it("shows no images on cards without any", async () => {
     const page = await (await fetch(origin)).text();

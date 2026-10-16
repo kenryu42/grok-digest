@@ -41,7 +41,7 @@
   },
   "scripts": {
     "build": "node scripts/build.mjs",
-    "dev": "bun run build && mkdir -p template/node_modules && ln -sfn ../.. template/node_modules/grok-digest && cd template && node node_modules/grok-digest/dist/cli.js dev",
+    "dev": "bun run build && mkdir -p template/node_modules && ln -sfn ../.. template/node_modules/grok-digest && cd template && node node_modules/grok-digest/dist/cli.js dev --host",
     "test": "vitest run",
     "typecheck": "astro sync && tsc --noEmit && astro check",
     "check": "bun run build && bun run typecheck && bun run lint && bun run format:check && bun run lint:comments && bun run lint:dup && bun run knip && bun run test && bun run check:starter",

@@ -18,6 +18,8 @@ Commands:
 
 Options:
   --data-dir <dir>  The folder that holds the data files. Defaults to "data".
+  --host            With dev or preview, also serve on this machine's network
+                    address, so a phone on the same Wi-Fi can open the site.
   -h, --help        Show this help.
   -v, --version     Show the package and schema versions.
 
@@ -33,6 +35,7 @@ const { values, positionals } = parseArgs({
   allowPositionals: true,
   options: {
     "data-dir": { type: "string", default: "data" },
+    host: { type: "boolean", default: false },
     help: { type: "boolean", short: "h" },
     version: { type: "boolean", short: "v" },
   },
@@ -64,7 +67,7 @@ if (values.version === true) {
 } else if (isSiteCommand(command)) {
   process.env["NODE_ENV"] ??= NODE_ENV_FOR_SITE_COMMAND[command];
   const { runSite } = await import("./site.ts");
-  await runSite(command, { dataDir });
+  await runSite(command, { dataDir, exposed: values.host });
 } else {
   console.error(`Unknown command "${command}".\n\n${USAGE}`);
   process.exitCode = 1;
