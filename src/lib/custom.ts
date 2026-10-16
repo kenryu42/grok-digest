@@ -9,7 +9,7 @@ export const THEME_FILE = "theme.css";
 export const COMPONENTS_DIR = "components";
 export const EJECTED_DIR = ".ejected";
 const PAGE_COMPONENTS = ["Header", "Footer", "BookmarkCard"] as const;
-const CONTROL_COMPONENTS = [
+const REACT_COMPONENTS = [
   "ControlsLayout",
   "ViewTabs",
   "SearchField",
@@ -18,8 +18,12 @@ const CONTROL_COMPONENTS = [
   "StatusLine",
   "KeyboardHints",
   "UndoToast",
+  "SwipeHeader",
+  "SwipeCard",
+  "SwipeFooter",
+  "SwipeEnd",
 ] as const;
-export const OVERRIDABLE_COMPONENTS = [...PAGE_COMPONENTS, ...CONTROL_COMPONENTS] as const;
+export const OVERRIDABLE_COMPONENTS = [...PAGE_COMPONENTS, ...REACT_COMPONENTS] as const;
 
 export type OverridableComponent = (typeof OVERRIDABLE_COMPONENTS)[number];
 

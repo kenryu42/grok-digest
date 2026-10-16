@@ -302,6 +302,32 @@ The controls above the cards are React components, ejected as `.tsx` files. Each
 
 In `ControlsLayout`, import the other parts from `virtual:grok-digest/components/<Component>`, as the copy does, so that a part you eject later still shows.
 
+Swipe mode shows one card per screen. The package keeps its frame: the full-screen dialog, the pages that snap one at a time, the swipe that marks a card done, and the keyboard keys. Eject these parts to change what is inside it. Each is a React component that gets one prop, `swipe`, and must keep its named export:
+
+| Component     | What it is                                                                                        | It also gets                                   |
+| ------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| `SwipeHeader` | The top bar: Close, the "3 / 12" counter, the Speed read button, and the reading progress.        |                                                |
+| `SwipeCard`   | What one card shows: topic, author, headline, summary, key points, "Try:", and the original post. | `page`, and `current` when it is the open card |
+| `SwipeFooter` | The bottom bar: the speed reading controls, Copy, Done, Open on X, and the "Marked done" message. |                                                |
+| `SwipeEnd`    | The screen after the last card, with Start over and Close.                                        |                                                |
+
+`page` is one card: `id`, `author`, `topic`, `url`, `headline`, and `blocks`, its text in order. Each block has a `kind` (`"summary"`, `"point"`, `"action"`, or `"post"`) and its `text`. `page.card` is the bookmark's card element on the page, so `SwipeCard` can show anything that card shows, such as its images: `page.card.querySelectorAll("figure img")`.
+
+`swipe` holds swipe mode's state and what changes it:
+
+| Field                                                 | What it is                                                                                                                     |
+| ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `pages`, `current`, `page`, `goTo(index)`, `close()`  | Every card, the open card's index and its `page`, moving to a card (`pages.length` is the end screen), and closing swipe mode. |
+| `done`, `pageDone`, `toggleDone()`                    | The ids marked done, whether the open card is, and marking it done or back to the inbox.                                       |
+| `undoPending`, `undo()`                               | Whether a card was just marked done, and undoing it.                                                                           |
+| `copied`, `copy()`                                    | Whether the open card was just copied, and copying it for an AI assistant.                                                     |
+| `expanded`, `toggleExpanded(id)`                      | The ids whose original post is open, and opening or closing one.                                                               |
+| `speedOn`, `toggleSpeed()`, `reading`                 | Whether speed reading is on, turning it on or off, and whether the open card is being speed read.                              |
+| `playing`, `starting`, `finished`, `togglePlaying()`  | Speed reading's state, and playing, pausing, or reading again.                                                                 |
+| `speed`, `changeSpeed(wpm)`, `plan`, `step`, `blocks` | Words per minute (200 to 900), the words to read, the word shown, and the open card's blocks.                                  |
+
+A tap on the card outside its buttons and links opens or closes the original post, or pauses speed reading. Buttons and links in `SwipeCard` get their own clicks.
+
 In `BookmarkCard`, keep every `data-` attribute and the element it is on. The page finds the card, its buttons, and its text by them for Done, Copy, Today's reasons, the Detail levels, swiping, and swipe mode. Move them, restyle them, or add elements around them, but don't remove them.
 
 Imports from `grok-digest/internal/…` reach the package's own parts, such as `grok-digest/internal/components/ui/button`. They can change in any release, and `bunx grok-digest merge` brings in those changes.

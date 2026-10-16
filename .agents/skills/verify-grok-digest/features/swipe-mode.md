@@ -45,6 +45,7 @@ Preconditions:
 
 ## Gotchas
 
+- When the open card is taller than the screen (the first fixture card is, at 375×812), the first upward flick scrolls inside the card and only the next one moves to `2 / 15`. Use `$V key "$RUN" j` when a recipe only needs the next card.
 - Swipe mode is a modal dialog, and the list's buttons stay in the DOM behind it. Card buttons named `Done` or `Copy` come later in the page, so scope with `--selector "dialog button"` when a name could match both.
 - A left swipe needs `touch-pan-y` on the card's own scroll area (the section's child that is not `aria-hidden`); without it the browser cancels the drag with `pointercancel` and nothing is marked. Prove swipes with a real `$V swipe`, not by setting `data-swiping`.
 - Target the current card with `[data-swipe-page][data-current]`. Targeting the first `article` makes the driver scroll back to it before swiping.
