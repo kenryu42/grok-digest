@@ -114,20 +114,39 @@ const posted = dateFormat.format(postedAt);
 
       <div data-level="full" class="flex flex-col gap-4 px-(--card-spacing) pb-4">
         {links.length > 0 && (
-          <ul class="flex flex-col gap-1.5 text-sm" aria-label="Links in the post">
+          <ul class="flex max-w-md flex-col gap-2" aria-label="Links in the post">
             {links.map((link) => (
               <li>
                 <a
                   href={link.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="group/link inline-flex items-baseline gap-2 rounded-sm focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+                  data-link-card
+                  class:list={[
+                    "group/link flex overflow-hidden rounded-xl border border-border transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
+                    { "flex-col": link.image !== undefined },
+                  ]}
                 >
-                  <LinkIcon className="size-3.5 shrink-0 translate-y-0.5 text-muted-foreground" aria-hidden="true" />
-                  <span class="text-pretty text-foreground underline decoration-border underline-offset-4 transition-colors group-hover/link:decoration-brand">
-                    {link.title}
+                  {link.image === undefined ? (
+                    <span class="flex w-16 shrink-0 items-center justify-center border-r border-border bg-muted text-muted-foreground">
+                      <LinkIcon className="size-5" aria-hidden="true" />
+                    </span>
+                  ) : (
+                    <img
+                      src={link.image}
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      onerror="this.remove()"
+                      class="aspect-[1.91/1] w-full border-b border-border bg-muted object-cover"
+                    />
+                  )}
+                  <span class="flex min-w-0 flex-col justify-center gap-0.5 px-3 py-2.5">
+                    <span class="truncate text-xs text-muted-foreground">{hostOf(link.url)}</span>
+                    <span class="line-clamp-2 text-sm font-medium text-pretty text-foreground group-hover/link:underline group-hover/link:decoration-brand group-hover/link:underline-offset-4">
+                      {link.title}
+                    </span>
                   </span>
-                  <span class="shrink-0 text-xs text-muted-foreground">{hostOf(link.url)}</span>
                 </a>
               </li>
             ))}

@@ -27,6 +27,12 @@ const PHOTOS = [
   { url: "https://pbs.twimg.com/media/GaBcDeFgHi4.jpg", alt: "Before and after", link: "https://t.co/Ccccccccc3" },
 ];
 
+const LINKED_ID = "3000000000000000002";
+const LINKS = [
+  { title: "Launch week recap", url: "https://www.example.com/launch", image: "https://cdn.example.com/og/launch.png" },
+  { title: "GitHub repo: example/tool", url: "https://github.com/example/tool" },
+];
+
 let site = "";
 let server: ChildProcess | undefined;
 let origin = "";
@@ -51,6 +57,24 @@ const imagesOn = (card: string) =>
     lazy: /\sloading="lazy"/.test(tag),
   }));
 
+const linkCardsOn = (card: string) =>
+  [...card.matchAll(/<a\b([^>]*\bdata-link-card\b[^>]*)>([\s\S]*?)<\/a>/g)].map(([, attributes, body]) => ({
+    href: /\bhref="([^"]*)"/.exec(attributes ?? "")?.[1],
+    newTab: /\btarget="_blank"/.test(attributes ?? ""),
+    image: imagesOn(body ?? "")[0]?.src,
+    text: (body ?? "")
+      .replaceAll(/<[^>]*>/g, " ")
+      .replaceAll(/\s+/g, " ")
+      .trim(),
+  }));
+
+const withLinks = {
+  ...samples[0],
+  id: LINKED_ID,
+  url: `https://x.com/example/status/${LINKED_ID}`,
+  links: LINKS,
+};
+
 const thread = {
   ...samples[0],
   id: THREAD_ID,
@@ -60,7 +84,7 @@ const thread = {
 };
 
 beforeAll(async () => {
-  site = await linkedSite([...samples, thread]);
+  site = await linkedSite([...samples, thread, withLinks]);
   const started = await startDevServer(site);
   server = started.child;
   origin = started.address;
@@ -115,6 +139,15 @@ describe("dev", () => {
     ]);
   });
 
+  it("shows each link as a clickable card with the page's preview image, host and title", async () => {
+    const page = await (await fetch(origin)).text();
+    const card = page.split('<li id="b-').find((html) => html.startsWith(LINKED_ID)) ?? "";
+    expect(linkCardsOn(card)).toEqual([
+      { href: LINKS[0]?.url, newTab: true, image: LINKS[0]?.image, text: "example.com Launch week recap" },
+      { href: LINKS[1]?.url, newTab: true, image: undefined, text: "github.com GitHub repo: example/tool" },
+    ]);
+  });
+
   it("serves only this machine unless asked to serve the network", () => {
     expect(new URL(origin).hostname).toBe("localhost");
     expect(NETWORK_ADDRESS.exec(serverOutput())).toBeNull();
@@ -142,7 +175,7 @@ describe("dev", () => {
     const otherCards = page
       .split('<li id="b-')
       .slice(1)
-      .filter((card) => !card.startsWith(THREAD_ID));
+      .filter((card) => !card.startsWith(THREAD_ID) && !card.startsWith(LINKED_ID));
     expect(otherCards.length).toBeGreaterThan(0);
     expect(otherCards.flatMap(imagesOn)).toEqual([]);
   });

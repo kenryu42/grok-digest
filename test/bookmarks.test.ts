@@ -68,6 +68,14 @@ describe("parseBookmarks", () => {
     expect(parse([{ ...valid, text: "The CLI. pic.x.com/AbCdEf", media }])[0]?.media).toEqual(media);
   });
 
+  it("keeps a link's preview image", () => {
+    const links = [
+      { title: "The launch post", url: "https://example.com/launch", image: "https://example.com/og.png" },
+      { title: "The project's README", url: "https://github.com/someone/project" },
+    ];
+    expect(parse([{ ...valid, links }])[0]?.links).toEqual(links);
+  });
+
   it("sorts by when the bookmark was saved, newest first", () => {
     const ids = parse([
       { ...valid, id: "saved-earlier", posted_at: "2026-03-01", saved_at: "2026-03-02T09:00:00+09:00" },
@@ -84,6 +92,11 @@ describe("parseBookmarks", () => {
     ["a missing tldr", { ...valid, tldr: "" }, "tldr"],
     ["an unknown shelf life", { ...valid, shelf_life: "forever" }, "shelf_life"],
     ["a plain-http link", { ...valid, links: [{ title: "Blog", url: "http://example.com/post" }] }, "links"],
+    [
+      "a plain-http link preview image",
+      { ...valid, links: [{ title: "Blog", url: "https://example.com/post", image: "http://example.com/og.png" }] },
+      "links",
+    ],
     ["a link without a title", { ...valid, links: [{ title: " ", url: "https://example.com/post" }] }, "links"],
     ["a misspelled field", { ...valid, keypoints: [] }, "keypoints"],
     ["a missing summary", { ...valid, summary: " " }, "summary"],

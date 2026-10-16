@@ -12,7 +12,7 @@ describe("BOT.md", () => {
     expect(example).toBeDefined();
     const [bookmark] = parseBookmarks({ raw: [JSON.parse(example ?? "")], source: "BOT.md" });
     expect(bookmark?.action).not.toBe("");
-    expect(bookmark?.links).not.toHaveLength(0);
+    expect(bookmark?.links[0]?.image).toBeDefined();
     expect(bookmark?.media).not.toHaveLength(0);
   });
 

@@ -67,7 +67,13 @@ If `custom/components/.ejected/` exists, also run `bunx grok-digest merge`. It c
     "Keep only comments that must exist, such as browser-quirk explanations."
   ],
   "action": "Have an agent run /no-comments on one repo and sort each comment into refactor or delete.",
-  "links": [{ "title": "pstack: the /no-comments skill", "url": "https://github.com/example/pstack" }],
+  "links": [
+    {
+      "title": "pstack: the /no-comments skill",
+      "url": "https://github.com/example/pstack",
+      "image": "https://opengraph.githubassets.com/1/example/pstack"
+    }
+  ],
   "media": [
     {
       "url": "https://pbs.twimg.com/media/G3xAmPLeAAAbCdE.jpg",
@@ -162,6 +168,7 @@ Every link in the post and its thread, followed to where it really lands. Expand
 
 - `url`: the final `https` address without tracking parameters such as `utm_*`. Skip links that are not `https`.
 - `title`: the page's own title, cut to about 8 words, or a plain description such as `GitHub repo: example/pstack`.
+- `image`: the page's preview image, the address in its `og:image` or `twitter:image` tag, made absolute and `https`. The card shows it above the title, the way X shows a link card. Leave `image` out when the page has none.
 - Leave out links to the post itself, to the author's profile, and to the post's images or videos.
 - Write `[]` when there are none.
 
@@ -173,7 +180,7 @@ The images in the post and its thread, in thread order, so the card can show eac
 - `alt`: the author's alt text for the image when it has one, otherwise a few words on what it shows. Leave `alt` out rather than writing `""`.
 - `link`: the short link that stands for the image in `text`, copied exactly as it appears there, such as `https://t.co/Xq7mPLe0Ab` or `pic.x.com/Xq7mPLe0Ab`. X gives all the photos of one post a single link, so photos from the same post share it. The card shows the images where that link is and hides the link. The build rejects a `link` that is not in `text`. Leave `link` out only when `text` has no link for the image; the card then shows it after the post.
 - For a video or GIF, add its poster image (the `pbs.twimg.com` thumbnail X shows before it plays) when you can find it. Skip it otherwise.
-- Don't add link-preview cards or the author's profile picture.
+- Don't add link-preview images or the author's profile picture. A link's preview image goes in its `image` under `links`.
 - Write `[]` when the post has no images.
 
 Images never go in `links`, and `text` keeps the post's exact words, including any `t.co` lines that stood for the images.

@@ -71,7 +71,10 @@ function feedItem(bookmark: Bookmark, page: URL): FeedItem {
     )
     .join("");
   const linkItems = links
-    .map((outbound) => `<li><a href="${escapeHtml(outbound.url)}">${escapeHtml(outbound.title)}</a></li>`)
+    .map(({ url: href, title, image }) => {
+      const preview = image === undefined ? "" : `<img src="${escapeHtml(image)}" alt=""><br>`;
+      return `<li><a href="${escapeHtml(href)}">${preview}${escapeHtml(title)}</a></li>`;
+    })
     .join("");
   return {
     title: tldr,
