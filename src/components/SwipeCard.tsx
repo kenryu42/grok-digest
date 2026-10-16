@@ -1,5 +1,6 @@
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { cn } from "cn";
+import { LinkCard } from "./LinkCard.tsx";
 import { SpeedStage } from "./SpeedStage.tsx";
 import { shows } from "../lib/depth.ts";
 import { CARD_DEPTH, type BlockKind, type SwipeBlock, type SwipeControls, type SwipePage } from "../lib/swipe-mode.ts";
@@ -44,6 +45,15 @@ export function SwipeCard({ swipe, page, current }: { swipe: SwipeControls; page
                 {block.text}
               </p>
             ))}
+          {page.links.length > 0 && (
+            <ul className="flex max-w-md flex-col gap-2" aria-label="Links in the post">
+              {page.links.map((link) => (
+                <li key={link.url}>
+                  <LinkCard {...link} />
+                </li>
+              ))}
+            </ul>
+          )}
           {page.blocks.some((block) => !shows(CARD_DEPTH, block.level)) && (
             <OriginalPost
               blocks={page.blocks.filter((block) => !shows(CARD_DEPTH, block.level))}

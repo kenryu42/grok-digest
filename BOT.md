@@ -71,7 +71,7 @@ If `custom/components/.ejected/` exists, also run `bunx grok-digest merge`. It c
     {
       "title": "pstack: the /no-comments skill",
       "url": "https://github.com/example/pstack",
-      "image": "https://opengraph.githubassets.com/1/example/pstack"
+      "image": "https://pbs.twimg.com/card_img/2110149626133438733/AbCdEfGh?format=jpg&name=small"
     }
   ],
   "media": [
@@ -168,7 +168,7 @@ Every link in the post and its thread, followed to where it really lands. Expand
 
 - `url`: the final `https` address without tracking parameters such as `utm_*`. Skip links that are not `https`.
 - `title`: the page's own title, cut to about 8 words, or a plain description such as `GitHub repo: example/pstack`.
-- `image`: the page's preview image, the address in its `og:image` or `twitter:image` tag, made absolute and `https`. The card shows it above the title, the way X shows a link card. Leave `image` out when the page has none.
+- `image`: the preview image X shows for the link in the post's link card, its `https://pbs.twimg.com/card_img/` address. The card shows it above the title, the way X does. Never the page's own `og:image` address: the build rejects any host other than `pbs.twimg.com`, so opening a card never contacts the linked site. Leave `image` out when X shows no image for the link.
 - Leave out links to the post itself, to the author's profile, and to the post's images or videos.
 - Write `[]` when there are none.
 

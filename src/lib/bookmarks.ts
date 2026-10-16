@@ -37,7 +37,7 @@ export const bookmarkSchema = z
       z.strictObject({
         title: nonEmpty,
         url: z.url({ protocol: /^https$/ }),
-        image: z.url({ protocol: /^https$/ }).optional(),
+        image: z.url({ protocol: /^https$/, hostname: X_MEDIA_HOSTNAME }).optional(),
       }),
     ),
     media: z
@@ -79,6 +79,7 @@ export const stateFileSchema = z.array(nonEmpty);
 
 export type BookmarkFileEntry = z.input<typeof bookmarkSchema>;
 export type Bookmark = z.output<typeof bookmarkSchema>;
+export type PostLink = Bookmark["links"][number];
 
 export function parseDataFile<Schema extends z.ZodType>({
   schema,

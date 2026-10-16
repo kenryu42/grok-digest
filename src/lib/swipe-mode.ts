@@ -9,6 +9,7 @@ import {
   type RefObject,
 } from "react";
 import { shows, type Depth } from "./depth.ts";
+import type { PostLink } from "./bookmarks.ts";
 import { prefersReducedMotion } from "./morph.ts";
 import { readingPlan, stepMs, type ReadPlan } from "./reading.ts";
 import { readStored, STORAGE_PREFIX, writeStored } from "./storage.ts";
@@ -50,6 +51,7 @@ export type SwipePage = {
   copy: string;
   headline: string;
   blocks: SwipeBlock[];
+  links: PostLink[];
 };
 
 type Gesture = {
@@ -86,6 +88,16 @@ function pageFrom(card: HTMLElement): SwipePage {
     copy: card.querySelector<HTMLElement>("[data-copy]")?.dataset["copy"] ?? "",
     headline: blocks.find(({ kind }) => kind === "headline")?.text ?? "",
     blocks: blocks.filter(({ kind }) => kind !== "headline"),
+    links: [...card.querySelectorAll<HTMLAnchorElement>("[data-link-card]")].map(linkFrom),
+  };
+}
+
+function linkFrom(anchor: HTMLAnchorElement): PostLink {
+  const image = anchor.querySelector("img");
+  return {
+    url: anchor.href,
+    title: anchor.querySelector("[data-link-title]")?.textContent.trim() ?? "",
+    image: image === null || image.hidden ? undefined : image.src,
   };
 }
 

@@ -29,7 +29,11 @@ const PHOTOS = [
 
 const LINKED_ID = "3000000000000000002";
 const LINKS = [
-  { title: "Launch week recap", url: "https://www.example.com/launch", image: "https://cdn.example.com/og/launch.png" },
+  {
+    title: "Launch week recap",
+    url: "https://www.example.com/launch",
+    image: "https://pbs.twimg.com/card_img/3000000000000000003/AbCdEfGh?format=jpg",
+  },
   { title: "GitHub repo: example/tool", url: "https://github.com/example/tool" },
 ];
 

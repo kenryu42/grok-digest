@@ -41,7 +41,7 @@ The page reads `data/bookmarks.json` only. `data/processed.json` and `data/remov
 
 `data/bookmarks.json` is a JSON array with one object per bookmark. The bot's manual, [`BOT.md`](https://github.com/kenryu42/grok-digest/blob/main/BOT.md), lists every field with an example entry and the rules for each, and says how to save, change, and remove a bookmark. After `bun install`, the copy at `node_modules/grok-digest/BOT.md` matches the version this site builds with. Point a new Grok Bot at that file.
 
-The page sorts bookmarks by `saved_at`, most recently saved first, so the order in the file does not matter. A card shows the post date next to the save date when they differ, and shows the post's images from `media` inside the original post, each where its short link was. Each of `links` shows as a card you can click, with the page's preview `image` above its title when it has one.
+The page sorts bookmarks by `saved_at`, most recently saved first, so the order in the file does not matter. A card shows the post date next to the save date when they differ, and shows the post's images from `media` inside the original post, each where its short link was. Each of `links` shows as a card you can click, with X's copy of its preview `image` above its title when it has one.
 
 The template ships three fake entries so the page has something to show. Each one has `(sample)` in its author name. Delete them from `data/bookmarks.json` once real bookmarks arrive. An empty list (`[]`) is valid and shows a short "No bookmarks yet" message.
 

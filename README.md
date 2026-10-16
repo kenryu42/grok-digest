@@ -89,7 +89,7 @@ The site needs no Astro config. The package depends on the Astro version it was 
 import { SCHEMA_VERSION, bookmarkSchema, parseBookmarks, TOPICS } from "grok-digest/schema";
 ```
 
-`SCHEMA_VERSION` is `1`. The JSON files have no version field. A `bookmarks.json` that already validates is version 1. `posted_at` with milliseconds and a `Z` offset, as the bot writes it, is version 1. The optional `media` field, a post's images, is part of version 1 too: a bookmark without it parses with `media` set to `[]`. So is a link's optional `image`, its preview image.
+`SCHEMA_VERSION` is `1`. The JSON files have no version field. A `bookmarks.json` that already validates is version 1. `posted_at` with milliseconds and a `Z` offset, as the bot writes it, is version 1. The optional `media` field, a post's images, is part of version 1 too: a bookmark without it parses with `media` set to `[]`. So is a link's optional `image`, X's copy of its preview image.
 
 | File                  | Version 1 shape                                                      |
 | --------------------- | -------------------------------------------------------------------- |

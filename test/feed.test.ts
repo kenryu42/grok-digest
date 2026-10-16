@@ -20,7 +20,11 @@ const bookmarks = parseBookmarks({
       action: "Try <b>this</b>.",
       links: [
         { title: "Docs & guide", url: "https://example.com/docs?a=1&b=2" },
-        { title: "The launch post", url: "https://example.com/launch", image: "https://example.com/og.png?v=1&w=2" },
+        {
+          title: "The launch post",
+          url: "https://example.com/launch",
+          image: "https://pbs.twimg.com/card_img/1/AbCd?format=jpg&name=small",
+        },
       ],
       media: [
         {
@@ -82,7 +86,7 @@ describe("feedConfig", () => {
   it("shows a link's preview image inside the link, above its title", () => {
     const [item] = config.items;
     expect(item?.content).toContain(
-      '<li><a href="https://example.com/launch"><img src="https://example.com/og.png?v=1&amp;w=2" alt=""><br>The launch post</a></li>',
+      '<li><a href="https://example.com/launch"><img src="https://pbs.twimg.com/card_img/1/AbCd?format=jpg&amp;name=small" alt=""><br>The launch post</a></li>',
     );
   });
 

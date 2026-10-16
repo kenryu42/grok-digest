@@ -42,14 +42,14 @@ In `ControlsLayout`, import the other parts from `virtual:grok-digest/components
 
 Swipe mode shows one card per screen. The package keeps its frame: the full-screen dialog, the pages that snap one at a time, the swipe that marks a card done, and the keyboard keys. Eject these parts to change what is inside it. Each is a React component that gets one prop, `swipe`, and must keep its named export:
 
-| Component     | What it is                                                                                        | It also gets                                   |
-| ------------- | ------------------------------------------------------------------------------------------------- | ---------------------------------------------- |
-| `SwipeHeader` | The top bar: Close, the "3 / 12" counter, the Speed read button, and the reading progress.        |                                                |
-| `SwipeCard`   | What one card shows: topic, author, headline, summary, key points, "Try:", and the original post. | `page`, and `current` when it is the open card |
-| `SwipeFooter` | The bottom bar: the speed reading controls, Copy, Done, Open on X, and the "Marked done" message. |                                                |
-| `SwipeEnd`    | The screen after the last card, with Start over and Close.                                        |                                                |
+| Component     | What it is                                                                                                   | It also gets                                   |
+| ------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
+| `SwipeHeader` | The top bar: Close, the "3 / 12" counter, the Speed read button, and the reading progress.                   |                                                |
+| `SwipeCard`   | What one card shows: topic, author, headline, summary, key points, "Try:", the links, and the original post. | `page`, and `current` when it is the open card |
+| `SwipeFooter` | The bottom bar: the speed reading controls, Copy, Done, Open on X, and the "Marked done" message.            |                                                |
+| `SwipeEnd`    | The screen after the last card, with Start over and Close.                                                   |                                                |
 
-`page` is one card: `id`, `author`, `topic`, `url`, `headline`, and `blocks`, its text in order. Each block has a `kind` (`"summary"`, `"point"`, `"action"`, or `"post"`) and its `text`. `page.card` is the bookmark's card element on the page, so `SwipeCard` can show anything that card shows, such as its images: `page.card.querySelectorAll("figure img")`.
+`page` is one card: `id`, `author`, `topic`, `url`, `headline`, and `blocks`, its text in order. Each block has a `kind` (`"summary"`, `"point"`, `"action"`, or `"post"`) and its `text`. `links` are the post's links, each with its `url`, `title` and, when it has one that loaded, `image`. The ejected copy shows them with `LinkCard`, as the package does. `page.card` is the bookmark's card element on the page, so `SwipeCard` can show anything that card shows, such as its images: `page.card.querySelectorAll("figure img")`.
 
 `swipe` holds swipe mode's state and what changes it:
 

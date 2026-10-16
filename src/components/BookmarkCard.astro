@@ -1,8 +1,9 @@
 ---
-import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, InboxIcon, LinkIcon, ZapIcon } from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, InboxIcon, ZapIcon } from "lucide-react";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
+import { LinkCard } from "./LinkCard";
 import type { Bookmark } from "../lib/bookmarks";
 import { copyText } from "../lib/copy";
 import { postParts } from "../lib/media";
@@ -18,7 +19,6 @@ const { id, url, author, postedAt, savedAt, topic, shelfLife, tldr, summary, key
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
-const hostOf = (link: string) => new URL(link).hostname.replace(/^www\./, "");
 const post = postParts(bookmark);
 const posted = dateFormat.format(postedAt);
 ---
@@ -117,37 +117,7 @@ const posted = dateFormat.format(postedAt);
           <ul class="flex max-w-md flex-col gap-2" aria-label="Links in the post">
             {links.map((link) => (
               <li>
-                <a
-                  href={link.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  data-link-card
-                  class:list={[
-                    "group/link flex overflow-hidden rounded-xl border border-border transition-colors hover:bg-muted/50 focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none",
-                    { "flex-col": link.image !== undefined },
-                  ]}
-                >
-                  {link.image === undefined ? (
-                    <span class="flex w-16 shrink-0 items-center justify-center border-r border-border bg-muted text-muted-foreground">
-                      <LinkIcon className="size-5" aria-hidden="true" />
-                    </span>
-                  ) : (
-                    <img
-                      src={link.image}
-                      alt=""
-                      loading="lazy"
-                      decoding="async"
-                      onerror="this.remove()"
-                      class="aspect-[1.91/1] w-full border-b border-border bg-muted object-cover"
-                    />
-                  )}
-                  <span class="flex min-w-0 flex-col justify-center gap-0.5 px-3 py-2.5">
-                    <span class="truncate text-xs text-muted-foreground">{hostOf(link.url)}</span>
-                    <span class="line-clamp-2 text-sm font-medium text-pretty text-foreground group-hover/link:underline group-hover/link:decoration-brand group-hover/link:underline-offset-4">
-                      {link.title}
-                    </span>
-                  </span>
-                </a>
+                <LinkCard {...link} />
               </li>
             ))}
           </ul>

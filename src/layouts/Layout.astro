@@ -56,6 +56,17 @@ const { title, description, feedHref } = Astro.props;
         }
       } catch {}
     </script>
+    <script is:inline>
+      document.addEventListener(
+        "error",
+        (event) => {
+          if (event.target instanceof HTMLImageElement && event.target.closest("[data-link-card]") !== null) {
+            event.target.hidden = true;
+          }
+        },
+        true,
+      );
+    </script>
   </head>
   <body class="min-h-dvh">
     <slot />

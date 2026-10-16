@@ -70,7 +70,11 @@ describe("parseBookmarks", () => {
 
   it("keeps a link's preview image", () => {
     const links = [
-      { title: "The launch post", url: "https://example.com/launch", image: "https://example.com/og.png" },
+      {
+        title: "The launch post",
+        url: "https://example.com/launch",
+        image: "https://pbs.twimg.com/card_img/1/AbCd?format=jpg",
+      },
       { title: "The project's README", url: "https://github.com/someone/project" },
     ];
     expect(parse([{ ...valid, links }])[0]?.links).toEqual(links);
@@ -94,7 +98,15 @@ describe("parseBookmarks", () => {
     ["a plain-http link", { ...valid, links: [{ title: "Blog", url: "http://example.com/post" }] }, "links"],
     [
       "a plain-http link preview image",
-      { ...valid, links: [{ title: "Blog", url: "https://example.com/post", image: "http://example.com/og.png" }] },
+      {
+        ...valid,
+        links: [{ title: "Blog", url: "https://example.com/post", image: "http://pbs.twimg.com/card_img/1/A" }],
+      },
+      "links",
+    ],
+    [
+      "a link preview image served by the linked site",
+      { ...valid, links: [{ title: "Blog", url: "https://example.com/post", image: "https://example.com/og.png" }] },
       "links",
     ],
     ["a link without a title", { ...valid, links: [{ title: " ", url: "https://example.com/post" }] }, "links"],
