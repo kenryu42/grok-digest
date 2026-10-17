@@ -357,8 +357,10 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Opti
     if (gesture.axis !== "horizontal" || !gesture.touch) return;
     gesture.dx = dx;
     gesture.samples = [...gesture.samples, { x: event.clientX, time: event.timeStamp }].slice(-SWIPE_SAMPLES);
-    showSwipeAction(moverRef.current, page !== undefined && done.has(page.id) ? "inbox" : "done");
-    moveCard(moverRef.current, `translateX(${swipeOffset(dx, event.currentTarget.clientWidth)}px)`, "none");
+    const offset = swipeOffset(dx, event.currentTarget.clientWidth);
+    const action = page !== undefined && done.has(page.id) ? "inbox" : "done";
+    showSwipeAction(moverRef.current, offset < 0 ? action : null);
+    moveCard(moverRef.current, `translateX(${offset}px)`, "none");
   };
 
   const endGesture = (event: PointerEvent<HTMLDivElement>): void => {

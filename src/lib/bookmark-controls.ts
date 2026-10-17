@@ -427,12 +427,13 @@ export function useBookmarkControls({ entries, settings }: Props) {
           swipe = null;
           return;
         }
-        if (swipe.axis === "horizontal") swipe.card.toggleAttribute("data-swiping", true);
       }
       if (swipe.axis !== "horizontal") return;
       swipe.dx = dx;
       swipe.samples = [...swipe.samples, { x: event.clientX, time: event.timeStamp }].slice(-SWIPE_SAMPLES);
-      swipe.surface.style.transform = `translateX(${swipeOffset(swipe.origin + dx, swipe.card.offsetWidth)}px)`;
+      const offset = swipeOffset(swipe.origin + dx, swipe.card.offsetWidth);
+      swipe.card.toggleAttribute("data-swiping", offset < 0);
+      swipe.surface.style.transform = `translateX(${offset}px)`;
     };
 
     const holdSwipeFromScrolling = (event: TouchEvent): void => {

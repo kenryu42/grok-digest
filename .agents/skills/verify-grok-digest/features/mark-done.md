@@ -5,7 +5,7 @@ A reader works through saved posts by marking each one done. A done card leaves 
 ## Sub-features
 
 - `done-button` marks a card done with its `Done` button and unmarks it with the same button.
-- `done-swipe` marks a card done by swiping it left on a touch screen. A long drag or a quick short flick marks it; a short, slow drag springs back. Dragging right gives a little and springs back.
+- `done-swipe` marks a card done by swiping it left on a touch screen. A long drag or a quick short flick marks it; a short, slow drag springs back. Dragging right gives a little and springs back, with no green `Done` panel behind it.
 - `done-keyboard` moves between cards with `j` and `k` and marks the focused card with `e` on desktop.
 - `done-undo` restores the last card with the toast's `Undo` button, or with `u`, and the toast closes by itself after 5 seconds.
 - `done-views` updates the counts on `Today`, `Inbox`, `Done` and `All` (the bottom tab bar on phones, the row above the list on desktop), and lists done cards under `Done`.
@@ -32,7 +32,7 @@ Preconditions:
 - **Undo.** Tap Undo. Run `$V click "$RUN" --name Undo`. The status goes back to `15 bookmarks`, and `$V eval "$RUN" 'localStorage.getItem("grok-digest:/:done")'` prints `"[]"`.
 - **Short, slow drag.** Run `$V swipe "$RUN" --card 0 --distance 60 --duration 600`. The status stays `15 bookmarks`, no `[data-undo]` appears, and the card springs back (its `[data-swipe-surface]` has no inline `transform` afterwards).
 - **Short flick.** Run `$V swipe "$RUN" --card 0 --distance 60 --duration 50`. The status shows `14 bookmarks` and the toast appears. Undo it before the next step.
-- **Drag right.** Run `$V swipe "$RUN" --card 0 --distance=-100 --duration 400` (the `=` is needed for a negative number). Nothing is marked, and the card moved right by less than half the drag before springing back.
+- **Drag right.** Run `$V swipe "$RUN" --card 0 --distance=-100 --duration 400` (the `=` is needed for a negative number). Nothing is marked, the card moved right by less than half the drag before springing back, and the green `Done` panel never showed.
 - **Done button.** After setting `Deep`, run `$V click "$RUN" --card 0 --name Done`. The status shows `14 bookmarks`, and the toast appears.
 - **Toast timeout.** Wait out the toast. Run `$V wait "$RUN" --selector "[data-undo]" --gone`. It succeeds within about 5 seconds and the card stays hidden.
 - **Persistence.** Reload without clearing. Run `$V open "$RUN" "/?view=done"`. The status is `1 bookmark` and the snapshot shows `button "Done 1" [pressed=true]`.
