@@ -53,7 +53,7 @@ const visual = cardKind(bookmark);
         {visual.kind === "photo" && (
           <div
             data-cover
-            class="relative -mx-(--card-spacing) -mt-(--card-spacing) mb-2 aspect-video overflow-hidden group-data-[depth=full]/bookmark:hidden group-data-[depth=headline]/bookmark:aspect-[5/2] sm:aspect-[2.4/1] sm:group-data-[depth=headline]/bookmark:aspect-[4/1]"
+            class="relative mb-2 aspect-video overflow-hidden rounded-xl after:pointer-events-none after:absolute after:inset-0 after:rounded-[inherit] after:inset-ring after:inset-ring-foreground/10 group-data-[depth=full]/bookmark:hidden group-data-[depth=headline]/bookmark:aspect-[5/2] sm:aspect-[2.4/1] sm:group-data-[depth=headline]/bookmark:aspect-[4/1]"
           >
             <TopicTile topic={topic} seed={id} className="absolute inset-0" />
             <img
