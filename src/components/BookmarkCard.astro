@@ -29,7 +29,7 @@ const posted = dateFormat.format(postedAt);
   data-url={url}
   data-topic={topic}
   data-depth="full"
-  class="group/bookmark relative touch-pan-y touch-pinch-zoom scroll-mt-6 transition-[scale] duration-500 ease-spring data-pressed:scale-[0.98] data-pressed:duration-150 max-sm:scroll-mt-[calc(var(--controls-height,0px)+--spacing(3))]"
+  class="group/bookmark relative touch-pan-y touch-pinch-zoom scroll-mt-6 max-sm:scroll-mt-[calc(var(--controls-height,0px)+--spacing(3))]"
 >
   <span
     aria-hidden="true"
@@ -42,7 +42,7 @@ const posted = dateFormat.format(postedAt);
   </span>
   <Card
     data-swipe-surface
-    className="relative gap-0 py-0 shadow-xs before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-topic before:transition-opacity group-data-[done]/bookmark:before:opacity-55 ring-foreground/8 [--card-spacing:--spacing(5)] has-[[data-card-toggle]:focus-visible]:ring-2 has-[[data-card-toggle]:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
+    className="relative gap-0 py-0 shadow-xs transition-colors duration-150 group-data-[pressed]/bookmark:bg-accent before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-topic before:transition-opacity group-data-[done]/bookmark:before:opacity-55 ring-foreground/8 [--card-spacing:--spacing(5)] has-[[data-card-toggle]:focus-visible]:ring-2 has-[[data-card-toggle]:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
   >
     <div class="flex flex-col transition-opacity group-data-[depth=gist]/bookmark:pb-1 group-data-[depth=headline]/bookmark:pb-1 group-data-[done]/bookmark:opacity-55">
       <div data-card-head class="flex cursor-pointer flex-col gap-2 px-(--card-spacing) pt-(--card-spacing) pb-4">

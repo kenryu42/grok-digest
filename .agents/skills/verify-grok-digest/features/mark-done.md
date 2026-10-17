@@ -45,5 +45,6 @@ Preconditions:
 - `swipe` refuses to run on the desktop viewport. Swiping is touch-only, by design.
 - Whether a swipe counts as a flick depends on its speed. Each touch step costs the driver about 17ms, so a `--duration` under about 40ms is no faster than 40ms.
 - In `All`, a done card stays visible but dimmed and its `Done` button has `aria-pressed="true"`. Count with the `Done` view instead.
+- The driver's swipes are perfectly straight, and Chrome never takes a sideways drag over for scrolling. Safari on iOS does once the finger drifts down a little, which cancels the touch and springs the card back. After changing swipe code, also drag a card left and slightly down in Safari in the iOS Simulator (`open_url` to the run's `URL`, then a `touch_path`), and check that it is marked done.
 - A swipe blocks clicks for 400ms. Don't chain an `eval` click right after one.
 - Today's picks are cached per day. A card marked done stays in today's count (`n of 5 reviewed today`) rather than being replaced.

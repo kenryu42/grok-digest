@@ -463,6 +463,10 @@ export function useBookmarkControls({ entries, settings }: Props) {
       swipe.surface.style.transform = `translateX(${swipeOffset(swipe.origin + dx, swipe.card.offsetWidth)}px)`;
     };
 
+    const holdSwipeFromScrolling = (event: TouchEvent): void => {
+      if (swipe?.axis === "horizontal" && event.cancelable) event.preventDefault();
+    };
+
     const endSwipe = (event: PointerEvent): void => {
       if (press?.pointerId === event.pointerId) releasePress(event.type === "pointerup");
       if (swipe === null || swipe.pointerId !== event.pointerId) return;
@@ -561,6 +565,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
     document.addEventListener("keydown", onKeyDown);
     document.addEventListener("pointerdown", onPointerDown);
     document.addEventListener("pointermove", onPointerMove);
+    document.addEventListener("touchmove", holdSwipeFromScrolling, { passive: false });
     document.addEventListener("pointerup", endSwipe);
     document.addEventListener("pointercancel", endSwipe);
     return () => {
@@ -569,6 +574,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
       document.removeEventListener("keydown", onKeyDown);
       document.removeEventListener("pointerdown", onPointerDown);
       document.removeEventListener("pointermove", onPointerMove);
+      document.removeEventListener("touchmove", holdSwipeFromScrolling);
       document.removeEventListener("pointerup", endSwipe);
       document.removeEventListener("pointercancel", endSwipe);
     };

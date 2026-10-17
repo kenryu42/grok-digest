@@ -301,11 +301,17 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Opti
       if (document.hidden) setPlaying(false);
     };
     const onKey = (event: KeyboardEvent): void => keysRef.current(event);
+    const holdSwipeFromScrolling = (event: TouchEvent): void => {
+      const gesture = gestureRef.current;
+      if (gesture?.axis === "horizontal" && gesture.touch && event.cancelable) event.preventDefault();
+    };
     document.addEventListener("visibilitychange", pauseWhenHidden);
     document.addEventListener("keydown", onKey);
+    document.addEventListener("touchmove", holdSwipeFromScrolling, { passive: false });
     return () => {
       document.removeEventListener("visibilitychange", pauseWhenHidden);
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("touchmove", holdSwipeFromScrolling);
     };
   }, []);
 
