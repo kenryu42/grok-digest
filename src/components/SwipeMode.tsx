@@ -1,4 +1,6 @@
-import { CheckIcon, InboxIcon } from "lucide-react";
+import type { ReactNode } from "react";
+import { CheckIcon, ClockIcon, CopyIcon, InboxIcon, ShareIcon, Trash2Icon } from "lucide-react";
+import { cn } from "cn";
 import { SwipeCard } from "virtual:grok-digest/components/SwipeCard";
 import { SwipeEnd } from "virtual:grok-digest/components/SwipeEnd";
 import { SwipeFooter } from "virtual:grok-digest/components/SwipeFooter";
@@ -9,7 +11,7 @@ type Props = Parameters<typeof useSwipeMode>[0];
 
 export function SwipeMode(props: Props) {
   const { swipe, frame } = useSwipeMode(props);
-  const { dialogRef, pagerRef, moverRef, onDialogClose, nudging, pagerHandlers } = frame;
+  const { dialogRef, pagerRef, moverRef, onDialogClose, act, nudging, pagerHandlers } = frame;
   return (
     <dialog
       ref={dialogRef}
@@ -36,20 +38,47 @@ export function SwipeMode(props: Props) {
               data-current={isCurrent || undefined}
               className="group/page relative flex h-[calc(100%-3.5rem)] snap-start snap-always flex-col touch-pan-y"
             >
-              <span
-                aria-hidden="true"
-                className="absolute inset-0 hidden items-center justify-end gap-2 rounded-t-3xl bg-done px-8 text-lg font-medium text-done-foreground group-data-[swiping=done]/page:flex"
-              >
-                <CheckIcon className="size-5" />
-                Done
-              </span>
-              <span
-                aria-hidden="true"
-                className="absolute inset-0 hidden items-center justify-end gap-2 rounded-t-3xl bg-muted px-8 text-lg font-medium text-foreground group-data-[swiping=inbox]/page:flex"
-              >
-                <InboxIcon className="size-5" />
-                Back to inbox
-              </span>
+              {isCurrent && (
+                <>
+                  <div
+                    data-swipe-tray="right"
+                    className="invisible absolute inset-y-0 left-0 flex items-center gap-4 px-safe-4 group-data-[swiping=right]/page:visible"
+                  >
+                    {swipe.canShare && (
+                      <TrayButton label="Share" tone="bg-sky-500 text-white" onClick={() => act("share")}>
+                        <ShareIcon />
+                      </TrayButton>
+                    )}
+                    <TrayButton
+                      label={swipe.copied ? "Copied" : "Copy"}
+                      tone="bg-zinc-500 text-white"
+                      onClick={() => act("copy")}
+                    >
+                      {swipe.copied ? <CheckIcon /> : <CopyIcon />}
+                    </TrayButton>
+                  </div>
+                  <div
+                    data-swipe-tray="left"
+                    className="invisible absolute inset-y-0 right-0 flex items-center gap-4 px-safe-4 group-data-[swiping=full]/page:visible group-data-[swiping=left]/page:visible"
+                  >
+                    <TrayButton label="Delete" tone="bg-destructive text-white" onClick={() => act("delete")} secondary>
+                      <Trash2Icon />
+                    </TrayButton>
+                    <TrayButton label="Later" tone="bg-brand text-black" onClick={() => act("later")} secondary>
+                      <ClockIcon />
+                    </TrayButton>
+                    {swipe.pageDone ? (
+                      <TrayButton label="Inbox" tone="bg-muted-foreground text-background" onClick={() => act("done")}>
+                        <InboxIcon />
+                      </TrayButton>
+                    ) : (
+                      <TrayButton label="Done" tone="bg-done text-done-foreground" onClick={() => act("done")}>
+                        <CheckIcon />
+                      </TrayButton>
+                    )}
+                  </div>
+                </>
+              )}
               <div
                 ref={isCurrent ? moverRef : undefined}
                 className="relative flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto [overflow-anchor:none] rounded-t-3xl border-t bg-background px-safe-5 pt-3 pb-8 transition-[border-color,opacity] duration-300 opacity-60 group-data-current/page:border-transparent group-data-current/page:opacity-100"
@@ -66,5 +95,41 @@ export function SwipeMode(props: Props) {
 
       <SwipeFooter swipe={swipe} />
     </dialog>
+  );
+}
+
+function TrayButton({
+  label,
+  tone,
+  onClick,
+  secondary = false,
+  children,
+}: {
+  label: string;
+  tone: string;
+  onClick: () => void;
+  secondary?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "flex flex-col items-center gap-2 text-sm font-medium text-muted-foreground outline-none",
+        secondary && "transition-opacity duration-200 group-data-[swiping=full]/page:opacity-0",
+      )}
+    >
+      <span
+        className={cn(
+          "flex size-14 items-center justify-center rounded-full shadow-sm transition-transform duration-200 in-focus-visible:ring-3 in-focus-visible:ring-ring/50 [&_svg]:size-6",
+          !secondary && "group-data-[swiping=full]/page:scale-115",
+          tone,
+        )}
+      >
+        {children}
+      </span>
+      {label}
+    </button>
   );
 }

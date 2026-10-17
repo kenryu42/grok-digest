@@ -1,10 +1,11 @@
-import { ArrowUpRightIcon, CheckIcon, CopyIcon, PauseIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, CopyIcon, PauseIcon, PlayIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
 import { Button } from "./ui/button.tsx";
 import { SPEED, type SwipeControls } from "../lib/swipe-mode.ts";
 
 export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
   const {
     undoPending,
+    undoAction,
     undo,
     speedOn,
     page,
@@ -17,13 +18,14 @@ export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
     copied,
     pageDone,
     toggleDone,
+    deleteCard,
   } = swipe;
   return (
     <footer className="relative mx-auto flex w-full max-w-2xl flex-col gap-3 border-t px-safe-4 pt-3 pb-safe-4">
       <output className="pointer-events-none absolute inset-x-0 -top-14 flex justify-center px-4">
         {undoPending && (
           <span className="pointer-events-auto flex items-center gap-2 rounded-full bg-foreground py-1.5 pr-1.5 pl-4 text-sm text-background shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
-            Marked done
+            {undoAction === "delete" ? "Deleted" : "Marked done"}
             <Button
               type="button"
               variant="ghost"
@@ -33,6 +35,12 @@ export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
             >
               Undo
             </Button>
+          </span>
+        )}
+        {copied && !undoPending && (
+          <span className="flex items-center gap-2 rounded-full bg-foreground px-4 py-2.5 text-sm text-background shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 pointer-fine:hidden">
+            <CheckIcon className="size-4" aria-hidden="true" />
+            Copied
           </span>
         )}
       </output>
@@ -70,17 +78,35 @@ export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
         </div>
       )}
       {page !== undefined && (
-        <div className="grid grid-cols-3 items-center gap-2">
-          <Button type="button" variant="ghost" onClick={copy} className="h-11 rounded-full">
+        <div className="flex items-center justify-between gap-2 pointer-coarse:justify-center">
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={copy}
+            title="Copy for an AI assistant (c)"
+            className="h-11 rounded-full pointer-coarse:hidden"
+          >
             {copied ? <CheckIcon aria-hidden="true" /> : <CopyIcon aria-hidden="true" />}
             {copied ? "Copied" : "Copy"}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={deleteCard}
+            aria-label="Delete"
+            title="Delete (#)"
+            className="size-11 rounded-full text-muted-foreground pointer-coarse:hidden"
+          >
+            <Trash2Icon aria-hidden="true" />
           </Button>
           <Button
             type="button"
             variant="outline"
             aria-pressed={pageDone}
             onClick={toggleDone}
-            className="h-11 rounded-full aria-pressed:border-done aria-pressed:bg-done aria-pressed:text-done-foreground"
+            title="Mark done (e)"
+            className="h-11 rounded-full px-4 pointer-coarse:hidden aria-pressed:border-done aria-pressed:bg-done aria-pressed:text-done-foreground"
           >
             <CheckIcon aria-hidden="true" />
             Done
@@ -89,7 +115,7 @@ export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
             href={page.url}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex h-11 items-center justify-center gap-1 rounded-full text-sm font-medium focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+            className="inline-flex h-11 items-center justify-center gap-1 rounded-full px-3 text-sm font-medium focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
           >
             Open on X
             <ArrowUpRightIcon className="size-3.5" aria-hidden="true" />

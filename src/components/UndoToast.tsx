@@ -6,7 +6,7 @@ export function UndoToast({ controls }: { controls: Controls }) {
     <output className="pointer-events-none fixed inset-x-0 bottom-[max(--spacing(4),env(safe-area-inset-bottom))] z-20 flex justify-center px-4 max-sm:bottom-[calc(env(safe-area-inset-bottom)+--spacing(20))]">
       {controls.undoPending && (
         <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-foreground py-1.5 pr-1.5 pl-4 text-sm text-background shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
-          Marked done
+          {controls.undoAction === "delete" ? "Deleted" : "Marked done"}
           <Button
             type="button"
             variant="ghost"

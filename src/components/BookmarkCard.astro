@@ -1,5 +1,14 @@
 ---
-import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, ImagesIcon, InboxIcon, ZapIcon } from "lucide-react";
+import {
+  ArrowUpRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CopyIcon,
+  ImagesIcon,
+  InboxIcon,
+  Trash2Icon,
+  ZapIcon,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { LinkCard } from "./LinkCard";
@@ -35,15 +44,33 @@ const visual = cardKind(bookmark);
   data-depth="full"
   class="group/bookmark relative touch-pan-y touch-pinch-zoom scroll-mt-6 max-sm:scroll-mt-[calc(var(--controls-height,0px)+--spacing(3))]"
 >
-  <span
-    aria-hidden="true"
-    class="absolute inset-0 hidden items-center justify-end gap-1.5 rounded-xl bg-done px-6 text-sm font-medium text-done-foreground group-data-[done]/bookmark:bg-muted group-data-[done]/bookmark:text-foreground group-data-[swiped]/bookmark:flex group-data-[swiping]/bookmark:flex"
+  <div
+    data-swipe-actions
+    class="invisible absolute top-0 right-0 flex h-full max-h-40 items-center gap-4 pr-4 pl-4 group-data-[actions]/bookmark:visible group-data-[swiped]/bookmark:visible group-data-[swiping]/bookmark:visible"
   >
-    <CheckIcon className="size-4 group-data-[done]/bookmark:hidden" />
-    <span class="group-data-[done]/bookmark:hidden">Done</span>
-    <InboxIcon className="hidden size-4 group-data-[done]/bookmark:block" />
-    <span class="hidden group-data-[done]/bookmark:inline">Back to inbox</span>
-  </span>
+    <button
+      type="button"
+      data-swipe-action="delete"
+      class="flex flex-col items-center gap-1.5 text-xs font-medium text-muted-foreground transition-opacity duration-200 outline-none group-data-[swiping=full]/bookmark:opacity-0"
+    >
+      <span class="flex size-12 items-center justify-center rounded-full bg-destructive text-white shadow-sm">
+        <Trash2Icon className="size-5" aria-hidden="true" />
+      </span>
+      Delete
+    </button>
+    <button
+      type="button"
+      data-swipe-action="done"
+      class="flex flex-col items-center gap-1.5 text-xs font-medium text-muted-foreground outline-none"
+    >
+      <span class="flex size-12 items-center justify-center rounded-full bg-done text-done-foreground shadow-sm transition-transform duration-200 group-data-[done]/bookmark:bg-muted-foreground group-data-[done]/bookmark:text-background group-data-[swiping=full]/bookmark:scale-115">
+        <CheckIcon className="size-5 group-data-[done]/bookmark:hidden" aria-hidden="true" />
+        <InboxIcon className="hidden size-5 group-data-[done]/bookmark:block" aria-hidden="true" />
+      </span>
+      <span class="group-data-[done]/bookmark:hidden">Done</span>
+      <span class="hidden group-data-[done]/bookmark:inline">Inbox</span>
+    </button>
+  </div>
   <Card
     data-swipe-surface
     className="relative gap-0 py-0 shadow-xs ring-foreground/8 [--card-spacing:--spacing(5)] has-[[data-card-toggle]:focus-visible]:ring-2 has-[[data-card-toggle]:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
@@ -215,7 +242,18 @@ const visual = cardKind(bookmark);
       data-level="points"
       class="flex flex-col gap-3 px-(--card-spacing) pb-(--card-spacing) sm:flex-row sm:justify-end"
     >
-      <div class="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-3">
+      <div class="grid grid-cols-3 gap-2 pointer-fine:grid-cols-4 sm:flex sm:items-center sm:gap-3">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          data-delete
+          aria-label="Delete"
+          title="Delete (#)"
+          className="rounded-full text-muted-foreground pointer-coarse:hidden max-sm:h-10 sm:size-7 sm:px-0"
+        >
+          <Trash2Icon aria-hidden="true" />
+        </Button>
         <Button
           type="button"
           variant="ghost"

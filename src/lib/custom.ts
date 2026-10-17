@@ -18,6 +18,7 @@ const REACT_COMPONENTS = [
   "StatusLine",
   "KeyboardHints",
   "UndoToast",
+  "DeleteQueue",
   "SwipeHeader",
   "SwipeCard",
   "SwipeFooter",

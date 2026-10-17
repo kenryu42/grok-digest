@@ -11,7 +11,7 @@ A site owner (or their Grok bot) changes the page from a `custom/` folder next t
 - `config-review-size` sets how many bookmarks Today brings back.
 - `theme` overrides the color variables, in light and dark.
 - `eject` copies `Header`, `Footer` or `BookmarkCard` into `custom/components/`, where edits show on the page.
-- `eject-controls` copies a part of the controls (`ControlsLayout`, `ViewTabs`, `SearchField`, `TopicChips`, `DetailControl`, `StatusLine`, `KeyboardHints`, `UndoToast`) as a `.tsx` file. The controls keep working with any of them ejected.
+- `eject-controls` copies a part of the controls (`ControlsLayout`, `ViewTabs`, `SearchField`, `TopicChips`, `DetailControl`, `StatusLine`, `KeyboardHints`, `UndoToast`, `DeleteQueue`) as a `.tsx` file. The controls keep working with any of them ejected.
 - `eject-swipe` copies a part of swipe mode (`SwipeHeader`, `SwipeCard`, `SwipeFooter`, `SwipeEnd`). Paging, swipe-to-done, Undo, speed reading and the keys keep working with any of them ejected.
 - `merge` brings a newer default into an ejected component (covered by `test/custom.test.ts`, which simulates an older release).
 

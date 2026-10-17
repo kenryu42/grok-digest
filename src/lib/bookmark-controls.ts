@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import type { PageSettings } from "./custom.ts";
+import { pendingDeletes, removeRequest } from "./deletions.ts";
 import { DEPTHS, NARROW_SCREEN_QUERY, startingDepth, tappedDepth, type Depth } from "./depth.ts";
 import { filterSearch, parseFilter, type Filter, type View } from "./filter.ts";
 import { morph, prefersReducedMotion, stopMotion, type Anchor } from "./morph.ts";
@@ -9,12 +10,15 @@ import { matchingIds, type SearchEntry } from "./search.ts";
 import { readStored, STORAGE_PREFIX, writeStored } from "./storage.ts";
 import {
   flyOffMs,
+  fullSwipeDistance,
+  restOffset,
   swipeAxis,
-  swipeCommits,
   swipeOffset,
+  swipeRest,
   swipeVelocity,
   type SwipeAxis,
   type SwipeSample,
+  type SwipeTrays,
 } from "./swipe.ts";
 import { TOPICS, type Topic } from "./topics.ts";
 
@@ -49,8 +53,21 @@ export type Controls = {
   reviewed: number;
   reviewSize: number;
   undoPending: boolean;
+  undoAction: UndoAction | null;
   undo: () => void;
+  deleteQueue: DeleteQueue;
   openSwipe: () => void;
+};
+
+export type UndoAction = "done" | "delete";
+
+type PendingDelete = { id: string; url: string; headline: string; author: string };
+
+export type DeleteQueue = {
+  items: readonly PendingDelete[];
+  copy: () => void;
+  copied: boolean;
+  restore: (id: string) => void;
 };
 
 type Swipe = {
@@ -58,17 +75,24 @@ type Swipe = {
   start: number;
   done: ReadonlySet<string>;
   toggleDone: (id: string) => Promise<void>;
+  deleteCard: (id: string) => Promise<void>;
+  deleteQueue: DeleteQueue;
   close: (last: HTMLElement | undefined) => void;
 };
 
+type CardAction = "done" | "delete";
+
 const DONE_KEY = `${STORAGE_PREFIX}done`;
+const DELETED_KEY = `${STORAGE_PREFIX}deleted`;
 const REVIEW_KEY = `${STORAGE_PREFIX}review`;
 const DEPTH_KEY = `${STORAGE_PREFIX}cards-depth`;
 const UNDO_MS = 5000;
+const COPIED_MS = 2000;
 const SWIPE_CLICK_GUARD_MS = 400;
 const SWIPE_SAMPLES = 6;
 const SPRING_BACK = "transform 500ms var(--ease-spring)";
 const FLY_OFF_EASING = "cubic-bezier(0.25, 0.4, 0.5, 1)";
+const FLY_OFF_ACTION_MS = 220;
 const ANCHOR_GAP = 12;
 
 const FORM_FIELDS = "input, textarea, select, [contenteditable]";
@@ -98,6 +122,31 @@ function isStoredReview(value: unknown): value is { day: string; picks: ReviewPi
 function storedDone(): Set<string> {
   const stored = readStored(DONE_KEY);
   return new Set(isStringArray(stored) ? stored : []);
+}
+
+function storedDeleted(entries: readonly SearchEntry[]): Set<string> {
+  return new Set(pendingDeletes(readStored(DELETED_KEY), new Set(entries.map(({ id }) => id))));
+}
+
+function pendingDelete(id: string): PendingDelete {
+  const card = document.querySelector<HTMLElement>(`[data-bookmark-id="${CSS.escape(id)}"]`);
+  return {
+    id,
+    url: card?.dataset["url"] ?? "",
+    headline: card?.querySelector("[data-card-toggle]")?.textContent.trim() ?? "",
+    author: card?.querySelector("[data-author]")?.textContent.trim() ?? "",
+  };
+}
+
+function withId(ids: ReadonlySet<string>, id: string, present: boolean): Set<string> {
+  const next = new Set(ids);
+  if (present) next.add(id);
+  else next.delete(id);
+  return next;
+}
+
+function trays(card: HTMLElement): SwipeTrays {
+  return { left: card.querySelector<HTMLElement>("[data-swipe-actions]")?.offsetWidth ?? 0, right: 0 };
 }
 
 function todaysReview(entries: readonly SearchEntry[], done: ReadonlySet<string>, size: number): ReviewPick[] {
@@ -179,10 +228,12 @@ export function useBookmarkControls({ entries, settings }: Props) {
   );
   const [filter, setFilter] = useState(() => initialFilter(viewDefaults));
   const [done, setDone] = useState(storedDone);
+  const [deleted, setDeleted] = useState(() => storedDeleted(entries));
+  const [deleteRequestCopied, setDeleteRequestCopied] = useState(false);
   const [depth, setDepth] = useState(() =>
     startingDepth(readStored(DEPTH_KEY), window.matchMedia(NARROW_SCREEN_QUERY).matches, settings.detail),
   );
-  const [undo, setUndo] = useState<{ id: string } | null>(null);
+  const [undo, setUndo] = useState<{ id: string; action: UndoAction } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [swiping, setSwiping] = useState<{ cards: HTMLElement[]; start: number } | null>(null);
   const [depthOpen, setDepthOpen] = useState(false);
@@ -197,22 +248,27 @@ export function useBookmarkControls({ entries, settings }: Props) {
   const { query, topic, view } = filter;
   const searching = query.trim() !== "";
   const showSearch = searchOpen || query !== "";
-  const reviewIds = useMemo(() => new Set(review.map(({ id }) => id)), [review]);
+  const reviewIds = useMemo(
+    () => new Set(review.map(({ id }) => id).filter((id) => !deleted.has(id))),
+    [review, deleted],
+  );
   const reasons = useMemo(() => new Map(review.map(({ id, reason }) => [id, reason])), [review]);
   const visible = useMemo(
-    () => matchingIds({ entries, filter, triage: { done, review: reviewIds } }),
-    [entries, filter, done, reviewIds],
+    () => matchingIds({ entries, filter, triage: { done, review: reviewIds, deleted } }),
+    [entries, filter, done, reviewIds, deleted],
   );
   const topicsInUse = useMemo(() => TOPICS.filter((t) => entries.some((entry) => entry.topic === t)), [entries]);
 
-  const doneCount = entries.filter(({ id }) => done.has(id)).length;
-  const reviewedCount = review.filter(({ id }) => done.has(id)).length;
+  const kept = entries.filter(({ id }) => !deleted.has(id));
+  const doneCount = kept.filter(({ id }) => done.has(id)).length;
+  const reviewedCount = [...reviewIds].filter((id) => done.has(id)).length;
   const counts: Record<View, number> = {
-    today: review.length,
-    inbox: entries.length - doneCount,
+    today: reviewIds.size,
+    inbox: kept.length - doneCount,
     done: doneCount,
-    all: entries.length,
+    all: kept.length,
   };
+  const deleteItems = useMemo(() => [...deleted].map(pendingDelete), [deleted]);
 
   useLayoutEffect(() => {
     doneRef.current = done;
@@ -222,7 +278,8 @@ export function useBookmarkControls({ entries, settings }: Props) {
       stopMotion(card);
       card.hidden = !visible.has(id);
       card.toggleAttribute("data-done", done.has(id));
-      card.querySelector("[data-done-toggle]")?.setAttribute("aria-pressed", String(done.has(id)));
+      for (const toggle of card.querySelectorAll("[data-done-toggle]"))
+        toggle.setAttribute("aria-pressed", String(done.has(id)));
       const reason = card.querySelector<HTMLElement>("[data-review-reason]");
       const text = showReasons ? reasons.get(id) : undefined;
       if (reason !== null) {
@@ -231,6 +288,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
       }
       if (card.hasAttribute("data-swiped") && !card.hidden) {
         card.removeAttribute("data-swiped");
+        delete card.dataset["actions"];
         const surface = card.querySelector<HTMLElement>("[data-swipe-surface]");
         if (surface !== null) {
           surface.style.transition = prefersReducedMotion() ? "" : SPRING_BACK;
@@ -243,6 +301,16 @@ export function useBookmarkControls({ entries, settings }: Props) {
   useEffect(() => {
     writeStored(DONE_KEY, [...done]);
   }, [done]);
+
+  useEffect(() => {
+    writeStored(DELETED_KEY, [...deleted]);
+  }, [deleted]);
+
+  useEffect(() => {
+    if (!deleteRequestCopied) return undefined;
+    const timer = setTimeout(() => setDeleteRequestCopied(false), COPIED_MS);
+    return () => clearTimeout(timer);
+  }, [deleteRequestCopied]);
 
   useEffect(() => {
     undoRef.current = undo;
@@ -325,31 +393,57 @@ export function useBookmarkControls({ entries, settings }: Props) {
     const marking = !doneRef.current.has(id);
     return morph(() =>
       flushSync(() => {
-        setDone((previous) => {
-          const next = new Set(previous);
-          if (marking) next.add(id);
-          else next.delete(id);
-          return next;
-        });
-        setUndo(marking ? { id } : null);
+        setDone((previous) => withId(previous, id, marking));
+        setUndo(marking ? { id, action: "done" } : null);
       }),
     );
   }, []);
 
-  const undoDone = useCallback((): void => {
-    const pending = undoRef.current;
-    if (pending === null) return;
+  const deleteCard = useCallback(
+    (id: string): Promise<void> =>
+      morph(() =>
+        flushSync(() => {
+          setDeleted((previous) => withId(previous, id, true));
+          setUndo({ id, action: "delete" });
+        }),
+      ),
+    [],
+  );
+
+  const restore = useCallback((id: string): void => {
     void morph(() =>
       flushSync(() => {
-        setDone((previous) => {
-          const next = new Set(previous);
-          next.delete(pending.id);
-          return next;
-        });
+        setDeleted((previous) => withId(previous, id, false));
+        if (undoRef.current?.id === id) setUndo(null);
+      }),
+    );
+  }, []);
+
+  const undoLast = useCallback((): void => {
+    const pending = undoRef.current;
+    if (pending === null) return;
+    const change = pending.action === "done" ? setDone : setDeleted;
+    void morph(() =>
+      flushSync(() => {
+        change((previous) => withId(previous, pending.id, false));
         setUndo(null);
       }),
     );
   }, []);
+
+  const copyDeleteRequest = useCallback((): void => {
+    navigator.clipboard.writeText(removeRequest(deleteItems.map(({ url }) => url))).then(
+      () => setDeleteRequestCopied(true),
+      () => setDeleteRequestCopied(false),
+    );
+  }, [deleteItems]);
+
+  const deleteQueue: DeleteQueue = {
+    items: deleteItems,
+    copy: copyDeleteRequest,
+    copied: deleteRequestCopied,
+    restore,
+  };
 
   const openSwipe = useCallback((): void => {
     if (!settings.swipeMode) return;
@@ -383,25 +477,53 @@ export function useBookmarkControls({ entries, settings }: Props) {
       startX: number;
       startY: number;
       origin: number;
+      open: boolean;
       axis: SwipeAxis;
       dx: number;
       samples: SwipeSample[];
+      trays: SwipeTrays;
     } | null = null;
     let clicksBlockedUntil = 0;
 
-    const springBack = (surface: HTMLElement): void => {
-      surface.style.transition = prefersReducedMotion() ? "" : SPRING_BACK;
-      surface.style.transform = "";
+    const moveSurface = (surface: HTMLElement, offset: number, transition: string): void => {
+      surface.style.transition = prefersReducedMotion() ? "" : transition;
+      surface.style.transform = offset === 0 ? "" : `translateX(${offset}px)`;
+    };
+
+    const closeActions = (card: HTMLElement): void => {
+      delete card.dataset["actions"];
+      card.removeAttribute("data-swiping");
+      const surface = card.querySelector<HTMLElement>("[data-swipe-surface]");
+      if (surface !== null) moveSurface(surface, 0, SPRING_BACK);
+    };
+
+    const act = (card: HTMLElement, action: CardAction): Promise<void> => {
+      const id = card.dataset["bookmarkId"] ?? "";
+      return action === "done" ? toggleDone(id) : deleteCard(id);
+    };
+
+    const flyOff = (card: HTMLElement, action: CardAction, ms: number): void => {
+      const surface = card.querySelector<HTMLElement>("[data-swipe-surface]");
+      card.toggleAttribute("data-swiped", true);
+      if (surface !== null) {
+        surface.style.transition = ms === 0 ? "" : `transform ${ms}ms ${FLY_OFF_EASING}`;
+        surface.style.transform = "translateX(-100%)";
+      }
+      setTimeout(() => void act(card, action), ms);
     };
 
     const onPointerDown = (event: PointerEvent): void => {
       if (!event.isPrimary || !(event.target instanceof Element)) return;
       const card = event.target.closest<HTMLElement>("[data-bookmark-id]");
+      for (const other of document.querySelectorAll<HTMLElement>("[data-bookmark-id][data-actions]")) {
+        if (other !== card) closeActions(other);
+      }
       const surface = card?.querySelector<HTMLElement>("[data-swipe-surface]");
       if (card === null || card === undefined || surface === null || surface === undefined) return;
-      if (card.hasAttribute("data-swiped")) return;
-      if (event.pointerType !== "touch") return;
+      if (card.hasAttribute("data-swiped") || event.pointerType !== "touch") return;
+      if (event.target.closest("[data-swipe-actions]") !== null) return;
       const origin = Math.min(surfaceOffset(surface), 0);
+      const open = card.dataset["actions"] === "left";
       surface.style.transition = "none";
       surface.style.transform = origin === 0 ? "" : `translateX(${origin}px)`;
       swipe = {
@@ -411,11 +533,13 @@ export function useBookmarkControls({ entries, settings }: Props) {
         startX: event.clientX,
         startY: event.clientY,
         origin,
-        axis: origin === 0 ? "undecided" : "horizontal",
+        open,
+        axis: origin === 0 || open ? "undecided" : "horizontal",
         dx: 0,
         samples: [{ x: event.clientX, time: event.timeStamp }],
+        trays: trays(card),
       };
-      if (origin !== 0) card.toggleAttribute("data-swiping", true);
+      if (origin !== 0) card.dataset["swiping"] = "left";
     };
 
     const onPointerMove = (event: PointerEvent): void => {
@@ -424,6 +548,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
       if (swipe.axis === "undecided") {
         swipe.axis = swipeAxis(dx, event.clientY - swipe.startY);
         if (swipe.axis === "vertical") {
+          if (swipe.open) closeActions(swipe.card);
           swipe = null;
           return;
         }
@@ -431,8 +556,10 @@ export function useBookmarkControls({ entries, settings }: Props) {
       if (swipe.axis !== "horizontal") return;
       swipe.dx = dx;
       swipe.samples = [...swipe.samples, { x: event.clientX, time: event.timeStamp }].slice(-SWIPE_SAMPLES);
-      const offset = swipeOffset(swipe.origin + dx, swipe.card.offsetWidth);
-      swipe.card.toggleAttribute("data-swiping", offset < 0);
+      const width = swipe.card.offsetWidth;
+      const offset = swipeOffset(swipe.origin + dx, width, swipe.trays);
+      if (offset >= 0) swipe.card.removeAttribute("data-swiping");
+      else swipe.card.dataset["swiping"] = offset <= -fullSwipeDistance(width, swipe.trays) ? "full" : "left";
       swipe.surface.style.transform = `translateX(${offset}px)`;
     };
 
@@ -442,23 +569,28 @@ export function useBookmarkControls({ entries, settings }: Props) {
 
     const endSwipe = (event: PointerEvent): void => {
       if (swipe === null || swipe.pointerId !== event.pointerId) return;
-      const { card, surface, axis, dx, origin, samples } = swipe;
+      const { card, surface, axis, dx, origin, open, samples } = swipe;
+      const cardTrays = swipe.trays;
       swipe = null;
+      if (axis === "undecided" && open) {
+        clicksBlockedUntil = event.timeStamp + SWIPE_CLICK_GUARD_MS;
+        closeActions(card);
+        return;
+      }
       if (axis !== "horizontal") return;
       clicksBlockedUntil = event.timeStamp + SWIPE_CLICK_GUARD_MS;
       card.removeAttribute("data-swiping");
       const width = card.offsetWidth;
+      const offset = swipeOffset(origin + dx, width, cardTrays);
       const velocity = swipeVelocity([...samples, { x: event.clientX, time: event.timeStamp }]);
-      const commits = event.type === "pointerup" && swipeCommits(origin + dx, width, velocity);
-      if (!commits) {
-        springBack(surface);
+      const rest = event.type === "pointerup" ? swipeRest(offset, width, cardTrays, velocity) : "closed";
+      if (rest === "full") {
+        flyOff(card, "done", prefersReducedMotion() ? 0 : flyOffMs(width + offset, velocity));
         return;
       }
-      card.toggleAttribute("data-swiped", true);
-      const ms = prefersReducedMotion() ? 0 : flyOffMs(width + swipeOffset(origin + dx, width), velocity);
-      surface.style.transition = ms === 0 ? "" : `transform ${ms}ms ${FLY_OFF_EASING}`;
-      surface.style.transform = "translateX(-100%)";
-      setTimeout(() => void toggleDone(card.dataset["bookmarkId"] ?? ""), ms);
+      if (rest === "left") card.dataset["actions"] = "left";
+      else delete card.dataset["actions"];
+      moveSurface(surface, restOffset(rest, cardTrays), SPRING_BACK);
     };
 
     const blockClickAfterSwipe = (event: MouseEvent): void => {
@@ -472,8 +604,24 @@ export function useBookmarkControls({ entries, settings }: Props) {
       copyFrom(event.target.closest<HTMLElement>("[data-copy]"));
       const card = event.target.closest<HTMLElement>("[data-bookmark-id]");
       if (card === null) return;
-      if (event.target.closest("[data-done-toggle]") !== null) void toggleDone(card.dataset["bookmarkId"] ?? "");
+      const trayAction = event.target.closest<HTMLElement>("[data-swipe-action]")?.dataset["swipeAction"];
+      if (trayAction === "done" || trayAction === "delete") {
+        flyOff(card, trayAction, prefersReducedMotion() ? 0 : FLY_OFF_ACTION_MS);
+        return;
+      }
+      if (event.target.closest("[data-done-toggle]") !== null) void act(card, "done");
+      if (event.target.closest("[data-delete]") !== null) void act(card, "delete");
       if (event.target.closest("[data-card-head]") !== null) toggleCard(card);
+    };
+
+    const actOnFocused = (current: HTMLElement | null, shown: HTMLElement[], action: CardAction): void => {
+      if (current === null) return;
+      const index = shown.indexOf(current);
+      const neighbor = shown[index + 1] ?? shown[index - 1];
+      const settled = act(current, action);
+      if (!current.hidden && !current.inert) return;
+      neighbor?.querySelector<HTMLElement>("[data-card-toggle]")?.focus({ preventScroll: true });
+      void settled.then(() => focusCard(neighbor));
     };
 
     const onKeyDown = (event: KeyboardEvent): void => {
@@ -493,20 +641,17 @@ export function useBookmarkControls({ entries, settings }: Props) {
         case "k":
           focusCard(shown[Math.max(index - 1, 0)]);
           break;
-        case "e": {
-          if (current === null) return;
-          const neighbor = shown[index + 1] ?? shown[index - 1];
-          const settled = toggleDone(current.dataset["bookmarkId"] ?? "");
-          if (!current.hidden && !current.inert) break;
-          neighbor?.querySelector<HTMLElement>("[data-card-toggle]")?.focus({ preventScroll: true });
-          void settled.then(() => focusCard(neighbor));
+        case "e":
+          actOnFocused(current, shown, "done");
           break;
-        }
+        case "#":
+          actOnFocused(current, shown, "delete");
+          break;
         case "c":
           copyFrom(current?.querySelector<HTMLElement>("[data-copy]"));
           break;
         case "u":
-          undoDone();
+          undoLast();
           break;
         case "o": {
           const url = current?.dataset["url"];
@@ -550,7 +695,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
       document.removeEventListener("pointerup", endSwipe);
       document.removeEventListener("pointercancel", endSwipe);
     };
-  }, [changeDepth, openSwipe, toggleCard, toggleDone, undoDone]);
+  }, [changeDepth, deleteCard, openSwipe, toggleCard, toggleDone, undoLast]);
 
   useEffect(() => {
     if (!depthOpen) return undefined;
@@ -599,11 +744,14 @@ export function useBookmarkControls({ entries, settings }: Props) {
     barRef,
     shown: visible.size,
     reviewed: reviewedCount,
-    reviewSize: review.length,
+    reviewSize: reviewIds.size,
     undoPending: undo !== null,
-    undo: undoDone,
+    undoAction: undo?.action ?? null,
+    undo: undoLast,
+    deleteQueue,
     openSwipe,
   };
-  const swipe: Swipe | null = swiping === null ? null : { ...swiping, done, toggleDone, close: closeSwipe };
+  const swipe: Swipe | null =
+    swiping === null ? null : { ...swiping, done, toggleDone, deleteCard, deleteQueue, close: closeSwipe };
   return { controls, swipe };
 }
