@@ -37,6 +37,8 @@ If `custom/components/.ejected/` exists, also run `bunx grok-digest merge`. It c
 
 ## Save a shared post
 
+A share is one message that brought you posts, such as an email; its id is the message id. A link the owner pastes in chat has no share id, so skip the `processed.json` parts of these steps for it.
+
 1. If the share's id is already in `data/processed.json`, stop. You have handled it.
 2. Find the post's status id: the number at the end of its URL.
 3. If that id is in `data/removed.json`, the owner removed it. Do not add it again; add the share's id to `processed.json` and stop.
@@ -46,7 +48,7 @@ If `custom/components/.ejected/` exists, also run `bunx grok-digest merge`. It c
 7. Add the share's id to `data/processed.json`.
 8. If any entry's author name contains `(sample)`, delete those entries. They are the template's placeholders.
 9. Run `bun run validate` and fix the entry until it passes.
-10. Commit with the message `Save bookmark (@handle)`, using the post author's handle, and push to `main`.
+10. Commit with the message `Save bookmark (@handle)`, using the post author's handle, and push to `main`. For several posts in one commit, list the handles: `Save bookmarks (@a, @b)`.
 
 ## The entry
 
@@ -85,7 +87,7 @@ If `custom/components/.ejected/` exists, also run `bunx grok-digest merge`. It c
 }
 ```
 
-Write every field, in this order. The build rejects an entry with a missing field or a field not listed here. `text` and `action` may be empty strings, and `key_points`, `links`, and `media` may be empty arrays. Entries saved before `media` existed have no `media` field; that is valid, and you don't need to add one.
+Write every field, in this order. The build rejects an entry with a missing field or a field not listed here. `text` and `action` may be empty strings, and `key_points`, `links`, and `media` may be empty arrays. Inside them, `image` and `short` on a link and `alt` and `link` on an image are optional: leave each out rather than writing `""`. An entry with no `media` field is valid and reads as `[]`; you don't need to add one to old entries.
 
 ### id
 
@@ -146,7 +148,7 @@ One or two sentences on what the post says and why it matters. For a thread, sum
 
 ### text
 
-The post's own words, copied exactly as posted, with its line breaks. For a thread, the author's posts in order, separated by a blank line. Keep a `t.co` line that stands for an image or video as it is; the image itself goes in `media`. Write `""` when the post has no text.
+The post's own words, copied exactly as posted, with its line breaks. For a thread, the author's posts in order, separated by a blank line. Keep every short link (`https://t.co/…` or `pic.x.com/…`) as it is, including ones that stand for an image or a link card; `media[].link` and `links[].short` point at them. For a long post, the X API's `note_tweet.text` holds the full text and `text` is cut off, so copy `note_tweet.text` when it is there. Write `""` when the post has no text.
 
 Keep it complete. Most AI assistants can't open x.com, so when the owner copies a bookmark into one, this text is all it gets of the post.
 
@@ -169,8 +171,8 @@ Every link in the post and its thread, followed to where it really lands. Expand
 
 - `url`: the final `https` address without tracking parameters such as `utm_*`. Skip links that are not `https`.
 - `title`: the page's own title, cut to about 8 words, or a plain description such as `GitHub repo: example/pstack`.
-- `image`: the preview image X shows for the link in the post's link card, its `https://pbs.twimg.com/card_img/` address. The card shows it above the title, the way X does. Never the page's own `og:image` address: the build rejects any host other than `pbs.twimg.com`, so opening a card never contacts the linked site. Look at the post's link card on X before you leave `image` out, and leave it out only when X shows no image for the link.
-- `short`: the short link that stands for this link in `text`, copied exactly as it appears there, such as `https://t.co/Pq9rSt2Uvw`. The card shows the link's card in that spot and hides the short link. The build rejects a `short` that is not in `text`. Leave `short` out when `text` has no short link for this link; the card then lists the link above the post.
+- `image`: the preview image X shows for the link in the post's link card. Any `https://pbs.twimg.com/` address works, such as `…/card_img/…` or `…/news_img/…`; the X API gives it in the link's URL entity under `images` (take the largest). The card shows it above the title, the way X does. Never the page's own `og:image` address: the build rejects any host other than `pbs.twimg.com`, so opening a card never contacts the linked site. Check the URL entity (in `entities.urls`, or `note_tweet.entities.urls` for a long post) before you leave `image` out, and leave it out only when X has no image for the link.
+- `short`: the short link that stands for this link in `text`, copied exactly as it appears there, such as `https://t.co/Pq9rSt2Uvw`. The card shows the link's card where the short link first appears and hides it there. The build rejects a `short` that is not in `text`. Leave `short` out when `text` has no short link for this link; the card then lists the link above the post.
 - Leave out links to the post itself, to the author's profile, and to the post's images or videos.
 - Write `[]` when there are none.
 
@@ -180,16 +182,16 @@ The images in the post and its thread, in thread order, so the card can show eac
 
 - `url`: the image's `https://pbs.twimg.com/` address, such as `https://pbs.twimg.com/media/G3xAmPLeAAAbCdE.jpg`. A `?format=jpg&name=large` query is fine. Never a `t.co` link or an `x.com/…/photo/1` page; the build rejects any other host.
 - `alt`: the author's alt text for the image when it has one, otherwise a few words on what it shows. Leave `alt` out rather than writing `""`.
-- `link`: the short link that stands for the image in `text`, copied exactly as it appears there, such as `https://t.co/Xq7mPLe0Ab` or `pic.x.com/Xq7mPLe0Ab`. X gives all the photos of one post a single link, so photos from the same post share it. The card shows the images where that link is and hides the link. The build rejects a `link` that is not in `text`. Leave `link` out only when `text` has no link for the image; the card then shows it after the post.
+- `link`: the short link that stands for the image in `text`, copied exactly as it appears there, such as `https://t.co/Xq7mPLe0Ab` or `pic.x.com/Xq7mPLe0Ab`. X gives all the photos of one post a single link, so photos from the same post share it. The card shows the images where that link first appears and hides it there. The build rejects a `link` that is not in `text`. Leave `link` out only when `text` has no link for the image; the card then shows it after the post.
 - For a video or GIF, add its poster image (the `pbs.twimg.com` thumbnail X shows before it plays) when you can find it. Skip it otherwise.
 - Don't add link-preview images or the author's profile picture. A link's preview image goes in its `image` under `links`.
 - Write `[]` when the post has no images.
 
-Images never go in `links`, and `text` keeps the post's exact words, including any `t.co` lines that stood for the images.
+A post's own photos never go in `links`, and `text` keeps the post's exact words, including the short links that stood for the images.
 
 ## Change or remove a bookmark
 
-To change one, edit its fields in place. Keep `id` and `saved_at`. Commit with `Update bookmark (@handle)`.
+To change one, edit its fields in place. Keep `id` and `saved_at`. Commit with `Update bookmark (@handle)`, or `Update bookmarks (@a, @b)` for several.
 
 To remove one, delete its entry from `data/bookmarks.json` and add its id to `data/removed.json`, so a later share of the same post doesn't bring it back. Commit with `Remove bookmark (@handle)`.
 

@@ -55,7 +55,7 @@ A site changes its page from `custom/`, and keeps every release for the parts it
 
 The page finds cards and their parts by `data-` attributes, so an ejected `BookmarkCard` keeps them. `Header` and `Footer` carry none.
 
-The controls island keeps its state and behavior in `useBookmarkControls` and renders `ControlsLayout`, which renders the other parts. Each part gets one prop, `controls`: the state and the functions that change it. The parts import each other through `virtual:grok-digest/components/<Component>`, which the integration resolves to the site's copy when there is one. Its fields are listed in `BOT.md`; renaming or removing one is a breaking change for ejected parts.
+The controls island keeps its state and behavior in `useBookmarkControls` and renders `ControlsLayout`, which renders the other parts. Each part gets one prop, `controls`: the state and the functions that change it. The parts import each other through `virtual:grok-digest/components/<Component>`, which the integration resolves to the site's copy when there is one. Its fields are listed in `CUSTOMIZING.md`; renaming or removing one is a breaking change for ejected parts.
 
 Swipe mode works the same way with `useSwipeMode` and a `swipe` prop. `SwipeMode` keeps the frame that paging and swiping depend on: the dialog, the full-height pages that scroll-snap, and the element a swipe moves. The parts render inside it. `SwipeCard` also gets `page.card`, the bookmark's server-rendered card, for anything the text blocks leave out.
 
