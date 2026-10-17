@@ -148,7 +148,7 @@ One or two sentences on what the post says and why it matters. For a thread, sum
 
 ### text
 
-The post's own words, copied exactly as posted, with its line breaks. For a thread, the author's posts in order, separated by a blank line. Keep every short link (`https://t.co/…` or `pic.x.com/…`) as it is, including ones that stand for an image or a link card; `media[].link` and `links[].short` point at them. For a long post, the X API's `note_tweet.text` holds the full text and `text` is cut off, so copy `note_tweet.text` when it is there. Write `""` when the post has no text.
+The post's own words, copied exactly as posted, with its line breaks. For a thread, the author's posts in order, separated by a blank line. Keep every short link (`https://t.co/…` or `pic.x.com/…`) as it is, including ones that stand for an image or a link card; `media[].link` and `links[].short` point at them. For a long post, the X API's `note_tweet.text` holds the full text and `text` is cut off, so copy `note_tweet.text` when it is there. `note_tweet.text` usually leaves out the short link that stands for the post's photos; don't add it back, and leave those images' `link` out. Write `""` when the post has no text.
 
 Keep it complete. Most AI assistants can't open x.com, so when the owner copies a bookmark into one, this text is all it gets of the post.
 
