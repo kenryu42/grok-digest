@@ -38,14 +38,14 @@ export function SwipeMode(props: Props) {
             >
               <span
                 aria-hidden="true"
-                className="absolute inset-0 hidden items-center justify-end gap-2 bg-done px-8 text-lg font-medium text-done-foreground group-data-[swiping=done]/page:flex"
+                className="absolute inset-0 hidden items-center justify-end gap-2 rounded-t-3xl bg-done px-8 text-lg font-medium text-done-foreground group-data-[swiping=done]/page:flex"
               >
                 <CheckIcon className="size-5" />
                 Done
               </span>
               <span
                 aria-hidden="true"
-                className="absolute inset-0 hidden items-center justify-end gap-2 bg-muted px-8 text-lg font-medium text-foreground group-data-[swiping=inbox]/page:flex"
+                className="absolute inset-0 hidden items-center justify-end gap-2 rounded-t-3xl bg-muted px-8 text-lg font-medium text-foreground group-data-[swiping=inbox]/page:flex"
               >
                 <InboxIcon className="size-5" />
                 Back to inbox
