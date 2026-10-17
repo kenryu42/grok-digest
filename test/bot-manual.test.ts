@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseBookmarks } from "../src/lib/bookmarks.ts";
 import { OVERRIDABLE_COMPONENTS, siteConfigSchema } from "../src/lib/custom.ts";
-import { REMOVE_REQUEST } from "../src/lib/deletions.ts";
+import { REMOVE_REQUEST } from "../src/lib/remove-request.ts";
 import { TOPIC_LABELS, TOPICS } from "../src/lib/topics.ts";
 
 const manual = readFileSync(new URL("../BOT.md", import.meta.url), "utf8");

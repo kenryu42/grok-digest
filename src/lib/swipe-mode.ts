@@ -9,7 +9,6 @@ import {
   type RefObject,
 } from "react";
 import { flushSync } from "react-dom";
-import type { DeleteQueue, UndoAction } from "./bookmark-controls.ts";
 import { shows, type Depth } from "./depth.ts";
 import type { PostLink } from "./bookmarks.ts";
 import { withoutUrls, type PostPart } from "./media.ts";
@@ -17,7 +16,6 @@ import { prefersReducedMotion } from "./morph.ts";
 import { readingPlan, stepMs, type ReadPlan } from "./reading.ts";
 import { readStored, STORAGE_PREFIX, writeStored } from "./storage.ts";
 import {
-  fullSwipeDistance,
   restOffset,
   swipeAxis,
   swipeOffset,
@@ -85,15 +83,14 @@ type Gesture = {
 
 type OpenSide = "left" | "right";
 
-type TrayAction = "done" | "later" | "delete" | "share" | "copy";
+type TrayAction = "done" | "later" | "share" | "copy";
 
 type Options = {
   cards: HTMLElement[];
   start: number;
   done: ReadonlySet<string>;
   onToggleDone: (id: string) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
-  deleteQueue: DeleteQueue;
+  onLater: (id: string) => Promise<void>;
   onClose: (last: HTMLElement | undefined) => void;
 };
 
@@ -150,7 +147,7 @@ function moveCard(mover: HTMLElement | null, transform: string, transition: stri
   mover.style.transform = transform;
 }
 
-function showActions(mover: HTMLElement | null, side: OpenSide | "full" | null): void {
+function showActions(mover: HTMLElement | null, side: OpenSide | null): void {
   const page = mover?.parentElement;
   if (page === null || page === undefined) return;
   if (side === null) delete page.dataset["swiping"];
@@ -163,11 +160,10 @@ function traysOf(mover: HTMLElement | null): SwipeTrays {
   return { left: tray("left"), right: tray("right") };
 }
 
-function deck(pages: readonly SwipePage[], removed: ReadonlySet<string>, later: readonly string[]): SwipePage[] {
-  const kept = pages.filter(({ id }) => !removed.has(id));
+function deck(pages: readonly SwipePage[], later: readonly string[]): SwipePage[] {
   return [
-    ...kept.filter(({ id }) => !later.includes(id)),
-    ...later.flatMap((id) => kept.filter((page) => page.id === id)),
+    ...pages.filter(({ id }) => !later.includes(id)),
+    ...later.flatMap((id) => pages.filter((page) => page.id === id)),
   ];
 }
 
@@ -186,10 +182,7 @@ export type SwipeControls = {
   pageDone: boolean;
   toggleDone: () => void;
   later: () => void;
-  deleteCard: () => void;
-  deleteQueue: DeleteQueue;
   undoPending: boolean;
-  undoAction: UndoAction | null;
   undo: () => void;
   copied: boolean;
   copy: () => void;
@@ -227,14 +220,13 @@ type SwipeFrame = {
   };
 };
 
-export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, deleteQueue, onClose }: Options): {
+export function useSwipeMode({ cards, start, done, onToggleDone, onLater, onClose }: Options): {
   swipe: SwipeControls;
   frame: SwipeFrame;
 } {
   const allPages = useMemo(() => cards.map(pageFrom), [cards]);
-  const [removed, setRemoved] = useState<ReadonlySet<string>>(new Set());
   const [later, setLater] = useState<readonly string[]>([]);
-  const pages = useMemo(() => deck(allPages, removed, later), [allPages, removed, later]);
+  const pages = useMemo(() => deck(allPages, later), [allPages, later]);
   const openRef = useRef<OpenSide | null>(null);
   const [canShare] = useState(() => typeof navigator.share === "function");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -249,7 +241,7 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, delet
   const [step, setStep] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [startSoon, setStartSoon] = useState(true);
-  const [undo, setUndo] = useState<{ id: string; action: UndoAction } | null>(null);
+  const [undo, setUndo] = useState<{ id: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [nudging, setNudging] = useState(() => readStored(NUDGED_KEY) !== true && start < cards.length - 1);
   const page = pages[current];
@@ -338,7 +330,7 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, delet
     closeActions();
     const marking = !done.has(page.id);
     void onToggleDone(page.id);
-    setUndo(marking ? { id: page.id, action: "done" } : null);
+    setUndo(marking ? { id: page.id } : null);
     if (marking) setTimeout(() => goTo(current + 1), DONE_ADVANCE_MS);
   };
 
@@ -358,55 +350,33 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, delet
     }, FLY_OFF_RESET_MS);
   };
 
-  const leaveDeck = (change: () => void, afterwards?: () => void): void => {
+  const laterCurrent = (): void => {
+    if (page === undefined) return;
+    const { id } = page;
+    void onLater(id);
+    if (current === pages.length - 1) {
+      closeActions();
+      return;
+    }
     const mover = moverRef.current;
     flyOff(mover);
     setTimeout(
       () => {
-        flushSync(change);
+        flushSync(() => setLater((previous) => [...previous.filter((other) => other !== id), id]));
         stayAt(current);
         moveCard(mover, "", "");
         showActions(mover, null);
         arrive();
-        afterwards?.();
       },
       prefersReducedMotion() ? 0 : FLY_OFF_MS,
     );
   };
 
-  const deleteCurrent = (): void => {
-    if (page === undefined) return;
-    const { id } = page;
-    leaveDeck(
-      () => setRemoved((previous) => new Set([...previous, id])),
-      () => {
-        setUndo({ id, action: "delete" });
-        void onDelete(id);
-      },
-    );
-  };
-
-  const laterCurrent = (): void => {
-    if (page === undefined || current === pages.length - 1) {
-      closeActions();
-      return;
-    }
-    const { id } = page;
-    leaveDeck(() => setLater((previous) => [...previous.filter((other) => other !== id), id]));
-  };
-
-  const undoLast = (): void => {
+  const undoDone = (): void => {
     if (undo === null) return;
     setUndo(null);
-    if (undo.action === "done") {
-      void onToggleDone(undo.id);
-      goTo(pages.findIndex(({ id }) => id === undo.id));
-      return;
-    }
-    const restored = new Set([...removed].filter((id) => id !== undo.id));
-    flushSync(() => setRemoved(restored));
-    deleteQueue.restore(undo.id);
-    goTo(deck(allPages, restored, later).findIndex(({ id }) => id === undo.id));
+    void onToggleDone(undo.id);
+    goTo(pages.findIndex(({ id }) => id === undo.id));
   };
 
   const copyCurrent = (): void => {
@@ -428,7 +398,6 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, delet
     const actions: Record<TrayAction, () => void> = {
       done: leaveDone,
       later: laterCurrent,
-      delete: deleteCurrent,
       share: shareCurrent,
       copy: copyCurrent,
     };
@@ -550,8 +519,7 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, delet
     gesture.samples = [...gesture.samples, { x: event.clientX, time: event.timeStamp }].slice(-SWIPE_SAMPLES);
     const width = event.currentTarget.clientWidth;
     const offset = swipeOffset(gesture.origin + dx, width, gesture.trays);
-    const full = offset <= -fullSwipeDistance(width, gesture.trays);
-    showActions(moverRef.current, offset === 0 ? null : offset > 0 ? "right" : full ? "full" : "left");
+    showActions(moverRef.current, offset === 0 ? null : offset > 0 ? "right" : "left");
     moveCard(moverRef.current, `translateX(${offset}px)`, "none");
   };
 
@@ -568,9 +536,7 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, delet
       const velocity = swipeVelocity([...gesture.samples, { x: event.clientX, time: event.timeStamp }]);
       const width = event.currentTarget.clientWidth;
       const offset = swipeOffset(gesture.origin + gesture.dx, width, gesture.trays);
-      const rest = page === undefined ? "closed" : swipeRest(offset, width, gesture.trays, velocity);
-      if (rest === "full") leaveDone();
-      else settle(mover, rest, gesture.trays);
+      settle(mover, page === undefined ? "closed" : swipeRest(offset, gesture.trays, velocity), gesture.trays);
       return;
     }
     if (gesture.axis !== "undecided" || page === undefined) return;
@@ -614,11 +580,8 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, delet
       case "l":
         laterCurrent();
         break;
-      case "#":
-        deleteCurrent();
-        break;
       case "u":
-        undoLast();
+        undoDone();
         break;
       case "r":
         toggleSpeed();
@@ -659,11 +622,8 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onDelete, delet
     pageDone: page !== undefined && done.has(page.id),
     toggleDone: toggleCurrentDone,
     later: laterCurrent,
-    deleteCard: deleteCurrent,
-    deleteQueue,
     undoPending: undo !== null,
-    undoAction: undo?.action ?? null,
-    undo: undoLast,
+    undo: undoDone,
     copied,
     copy: copyCurrent,
     canShare,

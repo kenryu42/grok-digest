@@ -20,8 +20,7 @@ export function BookmarkControls({ entries, settings }: Props) {
           start={swipe.start}
           done={swipe.done}
           onToggleDone={swipe.toggleDone}
-          onDelete={swipe.deleteCard}
-          deleteQueue={swipe.deleteQueue}
+          onLater={swipe.later}
           onClose={swipe.close}
         />
       )}

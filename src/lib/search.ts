@@ -37,7 +37,7 @@ export function toSearchEntry(bookmark: Bookmark): SearchEntry {
   };
 }
 
-export type Triage = { done: ReadonlySet<string>; review: ReadonlySet<string>; deleted: ReadonlySet<string> };
+export type Triage = { done: ReadonlySet<string>; review: ReadonlySet<string> };
 
 const IN_VIEW: Record<View, (id: string, triage: Triage) => boolean> = {
   today: (id, { review }) => review.has(id),
@@ -58,7 +58,6 @@ export function matchingIds({
   const terms = normalize(query).split(/\s+/).filter(Boolean);
   return new Set(
     entries
-      .filter((entry) => !triage.deleted.has(entry.id))
       .filter((entry) => topic === null || entry.topic === topic)
       .filter((entry) =>
         terms.length === 0 ? IN_VIEW[view](entry.id, triage) : terms.every((term) => entry.text.includes(term)),

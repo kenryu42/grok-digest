@@ -1,7 +1,7 @@
 import { SearchIcon } from "lucide-react";
 import { cn } from "cn";
-import { DeleteQueue } from "virtual:grok-digest/components/DeleteQueue";
 import { DetailControl } from "virtual:grok-digest/components/DetailControl";
+import { DoneCleanup } from "virtual:grok-digest/components/DoneCleanup";
 import { KeyboardHints } from "virtual:grok-digest/components/KeyboardHints";
 import { SearchField } from "virtual:grok-digest/components/SearchField";
 import { StatusLine } from "virtual:grok-digest/components/StatusLine";
@@ -62,7 +62,7 @@ export function ControlsLayout({ controls }: { controls: Controls }) {
         <KeyboardHints controls={controls} />
       </div>
 
-      <DeleteQueue controls={controls} />
+      <DoneCleanup controls={controls} />
 
       <UndoToast controls={controls} />
     </div>

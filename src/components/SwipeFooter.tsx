@@ -1,11 +1,10 @@
-import { ArrowUpRightIcon, CheckIcon, CopyIcon, PauseIcon, PlayIcon, RotateCcwIcon, Trash2Icon } from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, ClockIcon, CopyIcon, PauseIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
 import { Button } from "./ui/button.tsx";
 import { SPEED, type SwipeControls } from "../lib/swipe-mode.ts";
 
 export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
   const {
     undoPending,
-    undoAction,
     undo,
     speedOn,
     page,
@@ -18,14 +17,14 @@ export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
     copied,
     pageDone,
     toggleDone,
-    deleteCard,
+    later,
   } = swipe;
   return (
     <footer className="relative mx-auto flex w-full max-w-2xl flex-col gap-3 border-t px-safe-4 pt-3 pb-safe-4">
       <output className="pointer-events-none absolute inset-x-0 -top-14 flex justify-center px-4">
         {undoPending && (
           <span className="pointer-events-auto flex items-center gap-2 rounded-full bg-foreground py-1.5 pr-1.5 pl-4 text-sm text-background shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2">
-            {undoAction === "delete" ? "Deleted" : "Marked done"}
+            Marked done
             <Button
               type="button"
               variant="ghost"
@@ -93,12 +92,12 @@ export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
             type="button"
             variant="ghost"
             size="icon"
-            onClick={deleteCard}
-            aria-label="Delete"
-            title="Delete (#)"
+            onClick={later}
+            aria-label="Later"
+            title="Move to the end (l)"
             className="size-11 rounded-full text-muted-foreground pointer-coarse:hidden"
           >
-            <Trash2Icon aria-hidden="true" />
+            <ClockIcon aria-hidden="true" />
           </Button>
           <Button
             type="button"

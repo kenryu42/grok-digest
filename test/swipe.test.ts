@@ -4,8 +4,8 @@ import { restOffset, swipeAxis, swipeOffset, swipeRest, swipeVelocity } from "..
 const CARD_WIDTH = 343;
 const STILL = 0;
 
-const LIST_TRAYS = { left: 128, right: 0 };
-const SWIPE_MODE_TRAYS = { left: 216, right: 152 };
+const LIST_TRAYS = { left: 160, right: 0 };
+const SWIPE_MODE_TRAYS = { left: 160, right: 152 };
 
 describe("swiping a card", () => {
   it("waits to decide until the finger has moved a little", () => {
@@ -17,54 +17,43 @@ describe("swiping a card", () => {
     expect(swipeAxis(6, 40)).toBe("vertical");
   });
 
-  it("opens the actions after a drag past half of them", () => {
-    expect(swipeRest(-80, CARD_WIDTH, LIST_TRAYS, STILL)).toBe("left");
-    expect(restOffset("left", LIST_TRAYS)).toBe(-128);
+  it("opens the buttons after a drag past half of them", () => {
+    expect(swipeRest(-90, LIST_TRAYS, STILL)).toBe("left");
+    expect(restOffset("left", LIST_TRAYS)).toBe(-160);
   });
 
   it("closes again after a short, slow drag", () => {
-    expect(swipeRest(-40, CARD_WIDTH, LIST_TRAYS, -0.1)).toBe("closed");
+    expect(swipeRest(-40, LIST_TRAYS, -0.1)).toBe("closed");
     expect(restOffset("closed", LIST_TRAYS)).toBe(0);
   });
 
-  it("opens the actions after a short, quick flick", () => {
-    expect(swipeRest(-40, CARD_WIDTH, LIST_TRAYS, -0.9)).toBe("left");
+  it("opens the buttons after a short, quick flick", () => {
+    expect(swipeRest(-40, LIST_TRAYS, -0.9)).toBe("left");
   });
 
   it("ignores a flick too small to be meant", () => {
-    expect(swipeRest(-12, CARD_WIDTH, LIST_TRAYS, -1.5)).toBe("closed");
-    expect(swipeRest(-12, CARD_WIDTH, { left: 0, right: 0 }, -1.5)).toBe("closed");
+    expect(swipeRest(-12, LIST_TRAYS, -1.5)).toBe("closed");
   });
 
-  it("marks the card done after a drag well past the actions", () => {
-    expect(swipeRest(-220, CARD_WIDTH, LIST_TRAYS, STILL)).toBe("full");
-    expect(swipeRest(-290, CARD_WIDTH, SWIPE_MODE_TRAYS, STILL)).toBe("full");
-  });
-
-  it("only opens the actions when the drag stops on them", () => {
-    expect(swipeRest(-240, CARD_WIDTH, SWIPE_MODE_TRAYS, STILL)).toBe("left");
-  });
-
-  it("marks the card done after a quick flick past the actions", () => {
-    expect(swipeRest(-140, CARD_WIDTH, LIST_TRAYS, -0.9)).toBe("full");
+  it("stops at the buttons however far or fast the card is swiped", () => {
+    expect(swipeRest(-340, LIST_TRAYS, -3)).toBe("left");
+    expect(swipeOffset(-150, CARD_WIDTH, LIST_TRAYS)).toBe(-150);
+    const past = swipeOffset(-340, CARD_WIDTH, LIST_TRAYS);
+    expect(past).toBeLessThan(-160);
+    expect(past).toBeGreaterThan(-260);
   });
 
   it("closes when the finger turns around before letting go", () => {
-    expect(swipeRest(-250, CARD_WIDTH, LIST_TRAYS, 0.6)).toBe("closed");
+    expect(swipeRest(-150, LIST_TRAYS, 0.6)).toBe("closed");
   });
 
-  it("opens the actions on the left after a drag to the right, when there are any", () => {
-    expect(swipeRest(100, CARD_WIDTH, SWIPE_MODE_TRAYS, STILL)).toBe("right");
+  it("opens the buttons on the left after a drag to the right, when there are any", () => {
+    expect(swipeRest(100, SWIPE_MODE_TRAYS, STILL)).toBe("right");
     expect(restOffset("right", SWIPE_MODE_TRAYS)).toBe(152);
-    expect(swipeRest(200, CARD_WIDTH, LIST_TRAYS, STILL)).toBe("closed");
+    expect(swipeRest(200, LIST_TRAYS, STILL)).toBe("closed");
   });
 
-  it("never marks the card done when dragged to the right", () => {
-    expect(swipeRest(400, CARD_WIDTH, SWIPE_MODE_TRAYS, 2)).toBe("right");
-  });
-
-  it("follows the finger to the left and over the actions, and resists past them", () => {
-    expect(swipeOffset(-50, CARD_WIDTH, LIST_TRAYS)).toBe(-50);
+  it("follows the finger over the buttons and resists past them", () => {
     expect(swipeOffset(100, CARD_WIDTH, SWIPE_MODE_TRAYS)).toBe(100);
     const resisted = swipeOffset(100, CARD_WIDTH, LIST_TRAYS);
     expect(resisted).toBeGreaterThan(0);

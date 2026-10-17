@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CheckIcon, ClockIcon, CopyIcon, InboxIcon, ShareIcon, Trash2Icon } from "lucide-react";
+import { CheckIcon, ClockIcon, CopyIcon, InboxIcon, ShareIcon } from "lucide-react";
 import { cn } from "cn";
 import { SwipeCard } from "virtual:grok-digest/components/SwipeCard";
 import { SwipeEnd } from "virtual:grok-digest/components/SwipeEnd";
@@ -59,12 +59,9 @@ export function SwipeMode(props: Props) {
                   </div>
                   <div
                     data-swipe-tray="left"
-                    className="invisible absolute inset-y-0 right-0 flex items-center gap-4 px-safe-4 group-data-[swiping=full]/page:visible group-data-[swiping=left]/page:visible"
+                    className="invisible absolute inset-y-0 right-0 flex items-center gap-4 px-safe-4 group-data-[swiping=left]/page:visible"
                   >
-                    <TrayButton label="Delete" tone="bg-destructive text-white" onClick={() => act("delete")} secondary>
-                      <Trash2Icon />
-                    </TrayButton>
-                    <TrayButton label="Later" tone="bg-brand text-black" onClick={() => act("later")} secondary>
+                    <TrayButton label="Later" tone="bg-brand text-black" onClick={() => act("later")}>
                       <ClockIcon />
                     </TrayButton>
                     {swipe.pageDone ? (
@@ -102,28 +99,22 @@ function TrayButton({
   label,
   tone,
   onClick,
-  secondary = false,
   children,
 }: {
   label: string;
   tone: string;
   onClick: () => void;
-  secondary?: boolean;
   children: ReactNode;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={cn(
-        "flex flex-col items-center gap-2 text-sm font-medium text-muted-foreground outline-none",
-        secondary && "transition-opacity duration-200 group-data-[swiping=full]/page:opacity-0",
-      )}
+      className="flex flex-col items-center gap-2 text-sm font-medium text-muted-foreground outline-none"
     >
       <span
         className={cn(
-          "flex size-14 items-center justify-center rounded-full shadow-sm transition-transform duration-200 in-focus-visible:ring-3 in-focus-visible:ring-ring/50 [&_svg]:size-6",
-          !secondary && "group-data-[swiping=full]/page:scale-115",
+          "flex size-14 items-center justify-center rounded-full shadow-sm in-focus-visible:ring-3 in-focus-visible:ring-ring/50 [&_svg]:size-6",
           tone,
         )}
       >

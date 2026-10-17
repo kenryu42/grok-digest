@@ -49,14 +49,13 @@ const ids = (
     view = "all",
     done = [],
     review = [],
-    deleted = [],
-  }: { topic?: Topic | null; view?: View; done?: string[]; review?: string[]; deleted?: string[] } = {},
+  }: { topic?: Topic | null; view?: View; done?: string[]; review?: string[] } = {},
 ) =>
   [
     ...matchingIds({
       entries,
       filter: { query, topic, view },
-      triage: { done: new Set(done), review: new Set(review), deleted: new Set(deleted) },
+      triage: { done: new Set(done), review: new Set(review) },
     }),
   ].toSorted();
 
@@ -97,11 +96,5 @@ describe("matchingIds", () => {
   it("searches every bookmark whatever the view", () => {
     expect(ids("agents", { view: "today", review: ["b"] })).toEqual(["a"]);
     expect(ids("agents", { view: "inbox", done: ["a"] })).toEqual(["a"]);
-  });
-
-  it("hides a deleted bookmark from every view and from search", () => {
-    expect(ids("", { deleted: ["a"] })).toEqual(["b"]);
-    expect(ids("", { view: "done", done: ["a"], deleted: ["a"] })).toEqual([]);
-    expect(ids("agents", { deleted: ["a"] })).toEqual([]);
   });
 });

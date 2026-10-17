@@ -3,10 +3,10 @@ import {
   ArrowUpRightIcon,
   CheckIcon,
   ChevronDownIcon,
+  ClockIcon,
   CopyIcon,
   ImagesIcon,
   InboxIcon,
-  Trash2Icon,
   ZapIcon,
 } from "lucide-react";
 import { Button } from "./ui/button";
@@ -46,24 +46,24 @@ const visual = cardKind(bookmark);
 >
   <div
     data-swipe-actions
-    class="invisible absolute top-0 right-0 flex h-full max-h-40 items-center gap-4 pr-4 pl-4 group-data-[actions]/bookmark:visible group-data-[swiped]/bookmark:visible group-data-[swiping]/bookmark:visible"
+    class="invisible absolute top-0 right-0 flex h-full items-center gap-4 px-4 group-data-[actions]/bookmark:visible group-data-[swiped]/bookmark:visible group-data-[swiping]/bookmark:visible"
   >
     <button
       type="button"
-      data-swipe-action="delete"
-      class="flex flex-col items-center gap-1.5 text-xs font-medium text-muted-foreground transition-opacity duration-200 outline-none group-data-[swiping=full]/bookmark:opacity-0"
+      data-swipe-action="later"
+      class="flex flex-col items-center gap-1.5 text-xs font-medium text-muted-foreground outline-none"
     >
-      <span class="flex size-12 items-center justify-center rounded-full bg-destructive text-white shadow-sm">
-        <Trash2Icon className="size-5" aria-hidden="true" />
+      <span class="flex size-12 items-center justify-center rounded-full bg-brand text-black shadow-sm">
+        <ClockIcon className="size-5" aria-hidden="true" />
       </span>
-      Delete
+      Later
     </button>
     <button
       type="button"
       data-swipe-action="done"
       class="flex flex-col items-center gap-1.5 text-xs font-medium text-muted-foreground outline-none"
     >
-      <span class="flex size-12 items-center justify-center rounded-full bg-done text-done-foreground shadow-sm transition-transform duration-200 group-data-[done]/bookmark:bg-muted-foreground group-data-[done]/bookmark:text-background group-data-[swiping=full]/bookmark:scale-115">
+      <span class="flex size-12 items-center justify-center rounded-full bg-done text-done-foreground shadow-sm group-data-[done]/bookmark:bg-muted-foreground group-data-[done]/bookmark:text-background">
         <CheckIcon className="size-5 group-data-[done]/bookmark:hidden" aria-hidden="true" />
         <InboxIcon className="hidden size-5 group-data-[done]/bookmark:block" aria-hidden="true" />
       </span>
@@ -247,12 +247,12 @@ const visual = cardKind(bookmark);
           type="button"
           variant="ghost"
           size="sm"
-          data-delete
-          aria-label="Delete"
-          title="Delete (#)"
+          data-later
+          aria-label="Later"
+          title="Move to the end (l)"
           className="rounded-full text-muted-foreground pointer-coarse:hidden max-sm:h-10 sm:size-7 sm:px-0"
         >
-          <Trash2Icon aria-hidden="true" />
+          <ClockIcon aria-hidden="true" />
         </Button>
         <Button
           type="button"
