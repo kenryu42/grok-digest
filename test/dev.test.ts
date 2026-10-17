@@ -137,7 +137,7 @@ describe("dev", () => {
       PHOTOS[3]?.url,
     ]);
     expect(/<figure[\s\S]*?<\/figure>/.exec(threadCard)?.[0]).not.toContain("t.co/");
-    expect(imagesOn(threadCard).slice(0, 2)).toEqual([
+    expect(imagesOn(/<figure[\s\S]*?<\/figure>/.exec(threadCard)?.[0] ?? "").slice(0, 2)).toEqual([
       { src: PHOTOS[0]?.url, alt: "The old dashboard", lazy: true },
       { src: PHOTOS[1]?.url, alt: "Image 2 of 4 from the post by @example_agents", lazy: true },
     ]);
@@ -150,6 +150,18 @@ describe("dev", () => {
       { href: LINKS[0]?.url, newTab: true, image: LINKS[0]?.image, text: "example.com Launch week recap" },
       { href: LINKS[1]?.url, newTab: true, image: undefined, text: "github.com GitHub repo: example/tool" },
     ]);
+  });
+
+  it("pictures every card: the post's first photo, else the link's preview, else a tile for its topic", async () => {
+    const page = await (await fetch(origin)).text();
+    const cards = page.split('<li id="b-').slice(1);
+    const headOf = (id: string) =>
+      /data-card-head[\s\S]*?<p\b/.exec(cards.find((card) => card.startsWith(id)) ?? "")?.[0] ?? "";
+    expect(imagesOn(headOf(THREAD_ID))).toEqual([{ src: PHOTOS[0]?.url, alt: "The old dashboard", lazy: true }]);
+    expect(imagesOn(headOf(LINKED_ID))).toEqual([{ src: LINKS[0]?.image, alt: "", lazy: true }]);
+    const textOnly = samples.find(({ links }) => links.length === 0);
+    expect(imagesOn(headOf(textOnly?.id ?? ""))).toEqual([]);
+    expect(headOf(textOnly?.id ?? "")).toContain(`topic-tile`);
   });
 
   it("serves only this machine unless asked to serve the network", () => {

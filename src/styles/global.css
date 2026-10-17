@@ -146,6 +146,20 @@
   --topic-foreground: oklch(0.2 0.008 60);
 }
 
+.topic-tile {
+  background:
+    radial-gradient(
+      circle at var(--tile-x) var(--tile-y),
+      oklch(0.86 calc(0.12 * var(--topic-chroma)) var(--topic-hue) / 0.85),
+      transparent 65%
+    ),
+    linear-gradient(
+      160deg,
+      oklch(0.64 calc(0.14 * var(--topic-chroma)) var(--topic-hue)),
+      oklch(0.4 calc(0.12 * var(--topic-chroma)) calc(var(--topic-hue) + 35))
+    );
+}
+
 [data-topic="ai-agents"] {
   --topic-hue: 295;
 }

@@ -1,10 +1,11 @@
 ---
-import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, InboxIcon, ZapIcon } from "lucide-react";
-import { Badge } from "./ui/badge";
+import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, ImagesIcon, InboxIcon, ZapIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { LinkCard } from "./LinkCard";
+import { TopicTile } from "./TopicTile";
 import type { Bookmark } from "../lib/bookmarks";
+import { cardKind } from "../lib/card-kind";
 import { copyText } from "../lib/copy";
 import { postParts } from "../lib/media";
 import { TOPIC_LABELS } from "../lib/topics";
@@ -21,6 +22,7 @@ const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
 const post = postParts(bookmark);
 const posted = dateFormat.format(postedAt);
+const visual = cardKind(bookmark);
 ---
 
 <li
@@ -42,43 +44,108 @@ const posted = dateFormat.format(postedAt);
   </span>
   <Card
     data-swipe-surface
-    className="relative gap-0 py-0 shadow-xs before:absolute before:inset-y-0 before:left-0 before:w-1 before:bg-topic before:transition-opacity group-data-[done]/bookmark:before:opacity-55 ring-foreground/8 [--card-spacing:--spacing(5)] has-[[data-card-toggle]:focus-visible]:ring-2 has-[[data-card-toggle]:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
+    className="relative gap-0 py-0 shadow-xs ring-foreground/8 [--card-spacing:--spacing(5)] has-[[data-card-toggle]:focus-visible]:ring-2 has-[[data-card-toggle]:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
   >
     <div class="flex flex-col transition-opacity group-data-[depth=gist]/bookmark:pb-1 group-data-[depth=headline]/bookmark:pb-1 group-data-[done]/bookmark:opacity-55">
       <div data-card-head class="flex cursor-pointer flex-col gap-2 px-(--card-spacing) pt-(--card-spacing) pb-4">
-        <span class="flex items-baseline justify-between gap-3 text-sm">
-          <span class="flex min-w-0 items-baseline gap-x-1.5">
-            <span data-author class="min-w-0 truncate font-medium text-foreground">
-              {author.name}
-            </span>
-            <span class="min-w-0 shrink-[3] truncate text-muted-foreground">@{author.handle}</span>
-          </span>
-          <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
-            <span class="max-sm:hidden">Saved </span>
-            <time datetime={savedAt.toISOString()}>{dateFormat.format(savedAt)}</time>
-            {postedOtherDay && (
-              <span class="max-sm:hidden">
-                {" · "}Posted <time datetime={isoDay(postedAt)}>{posted}</time>
+        {visual.kind === "photo" && (
+          <div
+            data-cover
+            class="relative -mx-(--card-spacing) -mt-(--card-spacing) mb-2 aspect-video overflow-hidden group-data-[depth=headline]/bookmark:aspect-[5/2] sm:aspect-[2.4/1] sm:group-data-[depth=headline]/bookmark:aspect-[4/1]"
+          >
+            <TopicTile topic={topic} seed={id} className="absolute inset-0" />
+            <img
+              src={visual.image.url}
+              alt={visual.image.alt}
+              loading="lazy"
+              decoding="async"
+              class="absolute inset-0 size-full object-cover"
+            />
+            {visual.count > 1 && (
+              <span class="absolute right-3 bottom-3 inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs font-medium text-white tabular-nums backdrop-blur-sm">
+                <ImagesIcon className="size-3.5" aria-hidden="true" />
+                {visual.count}
               </span>
             )}
+          </div>
+        )}
+        <span class="flex items-center justify-between gap-3">
+          <span class="flex min-w-0 items-center gap-1.5 text-xs font-semibold tracking-wider uppercase">
+            <span class="shrink-0 text-topic">{TOPIC_LABELS[topic]}</span>
+            {visual.kind === "link" && (
+              <>
+                <span aria-hidden="true" class="text-muted-foreground/60 max-sm:hidden">
+                  ·
+                </span>
+                <span class="min-w-0 truncate font-medium tracking-normal text-muted-foreground normal-case max-sm:hidden">
+                  {visual.host}
+                </span>
+              </>
+            )}
+            {shelfLife === "news" && (
+              <>
+                <span aria-hidden="true" class="text-muted-foreground/60">
+                  ·
+                </span>
+                <span class="shrink-0 text-brand-ink">News</span>
+              </>
+            )}
+          </span>
+          <span class="flex shrink-0 items-center gap-2 text-xs text-muted-foreground tabular-nums">
+            <span>
+              <span class="max-sm:hidden">Saved </span>
+              <time datetime={savedAt.toISOString()}>{dateFormat.format(savedAt)}</time>
+              {postedOtherDay && (
+                <span class="max-sm:hidden">
+                  {" · "}Posted <time datetime={isoDay(postedAt)}>{posted}</time>
+                </span>
+              )}
+            </span>
+            <ChevronDownIcon
+              className="size-4 transition-transform duration-500 ease-spring group-has-[[data-card-toggle][aria-expanded=true]]/bookmark:rotate-180"
+              aria-hidden="true"
+            />
           </span>
         </span>
         <span data-review-reason class="text-xs font-medium tracking-wide text-brand-ink uppercase" hidden></span>
-        <span class="flex items-start justify-between gap-3">
-          <h2 class="min-w-0 flex-1 font-heading text-xl leading-snug font-semibold text-balance text-foreground sm:text-headline">
-            <button
-              type="button"
-              data-card-toggle
-              aria-expanded="true"
-              class="block w-full cursor-pointer text-left text-balance outline-none"
-            >
-              {tldr}
-            </button>
-          </h2>
-          <ChevronDownIcon
-            className="mt-1.5 size-4 shrink-0 text-muted-foreground transition-transform duration-500 ease-spring group-has-[[data-card-toggle][aria-expanded=true]]/bookmark:rotate-180"
-            aria-hidden="true"
-          />
+        <span class="flex items-start gap-4">
+          <span class="flex min-w-0 flex-1 flex-col gap-2">
+            <h2 class="min-w-0 flex-1 font-heading text-xl leading-snug font-semibold text-balance text-foreground sm:text-headline">
+              <button
+                type="button"
+                data-card-toggle
+                aria-expanded="true"
+                class="block w-full cursor-pointer text-left text-balance outline-none"
+              >
+                {tldr}
+              </button>
+            </h2>
+            <span class="flex min-w-0 items-baseline gap-x-1.5 text-sm">
+              <span data-author class="min-w-0 truncate font-medium text-foreground">
+                {author.name}
+              </span>
+              <span class="min-w-0 shrink-[3] truncate text-muted-foreground">@{author.handle}</span>
+            </span>
+          </span>
+          {visual.kind !== "photo" && (
+            <span data-cover class="relative mt-1 size-16 shrink-0 overflow-hidden rounded-lg shadow-xs sm:size-20">
+              <TopicTile
+                topic={topic}
+                seed={id}
+                letter={visual.kind === "link" ? visual.host.charAt(0).toUpperCase() : undefined}
+                className="absolute inset-0"
+              />
+              {visual.kind === "link" && visual.image !== undefined && (
+                <img
+                  src={visual.image}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  class="absolute inset-0 size-full object-cover"
+                />
+              )}
+            </span>
+          )}
         </span>
       </div>
 
@@ -179,17 +246,9 @@ const posted = dateFormat.format(postedAt);
 
     <div
       data-level="points"
-      class="flex flex-col gap-3 px-(--card-spacing) pb-(--card-spacing) sm:flex-row sm:flex-wrap sm:items-center sm:justify-between sm:gap-x-3 sm:gap-y-2"
+      class="flex flex-col gap-3 px-(--card-spacing) pb-(--card-spacing) sm:flex-row sm:justify-end"
     >
-      <div class="flex flex-wrap items-center gap-1.5">
-        <Badge className="bg-topic-soft text-topic">{TOPIC_LABELS[topic]}</Badge>
-        {shelfLife === "news" && (
-          <Badge variant="outline" className="border-brand/60 text-brand-ink">
-            News
-          </Badge>
-        )}
-      </div>
-      <div class="grid grid-cols-3 gap-2 sm:ml-auto sm:flex sm:items-center sm:gap-3">
+      <div class="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-3">
         <Button
           type="button"
           variant="ghost"

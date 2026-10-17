@@ -1,7 +1,6 @@
 import { LinkIcon } from "lucide-react";
 import type { PostLink } from "../lib/bookmarks.ts";
-
-const hostOf = (url: string) => new URL(url).hostname.replace(/^www\./, "");
+import { hostOf } from "../lib/card-kind.ts";
 
 export function LinkCard({ url, title, image }: PostLink) {
   return (

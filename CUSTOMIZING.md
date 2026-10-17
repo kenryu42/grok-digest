@@ -49,7 +49,7 @@ Swipe mode shows one card per screen. The package keeps its frame: the full-scre
 | `SwipeFooter` | The bottom bar: the speed reading controls, Copy, Done, Open on X, and the "Marked done" message.            |                                                |
 | `SwipeEnd`    | The screen after the last card, with Start over and Close.                                                   |                                                |
 
-`page` is one card: `id`, `author`, `topic`, `url`, `headline`, and `blocks`, its text in order. Each block has a `kind` (`"summary"`, `"point"`, `"action"`, or `"post"`) and its `text`. `links` are the post's links, each with its `url`, `title` and, when it has one that loaded, `image`. The ejected copy shows them with `LinkCard`, as the package does. `page.card` is the bookmark's card element on the page, so `SwipeCard` can show anything that card shows, such as its images: `page.card.querySelectorAll("figure img")`.
+`page` is one card: `id`, `author`, `topic`, `url`, `headline`, and `blocks`, its text in order. Each block has a `kind` (`"summary"`, `"point"`, `"action"`, or `"post"`) and its `text`. `links` are the post's links, each with its `url`, `title` and, when it has one that loaded, `image`. The ejected copy shows them with `LinkCard`, as the package does. `cover` is the post's first image as `{ url, alt }`, or `undefined` when the post has none; without one, the package shows a `TopicTile` instead. `page.card` is the bookmark's card element on the page, so `SwipeCard` can show anything that card shows, such as its images: `page.card.querySelectorAll("figure img")`.
 
 `swipe` holds swipe mode's state and what changes it:
 

@@ -60,7 +60,10 @@ const { title, description, feedHref } = Astro.props;
       document.addEventListener(
         "error",
         (event) => {
-          if (event.target instanceof HTMLImageElement && event.target.closest("[data-link-card]") !== null) {
+          if (
+            event.target instanceof HTMLImageElement &&
+            event.target.closest("[data-link-card], [data-cover]") !== null
+          ) {
             event.target.hidden = true;
           }
         },

@@ -53,6 +53,7 @@ export type SwipePage = {
   headline: string;
   blocks: SwipeBlock[];
   links: PostLink[];
+  cover: { url: string; alt: string } | undefined;
 };
 
 type Gesture = {
@@ -90,7 +91,12 @@ function pageFrom(card: HTMLElement): SwipePage {
     headline: blocks.find(({ kind }) => kind === "headline")?.text ?? "",
     blocks: blocks.filter(({ kind }) => kind !== "headline"),
     links: [...card.querySelectorAll<HTMLAnchorElement>("[data-link-card]")].map(linkFrom),
+    cover: coverFrom(card.querySelector<HTMLImageElement>("[data-cover] img[alt]:not([alt=''], [hidden])")),
   };
+}
+
+function coverFrom(image: HTMLImageElement | null): SwipePage["cover"] {
+  return image === null ? undefined : { url: image.src, alt: image.alt };
 }
 
 function linkFrom(anchor: HTMLAnchorElement): PostLink {

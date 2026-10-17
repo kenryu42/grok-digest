@@ -1,6 +1,8 @@
 import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
 import { cn } from "cn";
 import { LinkCard } from "./LinkCard.tsx";
+import { TopicTile } from "./TopicTile.tsx";
+import { hostOf } from "../lib/card-kind.ts";
 import { SpeedStage } from "./SpeedStage.tsx";
 import { shows } from "../lib/depth.ts";
 import { CARD_DEPTH, type BlockKind, type SwipeBlock, type SwipeControls, type SwipePage } from "../lib/swipe-mode.ts";
@@ -20,18 +22,37 @@ export function SwipeCard({ swipe, page, current }: { swipe: SwipeControls; page
   const { done, reading, expanded, toggleExpanded } = swipe;
   return (
     <article data-topic={page.topic} className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-4">
-      <p className="flex items-center gap-2 text-sm text-muted-foreground">
-        <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-topic" />
-        <span className="min-w-0 truncate">
-          {page.topic === undefined ? page.author : `${TOPIC_LABELS[page.topic]} · ${page.author}`}
-        </span>
+      {page.cover !== undefined && (
+        <img
+          src={page.cover.url}
+          alt={page.cover.alt}
+          className="aspect-video w-full rounded-xl bg-muted object-cover"
+        />
+      )}
+      <div className="flex items-center gap-3">
+        {page.cover === undefined && page.topic !== undefined && (
+          <TopicTile
+            topic={page.topic}
+            seed={page.id}
+            letter={page.links[0] === undefined ? undefined : hostOf(page.links[0].url).charAt(0).toUpperCase()}
+            className="relative size-11 shrink-0 rounded-lg"
+          />
+        )}
+        <p className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {page.topic !== undefined && (
+            <span className="text-xs font-semibold tracking-wider text-topic uppercase">
+              {TOPIC_LABELS[page.topic]}
+            </span>
+          )}
+          <span className="truncate text-sm text-muted-foreground">{page.author}</span>
+        </p>
         {done.has(page.id) && (
-          <span className="ml-auto inline-flex shrink-0 items-center gap-1 rounded-full bg-done px-2 py-0.5 text-xs font-medium text-done-foreground">
+          <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-done px-2 py-0.5 text-xs font-medium text-done-foreground">
             <CheckIcon className="size-3" aria-hidden="true" />
             Done
           </span>
         )}
-      </p>
+      </div>
       <h2 className={BLOCK_STYLES.headline}>{page.headline}</h2>
       {current && reading ? (
         <SpeedStage swipe={swipe} />
