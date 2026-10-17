@@ -79,6 +79,15 @@ const withLinks = {
   links: LINKS,
 };
 
+const INLINE_ID = "3000000000000000004";
+const inline = {
+  ...samples[0],
+  id: INLINE_ID,
+  url: `https://x.com/example/status/${INLINE_ID}`,
+  text: "Read the recap https://t.co/Recap12345\n\nMore notes at https://example.org/notes.",
+  links: [{ ...LINKS[0], short: "https://t.co/Recap12345" }, LINKS[1]],
+};
+
 const thread = {
   ...samples[0],
   id: THREAD_ID,
@@ -88,7 +97,7 @@ const thread = {
 };
 
 beforeAll(async () => {
-  site = await linkedSite([...samples, thread, withLinks]);
+  site = await linkedSite([...samples, thread, withLinks, inline]);
   const started = await startDevServer(site);
   server = started.child;
   origin = started.address;
@@ -164,6 +173,22 @@ describe("dev", () => {
     expect(headOf(textOnly?.id ?? "")).toContain(`topic-tile`);
   });
 
+  it("shows a link card where its short link was in the post, and makes other addresses clickable", async () => {
+    const page = await (await fetch(origin)).text();
+    const card = page.split('<li id="b-').find((html) => html.startsWith(INLINE_ID)) ?? "";
+    const post = /<blockquote[\s\S]*?<\/blockquote>/.exec(card)?.[0] ?? "";
+    expect(post).not.toContain("t.co/");
+    expect(linkCardsOn(post)).toEqual([
+      { href: LINKS[0]?.url, newTab: true, image: LINKS[0]?.image, text: "example.com Launch week recap" },
+    ]);
+    expect(post.indexOf("Read the recap")).toBeLessThan(post.indexOf("data-link-card"));
+    expect(post.indexOf("data-link-card")).toBeLessThan(post.indexOf("More notes at"));
+    expect(post).toMatch(/<a\b[^>]*href="https:\/\/example\.org\/notes"[^>]*>https:\/\/example\.org\/notes<\/a>\./);
+    expect(linkCardsOn(card.replace(post, ""))).toEqual([
+      { href: LINKS[1]?.url, newTab: true, image: undefined, text: "github.com GitHub repo: example/tool" },
+    ]);
+  });
+
   it("serves only this machine unless asked to serve the network", () => {
     expect(new URL(origin).hostname).toBe("localhost");
     expect(NETWORK_ADDRESS.exec(serverOutput())).toBeNull();
@@ -191,7 +216,7 @@ describe("dev", () => {
     const otherCards = page
       .split('<li id="b-')
       .slice(1)
-      .filter((card) => !card.startsWith(THREAD_ID) && !card.startsWith(LINKED_ID));
+      .filter((card) => ![THREAD_ID, LINKED_ID, INLINE_ID].some((id) => card.startsWith(id)));
     expect(otherCards.length).toBeGreaterThan(0);
     expect(otherCards.flatMap(imagesOn)).toEqual([]);
   });

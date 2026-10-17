@@ -3,11 +3,12 @@ import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, ImagesIcon, Inb
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { LinkCard } from "./LinkCard";
+import { PostBody } from "./PostBody";
 import { TopicTile } from "./TopicTile";
 import type { Bookmark } from "../lib/bookmarks";
 import { cardKind } from "../lib/card-kind";
 import { copyText } from "../lib/copy";
-import { postParts } from "../lib/media";
+import { listedLinks, postParts } from "../lib/media";
 import { TOPIC_LABELS } from "../lib/topics";
 
 type Props = {
@@ -21,6 +22,7 @@ const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
 const postedOtherDay = isoDay(postedAt) !== isoDay(savedAt);
 const post = postParts(bookmark);
+const listed = listedLinks(links);
 const posted = dateFormat.format(postedAt);
 const visual = cardKind(bookmark);
 ---
@@ -51,7 +53,7 @@ const visual = cardKind(bookmark);
         {visual.kind === "photo" && (
           <div
             data-cover
-            class="relative -mx-(--card-spacing) -mt-(--card-spacing) mb-2 aspect-video overflow-hidden group-data-[depth=headline]/bookmark:aspect-[5/2] sm:aspect-[2.4/1] sm:group-data-[depth=headline]/bookmark:aspect-[4/1]"
+            class="relative -mx-(--card-spacing) -mt-(--card-spacing) mb-2 aspect-video overflow-hidden group-data-[depth=full]/bookmark:hidden group-data-[depth=headline]/bookmark:aspect-[5/2] sm:aspect-[2.4/1] sm:group-data-[depth=headline]/bookmark:aspect-[4/1]"
           >
             <TopicTile topic={topic} seed={id} className="absolute inset-0" />
             <img
@@ -128,7 +130,13 @@ const visual = cardKind(bookmark);
             </span>
           </span>
           {visual.kind !== "photo" && (
-            <span data-cover class="relative mt-1 size-16 shrink-0 overflow-hidden rounded-lg shadow-xs sm:size-20">
+            <span
+              data-cover
+              class:list={[
+                "relative mt-1 size-16 shrink-0 overflow-hidden rounded-lg shadow-xs sm:size-20",
+                { "group-data-[depth=full]/bookmark:hidden": visual.kind === "link" && visual.image !== undefined },
+              ]}
+            >
               <TopicTile
                 topic={topic}
                 seed={id}
@@ -180,9 +188,9 @@ const visual = cardKind(bookmark);
       )}
 
       <div data-level="full" class="flex flex-col gap-4 px-(--card-spacing) pb-4">
-        {links.length > 0 && (
+        {listed.length > 0 && (
           <ul class="flex max-w-md flex-col gap-2" aria-label="Links in the post">
-            {links.map((link) => (
+            {listed.map((link) => (
               <li>
                 <LinkCard {...link} />
               </li>
@@ -192,48 +200,7 @@ const visual = cardKind(bookmark);
         {post.length > 0 && (
           <figure class="border-t border-border pt-4">
             <figcaption class="mb-2 text-xs font-medium text-muted-foreground">Original post</figcaption>
-            <blockquote class="flex flex-col gap-3 text-sm leading-relaxed text-pretty text-foreground/80">
-              {post.map((part) =>
-                part.kind === "text" ? (
-                  <p data-read-post class="whitespace-pre-wrap">
-                    {part.text}
-                  </p>
-                ) : (
-                  <ul
-                    class:list={["grid max-w-md gap-2", { "grid-cols-2": part.images.length > 1 }]}
-                    aria-label="Images in the post"
-                  >
-                    {part.images.map((image, index) => (
-                      <li
-                        class:list={{
-                          "col-span-2": index === 0 && part.images.length > 1 && part.images.length % 2 === 1,
-                        }}
-                      >
-                        <a
-                          href={image.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="block overflow-hidden rounded-lg border border-border bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
-                        >
-                          <img
-                            src={image.url}
-                            alt={image.alt}
-                            loading="lazy"
-                            decoding="async"
-                            class:list={[
-                              "w-full",
-                              part.images.length === 1
-                                ? "max-h-[32rem] min-h-24 object-contain"
-                                : "aspect-video object-cover",
-                            ]}
-                          />
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                ),
-              )}
-            </blockquote>
+            <PostBody parts={post} className="text-sm" />
           </figure>
         )}
         {postedOtherDay && (

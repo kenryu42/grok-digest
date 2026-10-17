@@ -123,4 +123,44 @@ describe("feedConfig", () => {
     expect(quiet?.content).toContain("<li>One point.</li>");
     expect(all.customData).toContain("https://example.github.io/rss.xml");
   });
+
+  it("shows a link with a short link in place in the post, and links every other address", () => {
+    const [linked] = parseBookmarks({
+      source: "test.json",
+      raw: [
+        {
+          id: "3",
+          url: "https://x.com/someone/status/3",
+          author: { name: "Someone", handle: "someone" },
+          posted_at: "2026-02-01",
+          saved_at: "2026-02-03T08:00:00+09:00",
+          topic: "dev-tools",
+          shelf_life: "evergreen",
+          tldr: "Docs.",
+          summary: "Docs.",
+          key_points: [],
+          action: "",
+          text: "Read the docs https://t.co/Docs123456\n\nNotes at https://example.org/notes.",
+          links: [{ title: "Docs", url: "https://example.com/docs", short: "https://t.co/Docs123456" }],
+        },
+      ],
+    });
+    const feed = feedConfig({
+      bookmarks: linked === undefined ? [] : [linked],
+      topic: null,
+      origin: "https://example.github.io",
+      base: "/",
+    });
+    const content = feed.items[0]?.content ?? "";
+    expect(content).toContain(
+      [
+        "<blockquote>",
+        "<p>Read the docs</p>",
+        '<p><a href="https://example.com/docs">Docs</a></p>',
+        '<p>Notes at <a href="https://example.org/notes">https://example.org/notes</a>.</p>',
+        "</blockquote>",
+      ].join(""),
+    );
+    expect(content).not.toContain("<li><a");
+  });
 });

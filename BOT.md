@@ -61,7 +61,7 @@ If `custom/components/.ejected/` exists, also run `bunx grok-digest merge`. It c
   "shelf_life": "evergreen",
   "tldr": "Stale workaround comments spread because coding agents copy them",
   "summary": "Argues you should delete most code comments, because coding agents copy existing workaround comments and spread hacks through the codebase.",
-  "text": "ban and delete most if not all code comments!\n\nagents love copying what already exists. https://t.co/Xq7mPLe0Ab",
+  "text": "ban and delete most if not all code comments!\n\nagents love copying what already exists. https://t.co/Xq7mPLe0Ab\n\nuse the /no-comments skill as a weedkiller https://t.co/Pq9rSt2Uvw",
   "key_points": [
     "Agents imitate existing code, so stale workaround comments spread like weeds.",
     "Keep only comments that must exist, such as browser-quirk explanations."
@@ -71,7 +71,8 @@ If `custom/components/.ejected/` exists, also run `bunx grok-digest merge`. It c
     {
       "title": "pstack: the /no-comments skill",
       "url": "https://github.com/example/pstack",
-      "image": "https://pbs.twimg.com/card_img/2110149626133438733/AbCdEfGh?format=jpg&name=small"
+      "image": "https://pbs.twimg.com/card_img/2110149626133438733/AbCdEfGh?format=jpg&name=small",
+      "short": "https://t.co/Pq9rSt2Uvw"
     }
   ],
   "media": [
@@ -168,7 +169,8 @@ Every link in the post and its thread, followed to where it really lands. Expand
 
 - `url`: the final `https` address without tracking parameters such as `utm_*`. Skip links that are not `https`.
 - `title`: the page's own title, cut to about 8 words, or a plain description such as `GitHub repo: example/pstack`.
-- `image`: the preview image X shows for the link in the post's link card, its `https://pbs.twimg.com/card_img/` address. The card shows it above the title, the way X does. Never the page's own `og:image` address: the build rejects any host other than `pbs.twimg.com`, so opening a card never contacts the linked site. Leave `image` out when X shows no image for the link.
+- `image`: the preview image X shows for the link in the post's link card, its `https://pbs.twimg.com/card_img/` address. The card shows it above the title, the way X does. Never the page's own `og:image` address: the build rejects any host other than `pbs.twimg.com`, so opening a card never contacts the linked site. Look at the post's link card on X before you leave `image` out, and leave it out only when X shows no image for the link.
+- `short`: the short link that stands for this link in `text`, copied exactly as it appears there, such as `https://t.co/Pq9rSt2Uvw`. The card shows the link's card in that spot and hides the short link. The build rejects a `short` that is not in `text`. Leave `short` out when `text` has no short link for this link; the card then lists the link above the post.
 - Leave out links to the post itself, to the author's profile, and to the post's images or videos.
 - Write `[]` when there are none.
 

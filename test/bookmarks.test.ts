@@ -120,9 +120,21 @@ describe("parseBookmarks", () => {
       { ...valid, media: [{ url: "https://pbs.twimg.com/media/A.jpg", link: "https://t.co/Missing123" }] },
       "media",
     ],
+    [
+      "a link's short link that is not in the post",
+      { ...valid, links: [{ title: "Blog", url: "https://example.com/post", short: "https://t.co/Missing123" }] },
+      "links",
+    ],
     ["an image as a string", { ...valid, media: ["https://pbs.twimg.com/media/A.jpg"] }, "media"],
   ])("rejects %s", (_, entry, field) => {
     expect(() => parse([entry])).toThrow(field);
+  });
+
+  it("keeps the short link that stands for a link in the post", () => {
+    const links = [
+      { title: "The README", url: "https://github.com/someone/project", short: "https://t.co/Readme1234" },
+    ];
+    expect(parse([{ ...valid, text: "Read it https://t.co/Readme1234", links }])[0]?.links).toEqual(links);
   });
 
   it("keeps an empty post", () => {

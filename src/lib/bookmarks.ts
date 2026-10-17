@@ -38,6 +38,7 @@ export const bookmarkSchema = z
         title: nonEmpty,
         url: z.url({ protocol: /^https$/ }),
         image: z.url({ protocol: /^https$/, hostname: X_MEDIA_HOSTNAME }).optional(),
+        short: nonEmpty.optional(),
       }),
     ),
     media: z
@@ -50,10 +51,15 @@ export const bookmarkSchema = z
       )
       .default([]),
   })
-  .superRefine(({ text, media }, ctx) => {
+  .superRefine(({ text, media, links }, ctx) => {
     media.forEach(({ link }, index) => {
       if (link !== undefined && !text.includes(link)) {
         ctx.addIssue({ code: "custom", path: ["media", index, "link"], message: `"${link}" is not in text` });
+      }
+    });
+    links.forEach(({ short }, index) => {
+      if (short !== undefined && !text.includes(short)) {
+        ctx.addIssue({ code: "custom", path: ["links", index, "short"], message: `"${short}" is not in text` });
       }
     });
   })

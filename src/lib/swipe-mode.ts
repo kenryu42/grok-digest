@@ -10,6 +10,7 @@ import {
 } from "react";
 import { shows, type Depth } from "./depth.ts";
 import type { PostLink } from "./bookmarks.ts";
+import { withoutUrls, type PostPart } from "./media.ts";
 import { prefersReducedMotion } from "./morph.ts";
 import { readingPlan, stepMs, type ReadPlan } from "./reading.ts";
 import { readStored, STORAGE_PREFIX, writeStored } from "./storage.ts";
@@ -41,7 +42,7 @@ const BLOCKS: { kind: BlockKind; level: Depth; selector: string }[] = [
   { kind: "post", level: "full", selector: "[data-read-post]" },
 ];
 
-export type SwipeBlock = { key: string; kind: BlockKind; level: Depth; text: string };
+type SwipeBlock = { key: string; kind: BlockKind; level: Depth; text: string };
 
 export type SwipePage = {
   id: string;
@@ -53,6 +54,7 @@ export type SwipePage = {
   headline: string;
   blocks: SwipeBlock[];
   links: PostLink[];
+  post: PostPart[];
   cover: { url: string; alt: string } | undefined;
 };
 
@@ -77,7 +79,7 @@ type Options = {
 function pageFrom(card: HTMLElement): SwipePage {
   const blocks = BLOCKS.flatMap(({ kind, level, selector }) =>
     [...card.querySelectorAll(selector)]
-      .map((element) => element.textContent.trim())
+      .map((element) => (kind === "post" ? withoutUrls(element.textContent) : element.textContent.trim()))
       .filter((text) => text !== "")
       .map((text, position) => ({ key: `${kind}-${position}`, kind, level, text })),
   );
@@ -90,9 +92,22 @@ function pageFrom(card: HTMLElement): SwipePage {
     copy: card.querySelector<HTMLElement>("[data-copy]")?.dataset["copy"] ?? "",
     headline: blocks.find(({ kind }) => kind === "headline")?.text ?? "",
     blocks: blocks.filter(({ kind }) => kind !== "headline"),
-    links: [...card.querySelectorAll<HTMLAnchorElement>("[data-link-card]")].map(linkFrom),
+    links: [...card.querySelectorAll<HTMLAnchorElement>("[data-link-card]")]
+      .filter((anchor) => anchor.closest("blockquote") === null)
+      .map(linkFrom),
+    post: postFrom(card.querySelector("blockquote")),
     cover: coverFrom(card.querySelector<HTMLImageElement>("[data-cover] img[alt]:not([alt=''], [hidden])")),
   };
+}
+
+function postFrom(quote: Element | null): PostPart[] {
+  return [...(quote?.children ?? [])].flatMap((child): PostPart[] => {
+    if (child.matches("[data-read-post]")) return [{ kind: "text", text: child.textContent.trim() }];
+    const anchor = child.querySelector<HTMLAnchorElement>("[data-link-card]");
+    if (child.matches("[data-post-link]") && anchor !== null) return [{ kind: "link", link: linkFrom(anchor) }];
+    const images = [...child.querySelectorAll("img")].map((image) => ({ url: image.src, alt: image.alt }));
+    return images.length > 0 ? [{ kind: "images", images }] : [];
+  });
 }
 
 function coverFrom(image: HTMLImageElement | null): SwipePage["cover"] {

@@ -52,7 +52,7 @@ export function SwipeMode(props: Props) {
               </span>
               <div
                 ref={isCurrent ? moverRef : undefined}
-                className="relative flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto rounded-t-3xl border-t bg-background px-safe-5 pt-3 pb-8 transition-[border-color,opacity] duration-300 opacity-60 group-data-current/page:border-transparent group-data-current/page:opacity-100"
+                className="relative flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto [overflow-anchor:none] rounded-t-3xl border-t bg-background px-safe-5 pt-3 pb-8 transition-[border-color,opacity] duration-300 opacity-60 group-data-current/page:border-transparent group-data-current/page:opacity-100"
               >
                 <SwipeCard swipe={swipe} page={page} current={isCurrent} />
               </div>
