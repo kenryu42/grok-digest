@@ -69,8 +69,6 @@ const SWIPE_CLICK_GUARD_MS = 400;
 const SWIPE_SAMPLES = 6;
 const SPRING_BACK = "transform 500ms var(--ease-spring)";
 const FLY_OFF_EASING = "cubic-bezier(0.25, 0.4, 0.5, 1)";
-const TOUCH_PRESS_DELAY_MS = 80;
-const PRESS_SHOWN_MS = 120;
 const ANCHOR_GAP = 12;
 
 const FORM_FIELDS = "input, textarea, select, [contenteditable]";
@@ -389,21 +387,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
       dx: number;
       samples: SwipeSample[];
     } | null = null;
-    let press: { card: HTMLElement; pointerId: number; timer: ReturnType<typeof setTimeout> } | null = null;
     let clicksBlockedUntil = 0;
-
-    const releasePress = (shown: boolean): void => {
-      if (press === null) return;
-      const { card, timer } = press;
-      press = null;
-      clearTimeout(timer);
-      if (!shown) {
-        card.removeAttribute("data-pressed");
-        return;
-      }
-      card.toggleAttribute("data-pressed", true);
-      setTimeout(() => card.removeAttribute("data-pressed"), PRESS_SHOWN_MS);
-    };
 
     const springBack = (surface: HTMLElement): void => {
       surface.style.transition = prefersReducedMotion() ? "" : SPRING_BACK;
@@ -416,17 +400,6 @@ export function useBookmarkControls({ entries, settings }: Props) {
       const surface = card?.querySelector<HTMLElement>("[data-swipe-surface]");
       if (card === null || card === undefined || surface === null || surface === undefined) return;
       if (card.hasAttribute("data-swiped")) return;
-      if (event.target.closest("[data-card-head]") !== null) {
-        const pressed = card;
-        press = {
-          card,
-          pointerId: event.pointerId,
-          timer: setTimeout(
-            () => pressed.toggleAttribute("data-pressed", true),
-            event.pointerType === "touch" ? TOUCH_PRESS_DELAY_MS : 0,
-          ),
-        };
-      }
       if (event.pointerType !== "touch") return;
       const origin = Math.min(surfaceOffset(surface), 0);
       surface.style.transition = "none";
@@ -450,7 +423,6 @@ export function useBookmarkControls({ entries, settings }: Props) {
       const dx = event.clientX - swipe.startX;
       if (swipe.axis === "undecided") {
         swipe.axis = swipeAxis(dx, event.clientY - swipe.startY);
-        if (swipe.axis !== "undecided") releasePress(false);
         if (swipe.axis === "vertical") {
           swipe = null;
           return;
@@ -468,7 +440,6 @@ export function useBookmarkControls({ entries, settings }: Props) {
     };
 
     const endSwipe = (event: PointerEvent): void => {
-      if (press?.pointerId === event.pointerId) releasePress(event.type === "pointerup");
       if (swipe === null || swipe.pointerId !== event.pointerId) return;
       const { card, surface, axis, dx, origin, samples } = swipe;
       swipe = null;
