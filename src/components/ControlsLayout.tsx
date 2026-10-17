@@ -31,13 +31,13 @@ export function ControlsLayout({ controls }: { controls: Controls }) {
           <Button
             type="button"
             variant="outline"
+            size="icon"
             aria-expanded={detailShown}
             aria-label={`Detail: ${DEPTH_LABELS[depth]}`}
             onClick={toggleDetail}
-            className="h-9 shrink-0 rounded-full px-3 sm:hidden"
+            className="size-9 shrink-0 rounded-full sm:hidden"
           >
             <DepthIcon depth={depth} />
-            {DEPTH_LABELS[depth]}
           </Button>
           <Button
             type="button"
