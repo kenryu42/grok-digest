@@ -17,6 +17,7 @@ import { swipeAxis, swipeCommits, swipeOffset, swipeVelocity, type SwipeAxis, ty
 import { TOPICS, type Topic } from "./topics.ts";
 
 const SPEED_KEY = `${STORAGE_PREFIX}speed-reading-wpm`;
+const NUDGED_KEY = `${STORAGE_PREFIX}swipe-nudged`;
 export const SPEED = { min: 200, max: 600, step: 25, start: 250 };
 const START_DELAY_MS = 350;
 const DONE_ADVANCE_MS = 300;
@@ -153,6 +154,7 @@ type SwipeFrame = {
   pagerRef: RefObject<HTMLDivElement | null>;
   moverRef: RefObject<HTMLDivElement | null>;
   onDialogClose: () => void;
+  nudging: boolean;
   pagerHandlers: {
     onScroll: () => void;
     onPointerDown: (event: PointerEvent<HTMLDivElement>) => void;
@@ -181,6 +183,7 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Opti
   const [startSoon, setStartSoon] = useState(true);
   const [undo, setUndo] = useState<{ id: string; index: number } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [nudging, setNudging] = useState(() => readStored(NUDGED_KEY) !== true && start < cards.length - 1);
   const page = pages[current];
   const pageDepth = page !== undefined && expanded.has(page.id) ? "full" : CARD_DEPTH;
   const shown = useMemo(() => page?.blocks.filter(({ level }) => shows(pageDepth, level)) ?? [], [page, pageDepth]);
@@ -270,6 +273,10 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Opti
   }, [start]);
 
   useEffect(() => {
+    if (nudging) writeStored(NUDGED_KEY, true);
+  }, [nudging]);
+
+  useEffect(() => {
     if (!speedOn || !startSoon) return undefined;
     const timer = setTimeout(() => {
       setStartSoon(false);
@@ -337,6 +344,7 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Opti
 
   const onPointerDown = (event: PointerEvent<HTMLDivElement>): void => {
     if (!event.isPrimary || event.button !== 0) return;
+    setNudging(false);
     if (event.target instanceof Element && event.target.closest("button:not([data-swipe-peek]), a") !== null) return;
     gestureRef.current = {
       pointerId: event.pointerId,
@@ -395,6 +403,12 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Opti
       return;
     }
     if (gesture.axis !== "undecided" || page === undefined) return;
+    const tapped = event.target instanceof Element ? event.target.closest<HTMLElement>("[data-swipe-page]") : null;
+    const tappedIndex = pages.findIndex(({ id }) => id === tapped?.dataset["swipePage"]);
+    if (tappedIndex !== -1 && tappedIndex !== current) {
+      goTo(tappedIndex);
+      return;
+    }
     if (reading) togglePlaying();
     else toggleExpanded(page.id);
   };
@@ -487,6 +501,7 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Opti
     pagerRef,
     moverRef,
     onDialogClose: () => onClose(page?.card ?? pages.at(-1)?.card),
+    nudging,
     pagerHandlers: { onScroll, onPointerDown, onPointerMove, onPointerUp: endGesture, onPointerCancel: endGesture },
   };
   return { swipe, frame };

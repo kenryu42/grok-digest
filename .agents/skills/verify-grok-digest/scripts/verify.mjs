@@ -277,7 +277,11 @@ function locateInPage({ selector, name, card, nth }) {
     const names = [...new Set(candidates.map(({ accessibleName }) => accessibleName))].slice(0, 60).join(" | ");
     return { error: `No match for ${JSON.stringify({ selector, name, card, nth })}. Visible names: ${names}` };
   }
-  match.element.scrollIntoView({ block: "center", inline: "center" });
+  const before = match.element.getBoundingClientRect();
+  const onScreen = before.top >= 0 && before.left >= 0 && before.bottom <= innerHeight && before.right <= innerWidth;
+  const hit = document.elementFromPoint(before.left + before.width / 2, before.top + before.height / 2);
+  const reachable = onScreen && hit !== null && match.element.contains(hit);
+  if (!reachable) match.element.scrollIntoView({ block: "center", inline: "center" });
   const box = match.element.getBoundingClientRect();
   return {
     x: box.left + box.width / 2,

@@ -9,7 +9,7 @@ type Props = Parameters<typeof useSwipeMode>[0];
 
 export function SwipeMode(props: Props) {
   const { swipe, frame } = useSwipeMode(props);
-  const { dialogRef, pagerRef, moverRef, onDialogClose, pagerHandlers } = frame;
+  const { dialogRef, pagerRef, moverRef, onDialogClose, nudging, pagerHandlers } = frame;
   return (
     <dialog
       ref={dialogRef}
@@ -23,6 +23,7 @@ export function SwipeMode(props: Props) {
         ref={pagerRef}
         tabIndex={-1}
         data-swipe-pager
+        data-nudge={nudging || undefined}
         {...pagerHandlers}
         className="relative min-h-0 flex-1 snap-y snap-mandatory overflow-y-auto overscroll-contain outline-none [scrollbar-width:none]"
       >
@@ -33,7 +34,7 @@ export function SwipeMode(props: Props) {
               key={page.id}
               data-swipe-page={page.id}
               data-current={isCurrent || undefined}
-              className="group/page relative flex h-full snap-start snap-always flex-col touch-pan-y"
+              className="group/page relative flex h-[calc(100%-3.5rem)] snap-start snap-always flex-col touch-pan-y"
             >
               <span
                 aria-hidden="true"
@@ -51,7 +52,7 @@ export function SwipeMode(props: Props) {
               </span>
               <div
                 ref={isCurrent ? moverRef : undefined}
-                className="relative flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto bg-background px-safe-5 pt-3 pb-8"
+                className="relative flex min-h-0 flex-1 touch-pan-y flex-col overflow-y-auto rounded-t-3xl border-t bg-background px-safe-5 pt-3 pb-8 transition-[border-color,opacity] duration-300 opacity-60 group-data-current/page:border-transparent group-data-current/page:opacity-100"
               >
                 <SwipeCard swipe={swipe} page={page} current={isCurrent} />
               </div>

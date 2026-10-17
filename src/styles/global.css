@@ -228,6 +228,23 @@
   display: none;
 }
 
+@keyframes swipe-nudge {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30%,
+  55% {
+    transform: translateY(-5rem);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  [data-swipe-pager][data-nudge] > section {
+    animation: swipe-nudge 1400ms ease-in-out 700ms;
+  }
+}
+
 @keyframes word-flash {
   0% {
     opacity: 0;
