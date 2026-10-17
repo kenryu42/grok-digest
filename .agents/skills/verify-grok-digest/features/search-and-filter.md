@@ -10,6 +10,7 @@ A reader narrows the list by typing a search across all bookmarks, or by picking
 - `search-empty` shows `No bookmarks match your search.` for a query with no match.
 - `topic-chip` filters by a topic chip. Tapping the chosen chip again, or `All topics`, clears it.
 - `topic-row-scroll` scrolls the chosen chip into view in the one-row chip list on phones.
+- `topic-row-sideways` lets the phone chip row move only sideways: a vertical or diagonal drag on it never shifts the chips up or down. Chrome does not show the old fault, so check a diagonal drag in Safari in the iOS Simulator. In Chrome, `getComputedStyle` on the row gives `overflowY` `hidden` and `touchAction` `pan-x`.
 - `filter-url` mirrors the filters in `?q=`, `?topic=` and `?view=`, and restores them on load.
 - `sticky-bar` keeps the one-row top bar at the top of a phone screen while scrolling, and the views in the bottom tab bar.
 

@@ -9,7 +9,7 @@ export function TopicChips({ controls }: { controls: Controls }) {
     <fieldset
       ref={topicsRef}
       aria-label="Filter by topic"
-      className="relative flex min-w-0 flex-1 gap-2 max-sm:-ml-4 max-sm:snap-x max-sm:scroll-px-4 max-sm:overflow-x-auto max-sm:pr-6 max-sm:pl-4 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] max-sm:[scrollbar-width:none] sm:flex-wrap"
+      className="relative flex min-w-0 flex-1 gap-2 max-sm:-ml-4 max-sm:snap-x max-sm:scroll-px-4 max-sm:touch-pan-x max-sm:overflow-x-auto max-sm:overflow-y-hidden max-sm:pr-6 max-sm:pl-4 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-1.5rem),transparent)] max-sm:[scrollbar-width:none] sm:flex-wrap"
     >
       <TopicChip label="All topics" pressed={topic === null} onClick={() => chooseTopic(null)} />
       {topics.map((t) => (
