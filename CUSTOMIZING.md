@@ -17,7 +17,7 @@ The controls above the cards are React components, ejected as `.tsx` files. Each
 | `ControlsLayout` | Arranges the parts below, plus the Sort and filter button and the phone-only search button. Leave a part out to hide it. |
 | `SearchField`    | The search box and its Cancel button.                                                                                    |
 | `TopicChips`     | The topic filter chips.                                                                                                  |
-| `FilterMenu`     | The sort (Newest, Oldest, Post date) and the Show done and Hide news filters.                                            |
+| `FilterMenu`     | The sort (Newest, Oldest) and the Show done filter.                                                                      |
 | `StatusLine`     | The line that counts the bookmarks shown.                                                                                |
 | `KeyboardHints`  | The keyboard shortcuts on desktop and the swipe tip on phones.                                                           |
 | `UndoToast`      | The "Marked done" message with Undo.                                                                                     |
@@ -31,8 +31,8 @@ The controls above the cards are React components, ejected as `.tsx` files. Each
 | `query`, `searching`, `setQuery(text)`                          | The search text, whether it is not empty, and changing it.                                                                                                          |
 | `searchShown`, `openSearch()`, `closeSearch()`, `leaveSearch()` | Whether the search box shows on a phone; open it, clear and close it, or close it when empty.                                                                       |
 | `topic`, `topics`, `chooseTopic(topic)`                         | The chosen topic or `null`, the topics in use, and choosing one (the chosen one again, or `null`, shows all).                                                       |
-| `sort`, `chooseSort(sort)`                                      | The order: `"newest"` or `"oldest"` saved first, or `"posted"` (newest post first); and choosing one.                                                               |
-| `showDone`, `setShowDone(on)`, `hideNews`, `setHideNews(on)`    | Whether done bookmarks show and whether `news` bookmarks hide, and changing either. A search ignores both.                                                          |
+| `sort`, `chooseSort(sort)`                                      | The order: `"newest"` or `"oldest"` saved first, and choosing one.                                                                                                  |
+| `showDone`, `setShowDone(on)`                                   | Whether done bookmarks show, and changing it. A search ignores it.                                                                                                  |
 | `filtersShown`, `toggleFilters()`, `filtersChanged`             | Whether `FilterMenu` is open, opening or closing it, and whether the sort or a filter differs from the default.                                                     |
 | `shown`, `shownDone`                                            | How many cards show, and how many of those are done.                                                                                                                |
 | `undoPending`, `undo()`                                         | Whether a card was just marked done, and undoing it.                                                                                                                |

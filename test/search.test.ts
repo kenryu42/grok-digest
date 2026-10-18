@@ -44,7 +44,6 @@ const entries = parseBookmarks({
       author: { name: "Daily Wire", handle: "wire" },
       topic: "design",
       shelf_life: "news",
-      posted_at: "2026-01-15",
       saved_at: "2026-02-03T09:00:00+09:00",
       tldr: "A model launched today",
       summary: "Launch news.",
@@ -83,22 +82,19 @@ describe("matchingIds", () => {
     expect(ids("tokyo", { topic: "ai-agents" })).toEqual([]);
   });
 
-  it("shows done bookmarks only when asked, and hides news when asked", () => {
+  it("shows done bookmarks only when asked", () => {
     expect(ids("", { showDone: true }, ["a"])).toEqual(["a", "b", "c"]);
-    expect(ids("", { hideNews: true })).toEqual(["a", "b"]);
-    expect(ids("", { hideNews: true, topic: "design" })).toEqual([]);
+    expect(ids("", { topic: "design" }, ["c"])).toEqual([]);
   });
 
-  it("searches every bookmark in the topic, done or news", () => {
-    expect(ids("agents", { hideNews: true }, ["a"])).toEqual(["a"]);
-    expect(ids("launch", { hideNews: true })).toEqual(["c"]);
+  it("searches every bookmark in the topic, done or not", () => {
+    expect(ids("agents", {}, ["a"])).toEqual(["a"]);
   });
 });
 
 describe("sortedIds", () => {
-  it("orders by save date, newest or oldest first, or by post date, newest first", () => {
+  it("orders by save date, newest or oldest first", () => {
     expect(sortedIds(entries, "newest")).toEqual(["c", "a", "b"]);
     expect(sortedIds(entries, "oldest")).toEqual(["a", "b", "c"]);
-    expect(sortedIds(entries, "posted")).toEqual(["a", "b", "c"]);
   });
 });

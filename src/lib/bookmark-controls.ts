@@ -42,8 +42,6 @@ export type Controls = {
   chooseSort: (sort: Sort) => void;
   showDone: boolean;
   setShowDone: (showDone: boolean) => void;
-  hideNews: boolean;
-  setHideNews: (hideNews: boolean) => void;
   filtersShown: boolean;
   toggleFilters: () => void;
   filtersChanged: boolean;
@@ -132,15 +130,10 @@ function linkedCard(): HTMLElement | null {
   return target === "" ? null : document.querySelector<HTMLElement>(`[data-bookmark-id][id="${CSS.escape(target)}"]`);
 }
 
-function initialFilter(entries: readonly SearchEntry[]): Filter {
+function initialFilter(): Filter {
   const filter = parseFilter(window.location.search);
-  const linked = entries.find(({ id }) => id === linkedCard()?.dataset["bookmarkId"]);
-  if (linked === undefined) return filter;
-  return {
-    ...filter,
-    showDone: filter.showDone || storedDone().has(linked.id),
-    hideNews: filter.hideNews && linked.shelfLife !== "news",
-  };
+  const linked = linkedCard()?.dataset["bookmarkId"];
+  return linked === undefined ? filter : { ...filter, showDone: filter.showDone || storedDone().has(linked) };
 }
 
 function cards(): HTMLElement[] {
@@ -192,7 +185,7 @@ function copyFrom(button: HTMLElement | null | undefined): void {
 }
 
 export function useBookmarkControls({ entries, settings }: Props) {
-  const [filter, setFilter] = useState(() => initialFilter(entries));
+  const [filter, setFilter] = useState(initialFilter);
   const [done, setDone] = useState(storedDone);
   const [later, setLater] = useState(() => storedLater(entries));
   const [doneRequestCopied, setDoneRequestCopied] = useState(false);
@@ -207,7 +200,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
   const undoRef = useRef(undo);
   const openedRef = useRef(new Set<string>());
 
-  const { query, topic, sort, showDone, hideNews } = filter;
+  const { query, topic, sort, showDone } = filter;
   const searching = query.trim() !== "";
   const showSearch = searchOpen || query !== "";
   const visible = useMemo(() => matchingIds({ entries, filter, done }), [entries, filter, done]);
@@ -649,12 +642,9 @@ export function useBookmarkControls({ entries, settings }: Props) {
     },
     showDone,
     setShowDone: (next) => update({ showDone: next }),
-    hideNews,
-    setHideNews: (next) => update({ hideNews: next }),
     filtersShown: filtersOpen,
     toggleFilters: () => setFiltersOpen(!filtersOpen),
-    filtersChanged:
-      sort !== DEFAULT_FILTER.sort || showDone !== DEFAULT_FILTER.showDone || hideNews !== DEFAULT_FILTER.hideNews,
+    filtersChanged: sort !== DEFAULT_FILTER.sort || showDone !== DEFAULT_FILTER.showDone,
     barRef,
     shown: visible.size,
     shownDone,

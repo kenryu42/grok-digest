@@ -103,7 +103,7 @@ Every site takes every release, so every release reads every data file an earlie
 
 The page title is "Grok Digest" unless `custom/config.json` sets `title`. The footer reads "Unofficial. Summaries created with Grok." Every page sends `<meta name="robots" content="noindex,nofollow">` and `<meta name="referrer" content="no-referrer">`. `robots.txt` disallows all crawlers. Feeds live at `rss.xml` and `rss/<topic-id>.xml`. Card anchors are `#b-<id>`.
 
-The page opens on one list of the bookmarks not marked done, newest saved first. A Sort and filter menu orders it by save or post date and shows done or hides news bookmarks. Search, topic, sort, and the two filters are `?q=`, `?topic=`, `?sort=`, `?done=show`, and `?news=hide` on the page address. The behavior is documented in `template/README.md`.
+The page opens on one list of the bookmarks not marked done, newest saved first. A Sort and filter menu puts the oldest saved first and shows done bookmarks. Search, topic, sort, and done are `?q=`, `?topic=`, `?sort=oldest`, and `?done=show` on the page address. The behavior is documented in `template/README.md`.
 
 ## Package exports
 

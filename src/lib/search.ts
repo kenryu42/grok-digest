@@ -6,8 +6,6 @@ export type SearchEntry = {
   id: string;
   topic: Topic;
   savedAt: Date;
-  postedAt: Date;
-  shelfLife: Bookmark["shelfLife"];
   text: string;
 };
 
@@ -16,13 +14,11 @@ function normalize(text: string): string {
 }
 
 export function toSearchEntry(bookmark: Bookmark): SearchEntry {
-  const { id, topic, savedAt, postedAt, shelfLife, author, tldr, summary, text, keyPoints, action, links } = bookmark;
+  const { id, topic, savedAt, author, tldr, summary, text, keyPoints, action, links } = bookmark;
   return {
     id,
     topic,
     savedAt,
-    postedAt,
-    shelfLife,
     text: normalize(
       [
         author.name,
@@ -41,7 +37,7 @@ export function toSearchEntry(bookmark: Bookmark): SearchEntry {
 
 export function matchingIds({
   entries,
-  filter: { query, topic, showDone, hideNews },
+  filter: { query, topic, showDone },
   done,
 }: {
   entries: readonly SearchEntry[];
@@ -49,23 +45,17 @@ export function matchingIds({
   done: ReadonlySet<string>;
 }): Set<string> {
   const terms = normalize(query).split(/\s+/).filter(Boolean);
-  const listed = (entry: SearchEntry): boolean =>
-    (showDone || !done.has(entry.id)) && !(hideNews && entry.shelfLife === "news");
   return new Set(
     entries
       .filter((entry) => topic === null || entry.topic === topic)
-      .filter((entry) => (terms.length === 0 ? listed(entry) : terms.every((term) => entry.text.includes(term))))
+      .filter((entry) =>
+        terms.length === 0 ? showDone || !done.has(entry.id) : terms.every((term) => entry.text.includes(term)),
+      )
       .map((entry) => entry.id),
   );
 }
 
-const SORT_TIMES: Record<Sort, (entry: SearchEntry) => number> = {
-  newest: ({ savedAt }) => -savedAt.getTime(),
-  oldest: ({ savedAt }) => savedAt.getTime(),
-  posted: ({ postedAt }) => -postedAt.getTime(),
-};
-
 export function sortedIds(entries: readonly SearchEntry[], sort: Sort): string[] {
-  const time = SORT_TIMES[sort];
-  return entries.toSorted((a, b) => time(a) - time(b)).map(({ id }) => id);
+  const direction = sort === "newest" ? -1 : 1;
+  return entries.toSorted((a, b) => direction * (a.savedAt.getTime() - b.savedAt.getTime())).map(({ id }) => id);
 }

@@ -5,10 +5,10 @@ import type { Controls } from "../lib/bookmark-controls.ts";
 import { SORT_LABELS, SORTS } from "../lib/filter.ts";
 
 export function FilterMenu({ controls }: { controls: Controls }) {
-  const { sort, chooseSort, showDone, setShowDone, hideNews, setHideNews, counts } = controls;
+  const { sort, chooseSort, showDone, setShowDone, counts } = controls;
   return (
     <div className="flex flex-col gap-3 rounded-2xl border bg-popover p-3 text-popover-foreground shadow-lg">
-      <fieldset aria-label="Sort by" className="grid h-9 grid-cols-3 rounded-full bg-muted p-1">
+      <fieldset aria-label="Sort by" className="grid h-9 grid-cols-2 rounded-full bg-muted p-1">
         {SORTS.map((s) => (
           <button
             key={s}
@@ -28,9 +28,6 @@ export function FilterMenu({ controls }: { controls: Controls }) {
         <Toggle pressed={showDone} onClick={() => setShowDone(!showDone)}>
           Show done
           <span className="tabular-nums opacity-70">{counts.done}</span>
-        </Toggle>
-        <Toggle pressed={hideNews} onClick={() => setHideNews(!hideNews)}>
-          Hide news
         </Toggle>
       </div>
     </div>

@@ -7,7 +7,7 @@ description: "Use in the grok-digest repository to prove a change works in the r
 
 Grok Digest is one static page of bookmark cards (an Astro page with a React island for the controls), plus RSS feeds and a `grok-digest` CLI. Users touch three surfaces:
 
-- **The page** (primary): one list of the bookmarks not marked done, search, topic chips, a `Sort and filter` menu (sort by `Newest`, `Oldest` or `Post date`; `Show done`; `Hide news`), cards that show their headline and open with a tap to Copy, Done and Open on X, swipe-to-done on touch, a full-screen swipe mode (`Swipe through cards` in the header) with optional speed reading, a text size picker (`Aa`) in the header, and keyboard shortcuts on desktop.
+- **The page** (primary): one list of the bookmarks not marked done, search, topic chips, a `Sort and filter` menu (sort by `Newest` or `Oldest`; `Show done`), cards that show their headline and open with a tap to Copy, Done and Open on X, swipe-to-done on touch, a full-screen swipe mode (`Swipe through cards` in the header) with optional speed reading, a text size picker (`Aa`) in the header, and keyboard shortcuts on desktop.
 - **The feeds**: `/rss.xml` and `/rss/<topic>.xml`.
 - **The CLI**: `grok-digest validate`, `build`, `dev` and `preview`.
 
@@ -80,7 +80,7 @@ Stable handles in this app:
 | A card       | `li[data-bookmark-id]`, id `b-<bookmark id>`; hidden cards have the `hidden` attribute                                                                                                                                                                                                                                    |
 | Card state   | `data-done` and `data-depth` (`headline` for the headline only, `full` when opened) on the `li`                                                                                                                                                                                                                           |
 | Card title   | `h2` holding a button (`data-card-toggle`) with `aria-expanded`; tapping the header opens                                                                                                                                                                                                                                 |
-| Sort, filter | button `Sort and filter` (`aria-expanded`; a dot when not at the defaults); in it, group `Sort by` with `Newest`, `Oldest`, `Post date`, and buttons `Show done <count>` and `Hide news`, all with `aria-pressed`                                                                                                         |
+| Sort, filter | button `Sort and filter` (`aria-expanded`; a dot when not at the defaults); in it, group `Sort by` with `Newest` and `Oldest`, and button `Show done <count>`, all with `aria-pressed`                                                                                                                                    |
 | Swipe mode   | header button `Swipe through cards` (`data-open-swipe`); `dialog` named `Swipe mode`, pager `[data-swipe-pager]`, current page `[data-swipe-page][data-current]`, counter `[data-swipe-counter]`                                                                                                                          |
 | Swipe inside | `Close swipe mode`, `Speed read` (`aria-pressed`), `Play`/`Pause`/`Read again`, `Copy`, `Done`, `Open on X`; behind the card `[data-swipe-tray=left]` (`Later`, `Done`) and `[data-swipe-tray=right]` (`Share`, `Copy`), shown by `data-swiping` on the page; word `[data-speed-word]`, paused text `[data-speed-paused]` |
 | Topic chips  | group `Filter by topic`, buttons `All topics`, `AI agents` and so on, with `aria-pressed`                                                                                                                                                                                                                                 |
@@ -104,7 +104,7 @@ Proof standards:
 
 - Exercise the real user path (taps, clicks, keys, swipes) on the real page. Don't call internal setters, write `localStorage` to fake a state, or use `eval` to click.
 - Capture the action and the resulting state: a screenshot or snapshot before, and another after.
-- Verify side effects as well as the screen. Done marks persist in `localStorage` (`grok-digest:/:done`), Copy fills the clipboard (`await navigator.clipboard.readText()`; the driver grants clipboard access on `open`), and the URL query (`?q=`, `?topic=`, `?sort=`, `?done=show`, `?news=hide`) follows the filters. Reload with `open` (no `--fresh`) to prove that a state survives.
+- Verify side effects as well as the screen. Done marks persist in `localStorage` (`grok-digest:/:done`), Copy fills the clipboard (`await navigator.clipboard.readText()`; the driver grants clipboard access on `open`), and the URL query (`?q=`, `?topic=`, `?sort=`, `?done=show`) follows the filters. Reload with `open` (no `--fresh`) to prove that a state survives.
 - Prove a phone change at `--viewport mobile` and check that desktop did not regress at `--viewport desktop`. The layout switches at 640px.
 - Report a journey that can't reach its end state as a failure, with the command and what was missing. Never weaken it to pass.
 

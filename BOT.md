@@ -131,7 +131,7 @@ One of these ids:
 
 `news` when the post's value fades within weeks: launches, releases, announcements, funding, events, outages, drama. `evergreen` when it stays useful: ideas, techniques, how-tos, prompts, tools worth adopting later, essays. If a launch post also teaches how to use the thing, choose `evergreen`.
 
-The page's **Hide news** filter hides `news` bookmarks, and the daily digest brings them back less often than `evergreen` ones.
+The card shows a News label for `news`, and the daily digest brings `news` back less often than `evergreen`.
 
 ### tldr
 
