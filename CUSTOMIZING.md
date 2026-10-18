@@ -4,37 +4,37 @@ Reference for editing a component ejected with `bunx grok-digest eject <Componen
 
 The page's parts are [Astro components](https://docs.astro.build/en/basics/astro-components/), ejected as `.astro` files:
 
-| Component      | What it is                                                      | It gets                      |
-| -------------- | --------------------------------------------------------------- | ---------------------------- |
-| `Header`       | The mascot, the title, and the text size and dark mode buttons. | `title`, from the settings   |
-| `Footer`       | The feed links and the notes at the bottom.                     | Nothing                      |
-| `BookmarkCard` | One bookmark's card. The page renders one per bookmark.         | `bookmark`, the parsed entry |
+| Component      | What it is                                                             | It gets                                    |
+| -------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
+| `Header`       | The mascot, the title, and the text size, dark mode and Swipe buttons. | `title` and `swipeMode`, from the settings |
+| `Footer`       | The feed links and the notes at the bottom.                            | Nothing                                    |
+| `BookmarkCard` | One bookmark's card. The page renders one per bookmark.                | `bookmark`, the parsed entry               |
 
-The controls above the cards are React components, ejected as `.tsx` files. Each gets one prop, `controls`, and must keep its named export, such as `export function ViewTabs`:
+The controls above the cards are React components, ejected as `.tsx` files. Each gets one prop, `controls`, and must keep its named export, such as `export function FilterMenu`:
 
-| Component        | What it is                                                                                            |
-| ---------------- | ----------------------------------------------------------------------------------------------------- |
-| `ControlsLayout` | Arranges the parts below, plus the phone-only Detail and search buttons. Leave a part out to hide it. |
-| `ViewTabs`       | The Today, Inbox, Done, and All buttons (the bottom bar on phones) and the Swipe button.              |
-| `SearchField`    | The search box and its Cancel button.                                                                 |
-| `TopicChips`     | The topic filter chips.                                                                               |
-| `DetailControl`  | The Detail slider: Minimal, Light, Deep, Full.                                                        |
-| `StatusLine`     | The line that counts bookmarks and today's review.                                                    |
-| `KeyboardHints`  | The keyboard shortcuts on desktop and the swipe tip on phones.                                        |
-| `UndoToast`      | The "Marked done" message with Undo.                                                                  |
-| `DoneCleanup`    | In the Done view, Copy for Grok: a request for the Grok bot to remove the done bookmarks.             |
+| Component        | What it is                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `ControlsLayout` | Arranges the parts below, plus the Sort and filter button and the phone-only search button. Leave a part out to hide it. |
+| `SearchField`    | The search box and its Cancel button.                                                                                    |
+| `TopicChips`     | The topic filter chips.                                                                                                  |
+| `FilterMenu`     | The sort (Newest, Oldest, Post date) and the Show done and Hide news filters.                                            |
+| `StatusLine`     | The line that counts the bookmarks shown.                                                                                |
+| `KeyboardHints`  | The keyboard shortcuts on desktop and the swipe tip on phones.                                                           |
+| `UndoToast`      | The "Marked done" message with Undo.                                                                                     |
+| `DoneCleanup`    | With Show done on, Copy for Grok: a request for the Grok bot to remove the done bookmarks.                               |
 
-`controls` holds the page's state and what changes it. The package keeps owning the behavior: filtering, the done marks, the Later order, Today's picks, the keyboard shortcuts, and swiping cards. A control only shows the state and calls these:
+`controls` holds the page's state and what changes it. The package keeps owning the behavior: filtering, the done marks, the sort and the Later order, the keyboard shortcuts, and swiping cards. A control only shows the state and calls these:
 
 | Field                                                           | What it is                                                                                                                                                          |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `view`, `counts`, `chooseView(view)`                            | The open view (`"today"`, `"inbox"`, `"done"`, `"all"`), each view's count, and opening one.                                                                        |
+| `counts`                                                        | `toRead` and `done`: how many bookmarks are not done and done, in every topic.                                                                                      |
 | `query`, `searching`, `setQuery(text)`                          | The search text, whether it is not empty, and changing it.                                                                                                          |
 | `searchShown`, `openSearch()`, `closeSearch()`, `leaveSearch()` | Whether the search box shows on a phone; open it, clear and close it, or close it when empty.                                                                       |
 | `topic`, `topics`, `chooseTopic(topic)`                         | The chosen topic or `null`, the topics in use, and choosing one (the chosen one again, or `null`, shows all).                                                       |
-| `depth`, `setDepth(depth)`                                      | The Detail level: `"headline"`, `"gist"`, `"points"`, or `"full"`.                                                                                                  |
-| `detailShown`, `toggleDetail()`                                 | Whether the Detail slider shows on a phone, and showing or hiding it.                                                                                               |
-| `shown`, `reviewed`, `reviewSize`                               | How many cards show, how many of today's picks are done, and how many there are.                                                                                    |
+| `sort`, `chooseSort(sort)`                                      | The order: `"newest"` or `"oldest"` saved first, or `"posted"` (newest post first); and choosing one.                                                               |
+| `showDone`, `setShowDone(on)`, `hideNews`, `setHideNews(on)`    | Whether done bookmarks show and whether `news` bookmarks hide, and changing either. A search ignores both.                                                          |
+| `filtersShown`, `toggleFilters()`, `filtersChanged`             | Whether `FilterMenu` is open, opening or closing it, and whether the sort or a filter differs from the default.                                                     |
+| `shown`, `shownDone`                                            | How many cards show, and how many of those are done.                                                                                                                |
 | `undoPending`, `undo()`                                         | Whether a card was just marked done, and undoing it.                                                                                                                |
 | `copyDoneRequest()`, `doneRequestCopied`                        | Copying a request for the Grok bot to remove every done bookmark, and whether it was just copied.                                                                   |
 | `openSwipe()`, `settings`                                       | Opening swipe mode, and the settings from `custom/config.json`.                                                                                                     |

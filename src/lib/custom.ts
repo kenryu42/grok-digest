@@ -1,7 +1,4 @@
 import { z } from "zod";
-import { DEPTHS } from "./depth.ts";
-import { VIEWS } from "./filter.ts";
-import { REVIEW_SIZE } from "./review.ts";
 
 export const CUSTOM_DIR = "custom";
 export const CONFIG_FILE = "config.json";
@@ -11,10 +8,9 @@ export const EJECTED_DIR = ".ejected";
 const PAGE_COMPONENTS = ["Header", "Footer", "BookmarkCard"] as const;
 const REACT_COMPONENTS = [
   "ControlsLayout",
-  "ViewTabs",
   "SearchField",
   "TopicChips",
-  "DetailControl",
+  "FilterMenu",
   "StatusLine",
   "KeyboardHints",
   "UndoToast",
@@ -32,25 +28,13 @@ export const componentFile = (name: OverridableComponent): string =>
   `${name}${PAGE_COMPONENTS.some((page) => page === name) ? ".astro" : ".tsx"}`;
 
 export const DEFAULT_TITLE = "Grok Digest";
-const MAX_REVIEW_SIZE = 20;
 
 export const siteConfigSchema = z.strictObject({
   title: z.string().trim().min(1).default(DEFAULT_TITLE),
-  defaultView: z.enum(VIEWS).default("today"),
-  reviewSize: z.int().min(1).max(MAX_REVIEW_SIZE).default(REVIEW_SIZE),
-  detail: z
-    .strictObject({
-      phone: z.enum(DEPTHS).default("headline"),
-      desktop: z.enum(DEPTHS).default("full"),
-    })
-    .prefault({}),
   swipeMode: z.boolean().default(true),
 });
 
-export type PageSettings = Pick<
-  z.output<typeof siteConfigSchema>,
-  "defaultView" | "reviewSize" | "detail" | "swipeMode"
->;
+export type PageSettings = Pick<z.output<typeof siteConfigSchema>, "swipeMode">;
 
 export function isOverridable(name: string): name is OverridableComponent {
   return OVERRIDABLE_COMPONENTS.some((component) => component === name);

@@ -1,10 +1,10 @@
 # Swipe mode
 
-A reader can go through the cards in the current view one per screen, full screen, like a short-video feed. Swipe up for the next card and down for the previous one; swipe a card left to open round `Later` and `Done` buttons behind it, as in Mail (`Inbox` for a card already done), or right to open `Share` and `Copy`. The card stops at the buttons however far it is swiped; only a tap acts. Each card shows at `Deep` (summary, key points and the `Try:` action) whatever the list's `Detail` level, followed by the post's links as the same clickable cards the list shows, and a card with an original post ends with a peek at it: an `Original post` label and its first two lines, fading out. Tapping the peek (or anywhere on the card) opens the post in place, and `Show less` at its end closes it. Leaving swipe mode keeps the list at its own level. `Speed read` flashes the card's text one word at a time in the center of the screen, fading each word in and out, at 250 words per minute by default. It starts off each time swipe mode opens. When a card's text ends, the whole card shows and the reader decides when to swipe on.
+A reader can go through the cards in the list, in its order and with its filters, one per screen, full screen, like a short-video feed. Swipe up for the next card and down for the previous one; swipe a card left to open round `Later` and `Done` buttons behind it, as in Mail (`Inbox` for a card already done), or right to open `Share` and `Copy`. The card stops at the buttons however far it is swiped; only a tap acts. Each card shows its summary, key points and the `Try:` action though the list shows only headlines, followed by the post's links as the same clickable cards the list shows, and a card with an original post ends with a peek at it: an `Original post` label and its first two lines, fading out. Tapping the peek (or anywhere on the card) opens the post in place, and `Show less` at its end closes it. Leaving swipe mode leaves the list's cards closed. `Speed read` flashes the card's text one word at a time in the center of the screen, fading each word in and out, at 250 words per minute by default. It starts off each time swipe mode opens. When a card's text ends, the whole card shows and the reader decides when to swipe on.
 
 ## Sub-features
 
-- `swipe-open` opens swipe mode from the round button in the middle of the bottom tab bar on phones (`Swipe through cards`), the `Swipe` button next to the views on desktop, or `s`. It starts at the card at the top of the list.
+- `swipe-open` opens swipe mode from the `Swipe through cards` button right of the dark mode button in the header, or `s` on desktop. It starts at the card at the top of the list.
 - `swipe-navigate` moves to the next or previous card with a vertical swipe (or the mouse wheel, `j`/`k`, arrow keys). The top of the next card (its topic line, dimmed, under a rounded edge) always peeks above the bottom buttons, and tapping it moves there. The first time swipe mode ever opens, the cards lift once to show more of the next one and settle back; a touch stops it, and it never plays again. A card taller than the screen scrolls within itself first, so a flick stops at its end and the next swipe moves on. A card always opens at its top, including one scrolled down earlier and swiped back to.
 - `swipe-done` marks the current card done with the round `Done` button, the footer's `Done` (desktop) or `e`, then moves on. A `Marked done` toast offers `Undo` for 5 seconds (also `u`), which unmarks it and goes back to it.
 - `swipe-later` moves the card to the end of the deck, and of the list, with the round `Later` button, the footer's clock button (desktop) or `l`; the next card takes its place.
@@ -19,8 +19,7 @@ A reader can go through the cards in the current view one per screen, full scree
 
 ## How to get to it (user POV)
 
-- Phone: tap the round button in the middle of the bottom tab bar.
-- Desktop: click `Swipe` next to the views, or press `s`.
+- Tap or click the `Swipe through cards` button at the right end of the header, or press `s` on desktop.
 - Inside, swipe or use the buttons along the bottom; `Speed read` is at the top right.
 
 ## Driving it with verify.mjs
@@ -28,9 +27,9 @@ A reader can go through the cards in the current view one per screen, full scree
 Preconditions:
 
 - A healthy run with the default fixture.
-- `$V open "$RUN" "/?view=inbox" --viewport mobile --fresh`. The list starts at `Minimal`; swipe mode shows `Deep` anyway.
+- `$V open "$RUN" / --viewport mobile --fresh`. The list shows only headlines; swipe mode shows more anyway.
 
-- **Open.** Run `$V click "$RUN" --name "Swipe through cards"`. `dialog[open]` exists, named `Swipe mode`, and the counter (`[data-swipe-counter]`) reads `1 / 15`. The card shows its summary, key points and `Try:` line (`[data-swipe-page][data-current] article > div p` count is above 1) though the list is at `Minimal`. Take `$V screenshot "$RUN" swipe-open`.
+- **Open.** Run `$V click "$RUN" --name "Swipe through cards"`. `dialog[open]` exists, named `Swipe mode`, and the counter (`[data-swipe-counter]`) reads `1 / 15`. The card shows its summary, key points and `Try:` line (`[data-swipe-page][data-current] article > div p` count is above 1) though the list shows only headlines. Take `$V screenshot "$RUN" swipe-open`.
 - **Peek and nudge.** Right after opening, `[data-swipe-pager]` has `data-nudge` and `localStorage.getItem("grok-digest:/:swipe-nudged")` is `"true"`. About a second in, `$V screenshot "$RUN" swipe-nudge` shows the cards lifted with more of the next one in view; two seconds later the next card's topic line sits just above the footer. Run `$V click "$RUN" --selector '[data-swipe-page]:not([data-current]) article > p'`: the counter reads `2 / 15` and no card is expanded. Close, `open` without `--fresh` and open swipe mode again: no `data-nudge`.
 - **Next and back.** Run `$V swipe "$RUN" --selector "[data-swipe-pager]" --up --distance 300 --duration 150`. After about a second the counter reads `2 / 15`. `$V key "$RUN" k` goes back to `1 / 15`.
 - **Expand.** The first card ends with `[data-swipe-peek]`, whose text starts `Original post` and then the post. Run `$V click "$RUN" --selector "[data-swipe-page][data-current] [data-swipe-peek]"`. The peek is gone and the post shows in full (`[data-swipe-page][data-current] article > div p` count grows from 5 to 6). `$V click "$RUN" --name "Show less"` brings the peek back and the count to 5. A tap elsewhere on the card (`--selector "[data-swipe-page][data-current] article"`) toggles it the same way.
@@ -42,9 +41,9 @@ Preconditions:
 - **Pause.** Run `$V click "$RUN" --selector "[data-swipe-page][data-current] article"`. `[data-speed-paused]` shows the section's text with one word highlighted (`.bg-brand-soft`). `$V click "$RUN" --name Play` resumes.
 - **Finish and wait.** Press `$V key "$RUN" =` 14 times (600 wpm). Within a few seconds `[data-speed-stage]` is gone, the card's full text shows, the round button is named `Read again`, and the counter has not moved.
 - **Next card reads.** Run `$V key "$RUN" j`. The counter moves on and a word shows in `[data-speed-word]` again.
-- **Close.** Run `$V key "$RUN" Escape`. No `dialog` remains and `document.documentElement.style.overflow` is `""`. The list's cards are still at `headline` (`Minimal`): `[...new Set([...document.querySelectorAll("[data-bookmark-id]")].map((c) => c.dataset.depth))]` prints `["headline"]`.
+- **Close.** Run `$V key "$RUN" Escape`. No `dialog` remains and `document.documentElement.style.overflow` is `""`. The list's cards are still closed: `[...new Set([...document.querySelectorAll("[data-bookmark-id]")].map((c) => c.dataset.depth))]` prints `["headline"]`.
 - **Speed read resets.** Open swipe mode again. `Speed read` has `aria-pressed="false"` and no `[data-speed-stage]` shows, while the slider keeps the speed set earlier once speed reading is turned on.
-- **Tall card.** Run `$V open "$RUN" "/?view=all"`, `$V key "$RUN" s`, then open the first card in full with `$V click "$RUN" --selector "[data-swipe-page][data-current] article"`. It overflows: `document.querySelector("[data-swipe-page][data-current] > div:not([aria-hidden])")` has `scrollHeight` above `clientHeight`. A flick (`$V swipe "$RUN" --selector "[data-swipe-page][data-current]" --up --distance 200 --duration 80`) scrolls that element to its end while the counter stays on `1 / 15`. A second flick moves to `2 / 15`. Flick back down (`--distance=-300 --duration 150`) to `1 / 15`: that element's `scrollTop` is `0` again, so the card shows from its top.
+- **Tall card.** Run `$V open "$RUN" /`, `$V key "$RUN" s`, then open the first card in full with `$V click "$RUN" --selector "[data-swipe-page][data-current] article"`. It overflows: `document.querySelector("[data-swipe-page][data-current] > div:not([aria-hidden])")` has `scrollHeight` above `clientHeight`. A flick (`$V swipe "$RUN" --selector "[data-swipe-page][data-current]" --up --distance 200 --duration 80`) scrolls that element to its end while the counter stays on `1 / 15`. A second flick moves to `2 / 15`. Flick back down (`--distance=-300 --duration 150`) to `1 / 15`: that element's `scrollTop` is `0` again, so the card shows from its top.
 
 ## Gotchas
 

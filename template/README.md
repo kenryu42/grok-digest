@@ -33,7 +33,7 @@ To stay on one version, set `"grok-digest"` in `package.json` to that exact vers
 
 ## Change the page
 
-Ask the Grok bot. It changes the page from a `custom/` folder in this repository: settings such as the title, the view the page opens on, and how many bookmarks Today brings back go in `custom/config.json`, colors and fonts in `custom/theme.css`, and a reworked header, footer, card, part of the controls, or part of swipe mode in `custom/components/`. Everything else keeps updating with each release, and the bot carries new releases into the parts it changed. Delete `custom/` to go back to the page as released.
+Ask the Grok bot. It changes the page from a `custom/` folder in this repository: settings such as the title and whether swipe mode shows go in `custom/config.json`, colors and fonts in `custom/theme.css`, and a reworked header, footer, card, part of the controls, or part of swipe mode in `custom/components/`. Everything else keeps updating with each release, and the bot carries new releases into the parts it changed. Delete `custom/` to go back to the page as released.
 
 ## Data files
 
@@ -59,11 +59,13 @@ Every later release reads version 1 files unchanged. The policy is in [MIGRATION
 
 ## The page
 
-The page opens on **Today**: up to five bookmarks to look at again. It brings back bookmarks saved yesterday, a week ago, a month ago, three months ago, and on today's date in earlier years, then fills the rest from older bookmarks you have not marked done. A `news` bookmark comes back only the day after it was saved and a week later, and never fills a free slot. The five stay the same all day. When there is nothing to review, the page opens on **Inbox** instead.
+The page opens on every bookmark you have not marked done, the most recently saved first, so a new bookmark is at the top. Each card shows its headline; tap or click it to open the whole card, with its **Done** button. Marking a card done takes it off the list, with **Undo** for a few seconds.
 
-Each card has a **Done** button. **Inbox** lists what is not done, **Done** what is, and **All** everything. A search looks through every bookmark, whichever view is open. Done marks, today's five, and **Collapse all** are kept in your browser, so another browser or device starts fresh.
+The **Sort and filter** button next to the topics orders the list by **Newest** or **Oldest** saved, or by **Post date**. **Show done** puts done bookmarks back in the list, dimmed, with **Copy for Grok** to ask the bot to remove them. **Hide news** hides the `news` bookmarks. A search looks through every bookmark in the chosen topic, done or not. Done marks are kept in your browser, so another browser or device starts fresh.
 
-The **Aa** button next to the dark mode button sets the size of the text on the cards and in swipe mode: Small, Default, Large, or Larger. The search box, the views, and the other controls keep their size. Your choice is kept in your browser.
+The **Swipe** button right of the dark mode button opens swipe mode: one card per screen, in the list's order.
+
+The **Aa** button next to the dark mode button sets the size of the text on the cards and in swipe mode: Small, Default, Large, or Larger. The search box, the filters, and the other controls keep their size. Your choice is kept in your browser.
 
 On a phone, use **Add to Home Screen** to open the page like an app.
 
@@ -71,14 +73,15 @@ On a phone, use **Add to Home Screen** to open the page like an app.
 
 On a keyboard, `j` and `k` move between cards, `Enter` opens or closes one, `e` marks it done, `c` copies it, `o` opens it on X, and `/` jumps to the search box.
 
-The view, the search box, and the topic chips are stored in the page address.
+The search box, the topic chips, the sort, and the filters are stored in the page address.
 
-- `?view=inbox`, `?view=done`, and `?view=all` open those views. Without `view`, the page opens on Today, or on Inbox when Today is empty. `?view=today` always opens Today.
 - `?topic=design` shows the Design bookmarks.
 - `?q=tokyo` shows bookmarks whose author, tldr, post, summary, key points, action, or link titles contain `tokyo`.
-- The two combine, as in `?q=tokyo&topic=japan-tech`.
+- `?sort=oldest` lists the oldest saved first, and `?sort=posted` the newest posts first.
+- `?done=show` shows done bookmarks too, and `?news=hide` hides `news` bookmarks.
+- They combine, as in `?q=tokyo&topic=japan-tech`.
 
-An unknown `topic` or `view` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the All view so the card shows even when it is done.
+An unknown `topic` or `sort` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the card, and turns on **Show done** when the card is done and off **Hide news** when it is news, so the card always shows.
 
 The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item is titled with the tldr, dated when the bookmark was saved, links to the card on this page, and includes the summary, the action, the key points, the links with their preview images, the original post, and its images.
 

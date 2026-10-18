@@ -43,13 +43,13 @@ If a release fails a site's build, the deploy stops and the page that was live s
 
 A site changes its page from `custom/`, and keeps every release for the parts it leaves alone. A site without `custom/` gets the page exactly as released. The owner asks the Grok bot for a change; [`BOT.md`](BOT.md) tells it how, under "Change the page".
 
-| Path                                  | Changes                                                                                                                                                                                                                                                |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `custom/config.json`                  | Settings: `title`, `defaultView`, `reviewSize`, `detail.phone`, `detail.desktop`, and `swipeMode`. `validate` checks the file.                                                                                                                         |
-| `custom/theme.css`                    | Plain CSS loaded after the page's own: the color variables, fonts, and any selector.                                                                                                                                                                   |
-| `custom/components/<Component>.astro` | Replaces `Header`, `Footer`, or `BookmarkCard`. Tailwind classes in it work.                                                                                                                                                                           |
-| `custom/components/<Component>.tsx`   | Replaces a part of the controls: `ControlsLayout`, `ViewTabs`, `SearchField`, `TopicChips`, `DetailControl`, `StatusLine`, `KeyboardHints`, `UndoToast`, or `DoneCleanup`; or of swipe mode: `SwipeHeader`, `SwipeCard`, `SwipeFooter`, or `SwipeEnd`. |
-| `custom/components/.ejected/`         | Written by `eject` and `merge`. The component as the site last took it from the package.                                                                                                                                                               |
+| Path                                  | Changes                                                                                                                                                                                                                                 |
+| ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `custom/config.json`                  | Settings: `title` and `swipeMode`. `validate` checks the file.                                                                                                                                                                          |
+| `custom/theme.css`                    | Plain CSS loaded after the page's own: the color variables, fonts, and any selector.                                                                                                                                                    |
+| `custom/components/<Component>.astro` | Replaces `Header`, `Footer`, or `BookmarkCard`. Tailwind classes in it work.                                                                                                                                                            |
+| `custom/components/<Component>.tsx`   | Replaces a part of the controls: `ControlsLayout`, `SearchField`, `TopicChips`, `FilterMenu`, `StatusLine`, `KeyboardHints`, `UndoToast`, or `DoneCleanup`; or of swipe mode: `SwipeHeader`, `SwipeCard`, `SwipeFooter`, or `SwipeEnd`. |
+| `custom/components/.ejected/`         | Written by `eject` and `merge`. The component as the site last took it from the package.                                                                                                                                                |
 
 `grok-digest eject <Component>` copies the package's component into `custom/components/`, with its imports pointed at `grok-digest/internal/…`, the package's own modules. When a release changes that component, the build warns, and `grok-digest merge` runs `git merge-file` to apply the change to the site's copy. A change that conflicts with the site's own leaves conflict markers and makes `merge` exit with 1, and the build refuses the file until they are resolved.
 
@@ -103,7 +103,7 @@ Every site takes every release, so every release reads every data file an earlie
 
 The page title is "Grok Digest" unless `custom/config.json` sets `title`. The footer reads "Unofficial. Summaries created with Grok." Every page sends `<meta name="robots" content="noindex,nofollow">` and `<meta name="referrer" content="no-referrer">`. `robots.txt` disallows all crawlers. Feeds live at `rss.xml` and `rss/<topic-id>.xml`. Card anchors are `#b-<id>`.
 
-The page opens on Today, a daily review of up to five bookmarks, and has Inbox, Done, and All views. Search, topic, and view are `?q=`, `?topic=`, and `?view=` on the page address. The behavior is documented in `template/README.md`.
+The page opens on one list of the bookmarks not marked done, newest saved first. A Sort and filter menu orders it by save or post date and shows done or hides news bookmarks. Search, topic, sort, and the two filters are `?q=`, `?topic=`, `?sort=`, `?done=show`, and `?news=hide` on the page address. The behavior is documented in `template/README.md`.
 
 ## Package exports
 

@@ -75,7 +75,7 @@ const visual = cardKind(bookmark);
     data-swipe-surface
     className="relative gap-0 py-0 shadow-xs ring-foreground/8 [--card-spacing:--spacing(5)] has-[[data-card-toggle]:focus-visible]:ring-2 has-[[data-card-toggle]:focus-visible]:ring-ring sm:[--card-spacing:--spacing(6)]"
   >
-    <div class="flex flex-col transition-opacity group-data-[depth=gist]/bookmark:pb-1 group-data-[depth=headline]/bookmark:pb-1 group-data-[done]/bookmark:opacity-55">
+    <div class="flex flex-col transition-opacity group-data-[depth=headline]/bookmark:pb-1 group-data-[done]/bookmark:opacity-55">
       <div data-card-head class="flex cursor-pointer flex-col gap-2 px-(--card-spacing) pt-(--card-spacing) pb-4">
         {visual.kind === "photo" && (
           <div
@@ -136,7 +136,6 @@ const visual = cardKind(bookmark);
             />
           </span>
         </span>
-        <span data-review-reason class="text-xs font-medium tracking-wide text-brand-ink uppercase" hidden></span>
         <span class="flex items-start gap-4">
           <span class="flex min-w-0 flex-1 flex-col gap-2">
             <h2 class="min-w-0 flex-1 font-heading text-xl leading-snug font-semibold text-balance text-foreground sm:text-headline">

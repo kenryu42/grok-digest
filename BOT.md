@@ -1,6 +1,6 @@
 # Grok Digest: the bot's manual
 
-You keep a Grok Digest site. Its owner shares X posts with you. You turn each post into one entry in `data/bookmarks.json` and push it to `main`. GitHub Actions then rebuilds the page, where the owner reads the summaries and comes back to old bookmarks in a daily review.
+You keep a Grok Digest site. Its owner shares X posts with you. You turn each post into one entry in `data/bookmarks.json` and push it to `main`. GitHub Actions then rebuilds the page, where the owner reads the summaries and marks each bookmark done.
 
 The owner saves posts to read them later and then forgets them. Everything you write exists to make a post worth coming back to: a headline that says what it's about, a summary, the key points, and one thing to try.
 
@@ -111,7 +111,7 @@ If you can't read the time from the post, work it out from the status id: millis
 
 When you received the share: the current date and time as you handle it. Write it once and never change it, even when you edit the entry later.
 
-It must be a date and time with an offset, such as `2026-10-15T11:21:40+09:00`, or UTC with `Z`. A date alone is rejected. Use the owner's local offset when you know it. The daily review counts days in the owner's time zone, so the right offset keeps "Saved yesterday" true around midnight.
+It must be a date and time with an offset, such as `2026-10-15T11:21:40+09:00`, or UTC with `Z`. A date alone is rejected. Use the owner's local offset when you know it. The page sorts by it, and the daily digest counts days in the owner's time zone, so the right offset keeps "Saved yesterday" true around midnight.
 
 ### topic
 
@@ -131,7 +131,7 @@ One of these ids:
 
 `news` when the post's value fades within weeks: launches, releases, announcements, funding, events, outages, drama. `evergreen` when it stays useful: ideas, techniques, how-tos, prompts, tools worth adopting later, essays. If a launch post also teaches how to use the thing, choose `evergreen`.
 
-The daily review brings `news` back only the day after it was saved and a week later. `evergreen` comes back a day, a week, a month, and three months later, and on the same date in later years.
+The page's **Hide news** filter hides `news` bookmarks, and the daily digest brings them back less often than `evergreen` ones.
 
 ### tldr
 
@@ -195,7 +195,7 @@ To change one, edit its fields in place. Keep `id` and `saved_at`. Commit with `
 
 To remove one, delete its entry from `data/bookmarks.json` and add its id to `data/removed.json`, so a later share of the same post doesn't bring it back. Commit with `Remove bookmark (@handle)`.
 
-The page's Done view lets the owner copy a request to remove the bookmarks they have marked done, and send it to you:
+With **Show done** on, the page lets the owner copy a request to remove the bookmarks they have marked done, and send it to you:
 
 ```text
 Remove these bookmarks from my Grok Digest:
@@ -237,20 +237,14 @@ To undo a change, delete the setting, the CSS, or the component file and its cop
 
 `custom/config.json` is one JSON object. Leave out a setting to keep its default. `bun run validate` rejects a setting it does not know and names it.
 
-| Setting          | Default         | What it does                                                                                                                                                   |
-| ---------------- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`          | `"Grok Digest"` | The page's name in the header, the browser tab, and on the home screen.                                                                                        |
-| `defaultView`    | `"today"`       | The view the page opens on without `?view=`: `"today"`, `"inbox"`, `"done"`, or `"all"`. `"today"` opens Inbox when there is nothing to review.                |
-| `reviewSize`     | `5`             | How many bookmarks Today brings back, from 1 to 20. Today's picks stay the same all day, so a new size shows the next day.                                     |
-| `detail.phone`   | `"headline"`    | How much each card shows on a phone until the reader moves the Detail slider: `"headline"` (Minimal), `"gist"` (Light), `"points"` (Deep), or `"full"` (Full). |
-| `detail.desktop` | `"full"`        | The same on a wider screen.                                                                                                                                    |
-| `swipeMode`      | `true`          | `false` hides the Swipe button and the `s` shortcut.                                                                                                           |
+| Setting     | Default         | What it does                                                            |
+| ----------- | --------------- | ----------------------------------------------------------------------- |
+| `title`     | `"Grok Digest"` | The page's name in the header, the browser tab, and on the home screen. |
+| `swipeMode` | `true`          | `false` hides the Swipe button and the `s` shortcut.                    |
 
 ```json
 {
   "title": "Reading list",
-  "defaultView": "inbox",
-  "detail": { "desktop": "points" },
   "swipeMode": false
 }
 ```
@@ -273,7 +267,7 @@ Colors are CSS variables. Set light values on `:root` and dark values on `.dark`
 
 The variables are `--background`, `--foreground`, `--card`, `--muted`, `--muted-foreground`, `--border`, `--brand` (accents), `--brand-ink` (accent text), `--brand-soft` (the "Try:" box), `--done` (marked done), and `--radius` (corner size). Each topic's color comes from `--topic-hue`, such as `[data-topic="design"] { --topic-hue: 200; }`. For fonts, set `font-family` on `html`, and on `.font-serif` and `.font-heading` for the summaries and headlines.
 
-To reach one part of the page, select its data attribute: `[data-bookmark-id]` (a card), `[data-card-head]`, `[data-read-summary]`, `[data-read-point]`, `[data-read-action]`, `[data-level]`, `[data-done]` (a card marked done), and `nav[aria-label="Views"]`. To hide something, give it `display: none`.
+To reach one part of the page, select its data attribute: `[data-bookmark-id]` (a card), `[data-card-head]`, `[data-read-summary]`, `[data-read-point]`, `[data-read-action]`, `[data-level]`, `[data-done]` (a card marked done), and `[data-open-swipe]` (the Swipe button in the header). To hide something, give it `display: none`.
 
 ### Components
 
@@ -293,10 +287,9 @@ These are the components you can eject. What each one is, the props it gets, and
 | `Footer`         | `.astro` |
 | `BookmarkCard`   | `.astro` |
 | `ControlsLayout` | `.tsx`   |
-| `ViewTabs`       | `.tsx`   |
 | `SearchField`    | `.tsx`   |
 | `TopicChips`     | `.tsx`   |
-| `DetailControl`  | `.tsx`   |
+| `FilterMenu`     | `.tsx`   |
 | `StatusLine`     | `.tsx`   |
 | `KeyboardHints`  | `.tsx`   |
 | `UndoToast`      | `.tsx`   |
@@ -306,7 +299,7 @@ These are the components you can eject. What each one is, the props it gets, and
 | `SwipeFooter`    | `.tsx`   |
 | `SwipeEnd`       | `.tsx`   |
 
-In `BookmarkCard`, keep every `data-` attribute and the element it is on. The page finds the card, its buttons, and its text by them for Done, Later, Copy, Today's reasons, the Detail levels, swiping, and swipe mode. Move them, restyle them, or add elements around them, but don't remove them.
+In `BookmarkCard`, keep every `data-` attribute and the element it is on. The page finds the card, its buttons, and its text by them for Done, Later, Copy, opening a card, swiping, and swipe mode. Move them, restyle them, or add elements around them, but don't remove them.
 
 Imports from `grok-digest/internal/…` reach the package's own parts, such as `grok-digest/internal/components/ui/button`. They can change in any release, and `bunx grok-digest merge` brings in those changes.
 
@@ -329,4 +322,4 @@ If the owner wants a nudge to come back, run this every morning:
 1. Read `data/bookmarks.json` from the site repository.
 2. Using today's date in the owner's time zone, pick up to 3 bookmarks: first any `evergreen` bookmark saved exactly 1, 7, 30 or 90 days ago or on today's date in an earlier year, and any `news` bookmark saved 1 or 7 days ago; then fill the rest with bookmarks saved at least a day ago that you have not sent in the last 14 days. Skip anything saved today. Send nothing if nothing qualifies.
 3. For each, send the `tldr`, why it is back ("Saved a week ago"), the `action` as "Try: …" when it is not empty, and a link to `<site>/#b-<id>`.
-4. End with a link to `<site>/?view=today`, where `<site>` is the page's address.
+4. End with a link to `<site>/?sort=oldest`, where `<site>` is the page's address, so the owner can work through the rest of the backlog.

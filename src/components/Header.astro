@@ -1,13 +1,16 @@
 ---
+import { GalleryVerticalEndIcon } from "lucide-react";
 import Mascot from "../assets/mascot.svg";
 import { TextSizeControl } from "./TextSizeControl";
 import { ThemeToggle } from "./ThemeToggle";
+import { Button } from "./ui/button";
 
 type Props = {
   title: string;
+  swipeMode: boolean;
 };
 
-const { title } = Astro.props;
+const { title, swipeMode } = Astro.props;
 ---
 
 <header class="flex items-start justify-between gap-4 pt-safe-6 pb-4 sm:pt-safe-16 sm:pb-8">
@@ -18,5 +21,18 @@ const { title } = Astro.props;
   <div class="flex items-center gap-1">
     <TextSizeControl client:load />
     <ThemeToggle client:load />
+    {swipeMode && (
+      <Button
+        type="button"
+        variant="ghost"
+        size="icon"
+        data-open-swipe
+        aria-label="Swipe through cards"
+        title="Swipe through cards (s)"
+        className="max-sm:size-11"
+      >
+        <GalleryVerticalEndIcon aria-hidden="true" />
+      </Button>
+    )}
   </div>
 </header>

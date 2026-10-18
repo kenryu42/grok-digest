@@ -7,7 +7,7 @@ description: "Use in the grok-digest repository to prove a change works in the r
 
 Grok Digest is one static page of bookmark cards (an Astro page with a React island for the controls), plus RSS feeds and a `grok-digest` CLI. Users touch three surfaces:
 
-- **The page** (primary): search, views (Today, Inbox, Done, All; a bottom tab bar on phones), topic chips, a `Detail` slider (`Minimal`, `Light`, `Deep`, `Full`) that sets how much each card shows, cards that open with a tap and carry Copy, Done and Open on X, swipe-to-done on touch, a full-screen swipe mode with optional speed reading, a text size picker (`Aa`) in the header, and keyboard shortcuts on desktop.
+- **The page** (primary): one list of the bookmarks not marked done, search, topic chips, a `Sort and filter` menu (sort by `Newest`, `Oldest` or `Post date`; `Show done`; `Hide news`), cards that show their headline and open with a tap to Copy, Done and Open on X, swipe-to-done on touch, a full-screen swipe mode (`Swipe through cards` in the header) with optional speed reading, a text size picker (`Aa`) in the header, and keyboard shortcuts on desktop.
 - **The feeds**: `/rss.xml` and `/rss/<topic>.xml`.
 - **The CLI**: `grok-digest validate`, `build`, `dev` and `preview`.
 
@@ -51,17 +51,15 @@ It changes nothing (not even the journal) and prints each check as it goes. It c
 
 ## Drive
 
-Every command sends real input through Chrome's DevTools protocol. On the `mobile` viewport (375×812, touch emulation, `pointer: coarse`) clicks are touch taps. On `desktop` (1280×900) they are mouse clicks. Each command waits for the page to settle and prints JSON with the current URL, the status line (`p[aria-live]`, such as `14 bookmarks`) and the number of visible cards.
+Every command sends real input through Chrome's DevTools protocol. On the `mobile` viewport (375×812, touch emulation, `pointer: coarse`) clicks are touch taps. On `desktop` (1280×900) they are mouse clicks. Each command waits for the page to settle and prints JSON with the current URL, the status line (`p[aria-live]`, such as `15 bookmarks to read`) and the number of visible cards.
 
 ```bash
-$V open "$RUN" "/?view=inbox" --viewport mobile --fresh
-$V click "$RUN" --name "Inbox"                # a view button; names match exactly, then by prefix
+$V open "$RUN" "/?sort=oldest" --viewport mobile --fresh
+$V click "$RUN" --name "Sort and filter"      # names match exactly, then by prefix
 $V click "$RUN" --card 0 --name Done          # scoped to the first visible card
 $V click "$RUN" --name "Search bookmarks"     # mobile search icon; on desktop this names the input
-$V click "$RUN" --name Detail                # phones: open the detail slider from the top row
 $V type "$RUN" tokyo                          # types into whatever has focus
-$V key "$RUN" j                               # also e, u, c, o, p, 1-4, /, =, -, Space, Escape, Enter, Tab, ArrowRight…
-$V click "$RUN" --selector '[data-depth-stop="points"]'   # a Detail slider stop (Deep)
+$V key "$RUN" j                               # also e, l, u, c, o, p, s, /, =, -, Space, Escape, Enter, Tab, ArrowRight…
 $V swipe "$RUN" --selector "[data-swipe-pager]" --up --distance 300   # next card in swipe mode
 $V swipe "$RUN" --card 0                      # a flick: 160px left in 128ms
 $V swipe "$RUN" --card 0 --distance 60 --duration 600     # a short, slow drag
@@ -69,7 +67,7 @@ $V wait "$RUN" --selector "[data-undo]"       # or --gone
 $V eval "$RUN" 'document.querySelector("output").textContent'
 ```
 
-- `open [path] [--viewport mobile|desktop] [--fresh]` always does a full page load, even when only the `#hash` differs (it passes through `about:blank`), and waits until the island has hydrated (`[data-bookmark-list][data-ready]`). `--fresh` clears the site's storage first: done marks, the cached Today picks, the detail level and the speed-reading settings. Always use `--fresh` to start a recipe, and to see the first-visit defaults. Changing the viewport only takes effect on the `open`, so cards start at `Minimal` only when a phone-sized page loads.
+- `open [path] [--viewport mobile|desktop] [--fresh]` always does a full page load, even when only the `#hash` differs (it passes through `about:blank`), and waits until the island has hydrated (`[data-bookmark-list][data-ready]`). `--fresh` clears the site's storage first: done marks, the Later order and the speed-reading settings. Always use `--fresh` to start a recipe, and to see the first-visit defaults. Changing the viewport only takes effect on the `open`.
 - `click` finds a visible `button, a, summary, input, label` by accessible name (the `aria-label`, otherwise its text, whitespace collapsed). `--selector <css>` changes the candidate set, `--card <n>` scopes to the n-th visible card (0-based), `--nth` picks among several matches, and `--across <0-1>` taps at that share of the element's width instead of its middle. On a miss it lists the visible names, so read the error rather than guessing.
 - `swipe` drags the n-th card left from near its right edge. `--selector <css>` drags from the middle of any element instead, `--up` drags upward (a vertical swipe), `--distance=-<px>` (with `=`) drags the other way, and `--duration <ms>` sets the speed. Each touch step costs about 17ms, so very short durations are capped by that.
 - If Chrome dies, the driver exits too, and every command fails with `did not answer … Run doctor.` instead of hanging. Each command gives up after 2 minutes.
@@ -80,18 +78,17 @@ Stable handles in this app:
 | What         | Handle                                                                                                                                                                                                                                                                                                                    |
 | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | A card       | `li[data-bookmark-id]`, id `b-<bookmark id>`; hidden cards have the `hidden` attribute                                                                                                                                                                                                                                    |
-| Card state   | `data-done` and `data-depth` (`headline`, `gist`, `points`, `full` = Minimal, Light, Deep, Full) on the `li`                                                                                                                                                                                                              |
+| Card state   | `data-done` and `data-depth` (`headline` for the headline only, `full` when opened) on the `li`                                                                                                                                                                                                                           |
 | Card title   | `h2` holding a button (`data-card-toggle`) with `aria-expanded`; tapping the header opens                                                                                                                                                                                                                                 |
-| Detail       | phone button `Detail: <level>` (`aria-expanded`); range input `Detail`; stops `[data-depth-stop=<level>]`                                                                                                                                                                                                                 |
-| Swipe mode   | button `Swipe through cards`; `dialog` named `Swipe mode`, pager `[data-swipe-pager]`, current page `[data-swipe-page][data-current]`, counter `[data-swipe-counter]`                                                                                                                                                     |
+| Sort, filter | button `Sort and filter` (`aria-expanded`; a dot when not at the defaults); in it, group `Sort by` with `Newest`, `Oldest`, `Post date`, and buttons `Show done <count>` and `Hide news`, all with `aria-pressed`                                                                                                         |
+| Swipe mode   | header button `Swipe through cards` (`data-open-swipe`); `dialog` named `Swipe mode`, pager `[data-swipe-pager]`, current page `[data-swipe-page][data-current]`, counter `[data-swipe-counter]`                                                                                                                          |
 | Swipe inside | `Close swipe mode`, `Speed read` (`aria-pressed`), `Play`/`Pause`/`Read again`, `Copy`, `Done`, `Open on X`; behind the card `[data-swipe-tray=left]` (`Later`, `Done`) and `[data-swipe-tray=right]` (`Share`, `Copy`), shown by `data-swiping` on the page; word `[data-speed-word]`, paused text `[data-speed-paused]` |
-| View buttons | `nav[aria-label=Views]` (bottom tab bar on phones), group `Choose a view`, buttons named `Today 5`, `Inbox 14` and so on, with `aria-pressed`                                                                                                                                                                             |
 | Topic chips  | group `Filter by topic`, buttons `All topics`, `AI agents` and so on, with `aria-pressed`                                                                                                                                                                                                                                 |
 | Card buttons | `Copy` (`data-copy`), `Done` (`data-done-toggle`, `aria-pressed`), `Later` (`data-later`, desktop), link `Open on X`; behind the card `[data-swipe-action=later]` and `[data-swipe-action=done]`, shown while the `li` has `data-actions` or `data-swiping`                                                               |
 | Undo toast   | the `output` element, button `Undo` (`data-undo`)                                                                                                                                                                                                                                                                         |
-| Status line  | `p[aria-live]`                                                                                                                                                                                                                                                                                                            |
+| Status line  | `p[aria-live]`, such as `15 bookmarks to read` or `15 bookmarks, 1 done`                                                                                                                                                                                                                                                  |
 | Text size    | header button `Text size` (`aria-expanded`), group `Choose a text size` with `Small`, `Default`, `Large`, `Larger` (`aria-pressed`, `data-text-size-option`); `data-text-size` on `<html>`, absent at `Default`                                                                                                           |
-| Stored state | `localStorage` keys `grok-digest:/:done`, `:later`, `:review`, `:cards-depth`, `:speed-reading-wpm`; `grok-digest:text-size` and `grok-digest:theme` for every site                                                                                                                                                       |
+| Stored state | `localStorage` keys `grok-digest:/:done`, `:later`, `:speed-reading-wpm`; `grok-digest:text-size` and `grok-digest:theme` for every site                                                                                                                                                                                  |
 
 ## Evidence
 
@@ -107,7 +104,7 @@ Proof standards:
 
 - Exercise the real user path (taps, clicks, keys, swipes) on the real page. Don't call internal setters, write `localStorage` to fake a state, or use `eval` to click.
 - Capture the action and the resulting state: a screenshot or snapshot before, and another after.
-- Verify side effects as well as the screen. Done marks persist in `localStorage` (`grok-digest:/:done`), Copy fills the clipboard (`await navigator.clipboard.readText()`; the driver grants clipboard access on `open`), and the URL query (`?q=`, `?topic=`, `?view=`) follows the filters. Reload with `open` (no `--fresh`) to prove that a state survives.
+- Verify side effects as well as the screen. Done marks persist in `localStorage` (`grok-digest:/:done`), Copy fills the clipboard (`await navigator.clipboard.readText()`; the driver grants clipboard access on `open`), and the URL query (`?q=`, `?topic=`, `?sort=`, `?done=show`, `?news=hide`) follows the filters. Reload with `open` (no `--fresh`) to prove that a state survives.
 - Prove a phone change at `--viewport mobile` and check that desktop did not regress at `--viewport desktop`. The layout switches at 640px.
 - Report a journey that can't reach its end state as a failure, with the command and what was missing. Never weaken it to pass.
 
@@ -124,9 +121,8 @@ If `launch` fails partway, read `$RUN/logs/dev.log`, `driver.log` and `chrome.lo
 ## Gotchas
 
 - The fixture's images point at made-up `pbs.twimg.com` addresses (the schema only allows that host), so they render as broken images and Chrome makes requests to `pbs.twimg.com`. Check image layout through classes and the boxes, not the pixels. Use `--data` with real media URLs to see real images.
-- Today's picks depend on the browser's clock and the fixture's `saved_at` dates, and they are cached per day in `localStorage`. Counts in the `Today` button change from day to day. Assert on relationships (a picked card is visible in Today) rather than fixed numbers.
 - Headless Chrome follows the host's light or dark setting, and the page follows the system theme unless the theme toggle was used. Screenshots may come out dark.
-- Changing the detail level, opening a card, and marking one done animate for about half a second. Wait about 0.6 seconds before measuring positions or taking a screenshot.
+- Opening a card and marking one done animate for about half a second. Wait about 0.6 seconds before measuring positions or taking a screenshot.
 - A swipe blocks every click for 400ms afterwards, by design. The helper's settle time covers that between commands, but don't fire `eval` clicks right after a swipe.
 - `type` inserts text into the focused element. Focus the search field first: tap `Search bookmarks` on mobile, or press `/`.
 - The Astro dev toolbar is part of dev pages (a pill at the bottom). It is not part of the product. Ignore it in screenshots.

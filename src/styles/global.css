@@ -236,9 +236,7 @@
   --text-4xl: calc(2.25rem * var(--text-scale, 1));
 }
 
-[data-depth="headline"] :is([data-level="gist"], [data-level="points"], [data-level="full"]),
-[data-depth="gist"] :is([data-level="points"], [data-level="full"]),
-[data-depth="points"] [data-level="full"] {
+[data-depth="headline"] :is([data-level="gist"], [data-level="points"], [data-level="full"]) {
   display: none;
 }
 

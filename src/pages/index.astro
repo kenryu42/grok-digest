@@ -10,13 +10,12 @@ import { toSearchEntry } from "../lib/search";
 import { siteConfig } from "../lib/site-config";
 
 const entries = bookmarks.map(toSearchEntry);
-const { title, defaultView, reviewSize, detail, swipeMode } = siteConfig;
-const settings = { defaultView, reviewSize, detail, swipeMode };
+const { title, swipeMode } = siteConfig;
 ---
 
 <Layout title={title} description="Posts saved from X, summarized and sorted by topic." feedHref={siteHref("rss.xml")}>
-  <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-safe-4 max-sm:pb-[calc(env(safe-area-inset-bottom)+--spacing(18))] sm:px-safe-6">
-    <Header title={title} />
+  <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-safe-4 sm:px-safe-6">
+    <Header title={title} swipeMode={swipeMode} />
 
     <noscript>
       <style is:inline>
@@ -29,7 +28,7 @@ const settings = { defaultView, reviewSize, detail, swipeMode };
     <main class="flex flex-1 flex-col gap-6 pb-16">
       {bookmarks.length > 0 ? (
         <>
-          <BookmarkControls client:only="react" entries={entries} settings={settings} />
+          <BookmarkControls client:only="react" entries={entries} settings={{ swipeMode }} />
           <ul data-bookmark-list class="flex flex-col gap-4 not-data-ready:invisible sm:gap-5">
             {bookmarks.map((bookmark) => (
               <BookmarkCard bookmark={bookmark} />

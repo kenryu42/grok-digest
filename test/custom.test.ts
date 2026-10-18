@@ -37,6 +37,10 @@ async function write(file: string, text: string): Promise<void> {
   await writeFile(sitePath(file), text);
 }
 
+async function builtHeader(): Promise<string> {
+  return /<header[\s\S]*?<\/header>/.exec(await read("dist/index.html"))?.[0] ?? "";
+}
+
 async function builtCss(): Promise<string> {
   const files = (await readdir(sitePath("dist/_astro"))).filter((name) => name.endsWith(".css"));
   const texts = await Promise.all(files.map((name) => read(`dist/_astro/${name}`)));
@@ -99,6 +103,18 @@ describe("custom/config.json", () => {
   );
 
   it(
+    "puts the Swipe button in the header unless swipeMode is false",
+    async () => {
+      await build();
+      expect(await builtHeader()).toContain('aria-label="Swipe through cards"');
+      await write("custom/config.json", JSON.stringify({ swipeMode: false }));
+      await build();
+      expect(await builtHeader()).not.toContain("Swipe through cards");
+    },
+    2 * BUILD_TIMEOUT_MS,
+  );
+
+  it(
     "fails validate and the build on a setting the page does not know, naming it",
     async () => {
       await write("custom/config.json", JSON.stringify({ title: "Reading Room", defualtView: "all" }));
@@ -114,7 +130,7 @@ describe("custom/config.json", () => {
   );
 
   it("is reported by validate with the number of settings it changes", async () => {
-    await write("custom/config.json", JSON.stringify({ swipeMode: false, detail: { phone: "points" } }));
+    await write("custom/config.json", JSON.stringify({ title: "Reading Room", swipeMode: false }));
     const { code, output } = await run("validate");
     expect(code).toBe(0);
     expect(output).toContain("✓ custom/config.json: 2 settings changed from the defaults");

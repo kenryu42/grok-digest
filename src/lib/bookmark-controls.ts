@@ -1,11 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import type { PageSettings } from "./custom.ts";
-import { DEPTHS, NARROW_SCREEN_QUERY, startingDepth, tappedDepth, type Depth } from "./depth.ts";
-import { filterSearch, parseFilter, type Filter, type View } from "./filter.ts";
+import { DEFAULT_FILTER, filterSearch, parseFilter, type Filter, type Sort } from "./filter.ts";
 import { morph, prefersReducedMotion, stopMotion, type Anchor } from "./morph.ts";
-import { dailyReview, localDay, type ReviewPick } from "./review.ts";
-import { matchingIds, type SearchEntry } from "./search.ts";
+import { matchingIds, sortedIds, type SearchEntry } from "./search.ts";
 import { removeRequest } from "./remove-request.ts";
 import { readStored, STORAGE_PREFIX, writeStored } from "./storage.ts";
 import {
@@ -27,9 +25,7 @@ type Props = {
 
 export type Controls = {
   settings: PageSettings;
-  view: View;
-  counts: Record<View, number>;
-  chooseView: (view: View) => void;
+  counts: { toRead: number; done: number };
   query: string;
   searching: boolean;
   setQuery: (query: string) => void;
@@ -42,14 +38,18 @@ export type Controls = {
   topics: readonly Topic[];
   chooseTopic: (topic: Topic | null) => void;
   topicsRef: RefObject<HTMLFieldSetElement | null>;
-  depth: Depth;
-  setDepth: (depth: Depth) => void;
-  detailShown: boolean;
-  toggleDetail: () => void;
+  sort: Sort;
+  chooseSort: (sort: Sort) => void;
+  showDone: boolean;
+  setShowDone: (showDone: boolean) => void;
+  hideNews: boolean;
+  setHideNews: (hideNews: boolean) => void;
+  filtersShown: boolean;
+  toggleFilters: () => void;
+  filtersChanged: boolean;
   barRef: RefObject<HTMLDivElement | null>;
   shown: number;
-  reviewed: number;
-  reviewSize: number;
+  shownDone: number;
   undoPending: boolean;
   undo: () => void;
   copyDoneRequest: () => void;
@@ -70,8 +70,6 @@ type CardAction = "done" | "later";
 
 const DONE_KEY = `${STORAGE_PREFIX}done`;
 const LATER_KEY = `${STORAGE_PREFIX}later`;
-const REVIEW_KEY = `${STORAGE_PREFIX}review`;
-const DEPTH_KEY = `${STORAGE_PREFIX}cards-depth`;
 const UNDO_MS = 5000;
 const COPIED_MS = 2000;
 const SWIPE_CLICK_GUARD_MS = 400;
@@ -85,24 +83,6 @@ const FORM_FIELDS = "input, textarea, select, [contenteditable]";
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === "string");
-}
-
-function isStoredReview(value: unknown): value is { day: string; picks: ReviewPick[] } {
-  if (typeof value !== "object" || value === null || !("day" in value) || !("picks" in value)) return false;
-  const { day, picks } = value;
-  return (
-    typeof day === "string" &&
-    Array.isArray(picks) &&
-    picks.every(
-      (pick: unknown) =>
-        typeof pick === "object" &&
-        pick !== null &&
-        "id" in pick &&
-        "reason" in pick &&
-        typeof pick.id === "string" &&
-        typeof pick.reason === "string",
-    )
-  );
 }
 
 function storedDone(): Set<string> {
@@ -147,26 +127,20 @@ function centerActions(card: HTMLElement): void {
   actions.style.height = `${Math.max(bottom - top, 0)}px`;
 }
 
-function todaysReview(entries: readonly SearchEntry[], done: ReadonlySet<string>, size: number): ReviewPick[] {
-  const today = localDay(new Date());
-  const stored = readStored(REVIEW_KEY);
-  if (isStoredReview(stored) && stored.day === today) {
-    const ids = new Set(entries.map(({ id }) => id));
-    return stored.picks.filter(({ id }) => ids.has(id));
-  }
-  const picks = dailyReview({ bookmarks: entries, done, today, size });
-  writeStored(REVIEW_KEY, { day: today, picks });
-  return picks;
-}
-
 function linkedCard(): HTMLElement | null {
   const target = window.location.hash.slice(1);
   return target === "" ? null : document.querySelector<HTMLElement>(`[data-bookmark-id][id="${CSS.escape(target)}"]`);
 }
 
-function initialFilter(defaults: { view: View; reviewIsEmpty: boolean }): Filter {
-  const filter = parseFilter(window.location.search, defaults);
-  return linkedCard() === null ? filter : { ...filter, view: "all" };
+function initialFilter(entries: readonly SearchEntry[]): Filter {
+  const filter = parseFilter(window.location.search);
+  const linked = entries.find(({ id }) => id === linkedCard()?.dataset["bookmarkId"]);
+  if (linked === undefined) return filter;
+  return {
+    ...filter,
+    showDone: filter.showDone || storedDone().has(linked.id),
+    hideNews: filter.hideNews && linked.shelfLife !== "news",
+  };
 }
 
 function cards(): HTMLElement[] {
@@ -179,11 +153,11 @@ function focusCard(card: HTMLElement | undefined): void {
   card.scrollIntoView({ block: "start" });
 }
 
-function showDepths(listDepth: Depth, opened: ReadonlyMap<string, Depth>): void {
+function showOpened(opened: ReadonlySet<string>): void {
   for (const card of cards()) {
-    const shown = opened.get(card.dataset["bookmarkId"] ?? "") ?? listDepth;
-    card.dataset["depth"] = shown;
-    card.querySelector("[data-card-toggle]")?.setAttribute("aria-expanded", String(shown === "full"));
+    const open = opened.has(card.dataset["bookmarkId"] ?? "");
+    card.dataset["depth"] = open ? "full" : "headline";
+    card.querySelector("[data-card-toggle]")?.setAttribute("aria-expanded", String(open));
   }
 }
 
@@ -218,64 +192,46 @@ function copyFrom(button: HTMLElement | null | undefined): void {
 }
 
 export function useBookmarkControls({ entries, settings }: Props) {
-  const [review] = useState(() => todaysReview(entries, storedDone(), settings.reviewSize));
-  const reviewIsEmpty = review.length === 0;
-  const viewDefaults = useMemo(
-    () => ({ view: settings.defaultView, reviewIsEmpty }),
-    [settings.defaultView, reviewIsEmpty],
-  );
-  const [filter, setFilter] = useState(() => initialFilter(viewDefaults));
+  const [filter, setFilter] = useState(() => initialFilter(entries));
   const [done, setDone] = useState(storedDone);
   const [later, setLater] = useState(() => storedLater(entries));
   const [doneRequestCopied, setDoneRequestCopied] = useState(false);
-  const [depth, setDepth] = useState(() =>
-    startingDepth(readStored(DEPTH_KEY), window.matchMedia(NARROW_SCREEN_QUERY).matches, settings.detail),
-  );
   const [undo, setUndo] = useState<{ id: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [swiping, setSwiping] = useState<{ cards: HTMLElement[]; start: number } | null>(null);
-  const [depthOpen, setDepthOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const barRef = useRef<HTMLDivElement>(null);
   const topicsRef = useRef<HTMLFieldSetElement>(null);
   const doneRef = useRef(done);
   const undoRef = useRef(undo);
-  const depthRef = useRef(depth);
-  const openedRef = useRef(new Map<string, Depth>());
+  const openedRef = useRef(new Set<string>());
 
-  const { query, topic, view } = filter;
+  const { query, topic, sort, showDone, hideNews } = filter;
   const searching = query.trim() !== "";
   const showSearch = searchOpen || query !== "";
-  const reviewIds = useMemo(() => new Set(review.map(({ id }) => id)), [review]);
-  const reasons = useMemo(() => new Map(review.map(({ id, reason }) => [id, reason])), [review]);
-  const visible = useMemo(
-    () => matchingIds({ entries, filter, triage: { done, review: reviewIds } }),
-    [entries, filter, done, reviewIds],
-  );
+  const visible = useMemo(() => matchingIds({ entries, filter, done }), [entries, filter, done]);
+  const order = useMemo(() => sortedIds(entries, sort), [entries, sort]);
   const topicsInUse = useMemo(() => TOPICS.filter((t) => entries.some((entry) => entry.topic === t)), [entries]);
 
   const doneCount = entries.filter(({ id }) => done.has(id)).length;
-  const reviewedCount = review.filter(({ id }) => done.has(id)).length;
-  const counts: Record<View, number> = {
-    today: review.length,
-    inbox: entries.length - doneCount,
-    done: doneCount,
-    all: entries.length,
-  };
+  const shownDone = [...visible].filter((id) => done.has(id)).length;
+  const counts = { toRead: entries.length - doneCount, done: doneCount };
 
   useLayoutEffect(() => {
     const list = document.querySelector("[data-bookmark-list]");
-    for (const id of later) {
-      const card = document.querySelector<HTMLElement>(`[data-bookmark-id="${CSS.escape(id)}"]`);
-      if (card === null) continue;
+    const byId = new Map(cards().map((card) => [card.dataset["bookmarkId"] ?? "", card]));
+    const moved = new Set(later);
+    for (const id of [...order.filter((other) => !moved.has(other)), ...later]) {
+      const card = byId.get(id);
+      if (card === undefined) continue;
       list?.append(card);
       returnSwiped(card);
     }
-  }, [later]);
+  }, [order, later]);
 
   useLayoutEffect(() => {
     doneRef.current = done;
-    const showReasons = view === "today" && !searching;
     for (const card of cards()) {
       const id = card.dataset["bookmarkId"] ?? "";
       stopMotion(card);
@@ -283,15 +239,9 @@ export function useBookmarkControls({ entries, settings }: Props) {
       card.toggleAttribute("data-done", done.has(id));
       for (const toggle of card.querySelectorAll("[data-done-toggle]"))
         toggle.setAttribute("aria-pressed", String(done.has(id)));
-      const reason = card.querySelector<HTMLElement>("[data-review-reason]");
-      const text = showReasons ? reasons.get(id) : undefined;
-      if (reason !== null) {
-        reason.hidden = text === undefined;
-        reason.textContent = text ?? "";
-      }
       returnSwiped(card);
     }
-  }, [visible, done, reasons, view, searching]);
+  }, [visible, done]);
 
   useEffect(() => {
     writeStored(DONE_KEY, [...done]);
@@ -337,10 +287,10 @@ export function useBookmarkControls({ entries, settings }: Props) {
   }, [topic]);
 
   useEffect(() => {
-    const next = `${window.location.pathname}${filterSearch(filter, viewDefaults)}${window.location.hash}`;
+    const next = `${window.location.pathname}${filterSearch(filter)}${window.location.hash}`;
     const current = `${window.location.pathname}${window.location.search}${window.location.hash}`;
     if (current !== next) window.history.replaceState(null, "", next);
-  }, [filter, viewDefaults]);
+  }, [filter]);
 
   const coveredTop = useCallback(
     (): number => Math.max(barRef.current?.getBoundingClientRect().bottom ?? 0, 0) + ANCHOR_GAP,
@@ -359,27 +309,11 @@ export function useBookmarkControls({ entries, settings }: Props) {
     return shown.find((card) => card.getBoundingClientRect().top >= top) ?? shown[0];
   }, [coveredTop]);
 
-  const changeDepth = useCallback(
-    (next: Depth): void => {
-      if (next === depthRef.current) return;
-      depthRef.current = next;
-      openedRef.current.clear();
-      writeStored(DEPTH_KEY, next);
-      void morph(() => {
-        flushSync(() => setDepth(next));
-        showDepths(next, openedRef.current);
-      }, anchorAt(topCard()));
-    },
-    [anchorAt, topCard],
-  );
-
   const toggleCard = useCallback(
     (card: HTMLElement): void => {
       const id = card.dataset["bookmarkId"] ?? "";
-      const next = tappedDepth(openedRef.current.get(id) ?? depthRef.current, depthRef.current);
-      if (next === depthRef.current) openedRef.current.delete(id);
-      else openedRef.current.set(id, next);
-      void morph(() => showDepths(depthRef.current, openedRef.current), anchorAt(card));
+      if (!openedRef.current.delete(id)) openedRef.current.add(id);
+      void morph(() => showOpened(openedRef.current), anchorAt(card));
     },
     [anchorAt],
   );
@@ -437,8 +371,8 @@ export function useBookmarkControls({ entries, settings }: Props) {
 
   useLayoutEffect(() => {
     const linked = linkedCard();
-    if (linked !== null) openedRef.current.set(linked.dataset["bookmarkId"] ?? "", "full");
-    showDepths(depthRef.current, openedRef.current);
+    if (linked !== null) openedRef.current.add(linked.dataset["bookmarkId"] ?? "");
+    showOpened(openedRef.current);
     document.querySelector("[data-bookmark-list]")?.toggleAttribute("data-ready", true);
     linked?.scrollIntoView({ block: "start" });
   }, []);
@@ -573,6 +507,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
     const onClick = (event: MouseEvent): void => {
       if (!(event.target instanceof Element)) return;
       copyFrom(event.target.closest<HTMLElement>("[data-copy]"));
+      if (event.target.closest("[data-open-swipe]") !== null) openSwipe();
       const card = event.target.closest<HTMLElement>("[data-bookmark-id]");
       if (card === null) return;
       const trayAction = event.target.closest<HTMLElement>("[data-swipe-action]")?.dataset["swipeAction"];
@@ -636,12 +571,6 @@ export function useBookmarkControls({ entries, settings }: Props) {
         case "s":
           openSwipe();
           break;
-        case "1":
-        case "2":
-        case "3":
-        case "4":
-          changeDepth(DEPTHS[Number(event.key) - 1] ?? depthRef.current);
-          break;
         default:
           return;
       }
@@ -666,16 +595,23 @@ export function useBookmarkControls({ entries, settings }: Props) {
       document.removeEventListener("pointerup", endSwipe);
       document.removeEventListener("pointercancel", endSwipe);
     };
-  }, [changeDepth, moveLater, openSwipe, toggleCard, toggleDone, undoDone]);
+  }, [moveLater, openSwipe, toggleCard, toggleDone, undoDone]);
 
   useEffect(() => {
-    if (!depthOpen) return undefined;
+    if (!filtersOpen) return undefined;
     const closeOutside = (event: PointerEvent): void => {
-      if (event.target instanceof Node && barRef.current?.contains(event.target) !== true) setDepthOpen(false);
+      if (event.target instanceof Node && barRef.current?.contains(event.target) !== true) setFiltersOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent): void => {
+      if (event.key === "Escape") setFiltersOpen(false);
     };
     document.addEventListener("pointerdown", closeOutside);
-    return () => document.removeEventListener("pointerdown", closeOutside);
-  }, [depthOpen]);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOutside);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, [filtersOpen]);
 
   const update = (change: Partial<Filter>): void => setFilter((previous) => ({ ...previous, ...change }));
 
@@ -691,9 +627,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
 
   const controls: Controls = {
     settings,
-    view,
     counts,
-    chooseView: (next) => update({ view: next, query: "" }),
     query,
     searching,
     setQuery: (next) => update({ query: next }),
@@ -708,14 +642,22 @@ export function useBookmarkControls({ entries, settings }: Props) {
     topics: topicsInUse,
     chooseTopic: (next) => update({ topic: next === topic ? null : next }),
     topicsRef,
-    depth,
-    setDepth: changeDepth,
-    detailShown: depthOpen,
-    toggleDetail: () => setDepthOpen(!depthOpen),
+    sort,
+    chooseSort: (next) => {
+      update({ sort: next });
+      window.scrollTo({ top: 0 });
+    },
+    showDone,
+    setShowDone: (next) => update({ showDone: next }),
+    hideNews,
+    setHideNews: (next) => update({ hideNews: next }),
+    filtersShown: filtersOpen,
+    toggleFilters: () => setFiltersOpen(!filtersOpen),
+    filtersChanged:
+      sort !== DEFAULT_FILTER.sort || showDone !== DEFAULT_FILTER.showDone || hideNews !== DEFAULT_FILTER.hideNews,
     barRef,
     shown: visible.size,
-    reviewed: reviewedCount,
-    reviewSize: review.length,
+    shownDone,
     undoPending: undo !== null,
     undo: undoDone,
     copyDoneRequest,
