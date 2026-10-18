@@ -58,7 +58,7 @@ Swipe mode shows one card per screen. The package keeps its frame: the full-scre
 | Field                                                 | What it is                                                                                                                     |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `pages`, `current`, `page`, `goTo(index)`, `close()`  | Every card, the open card's index and its `page`, moving to a card (`pages.length` is the end screen), and closing swipe mode. |
-| `done`, `pageDone`, `toggleDone()`                    | The ids marked done, whether the open card is, and marking it done or back to the inbox.                                       |
+| `done`, `pageDone`, `toggleDone()`                    | The ids marked done, whether the open card is, and marking it done or not done.                                                |
 | `later()`                                             | Moving the open card to the end of the deck and of the list.                                                                   |
 | `undoPending`, `undo()`                               | Whether a card was just marked done, and undoing it.                                                                           |
 | `copied`, `copy()`                                    | Whether the open card was just copied, and copying it for an AI assistant.                                                     |

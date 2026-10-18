@@ -235,7 +235,7 @@ To undo a change, delete the setting, the CSS, or the component file and its cop
 
 ### Settings
 
-`custom/config.json` is one JSON object. Leave out a setting to keep its default. `bun run validate` rejects a setting it does not know and names it.
+`custom/config.json` is one JSON object. Leave out a setting to keep its default. `bun run validate` rejects a setting it does not know and names it. 0.5.8 removed `defaultView`, `reviewSize`, and `detail`; if validation names one of them, delete it from the file.
 
 | Setting     | Default         | What it does                                                            |
 | ----------- | --------------- | ----------------------------------------------------------------------- |
@@ -312,6 +312,8 @@ A release can change a component you ejected. The build then warns that `custom/
 1. Run `bunx grok-digest merge`. It applies each newer component to the owner's copy and keeps the owner's changes.
 2. If it reports a conflict, open the file. Each `<<<<<<< your change` block shows the owner's version, then the package's new version after `=======`. Keep what the owner asked for, take the rest of the new version, and delete the markers. The build refuses a file that still has them.
 3. Run `bun run build`, then commit `custom/` with `Merge grok-digest into custom components` and push.
+
+A release can also remove a component. The page then ignores its file in `custom/components/`: delete that file and its copy in `.ejected/`, and run `merge` so an ejected `ControlsLayout` stops importing it. 0.5.8 removed `ViewTabs` and `DetailControl`.
 
 `eject` and `merge` write only inside `custom/components/`. They never touch `package.json` or `bun.lock`, and you never commit those two files either way.
 
