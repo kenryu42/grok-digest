@@ -29,7 +29,7 @@ Each feature file starts with an H1 title and one paragraph describing the user-
 
 ## Features
 
-- [Mark bookmarks done](./mark-done.md): the Done button, `Show done`, swipes and flicks, keyboard triage and Undo.
+- [Mark bookmarks done](./mark-done.md): the Done button, the `Done` filter, swipes and flicks, keyboard triage and Undo.
 - [Search and filter](./search-and-filter.md): the search field, mobile search icon, `/` key, topic chips, the `Sort and filter` menu, the pinned top row and the URL.
 - [Read a card](./read-a-card.md): headlines on load, tap-to-open, the post's images and links, Copy, Open on X and linked cards.
 - [Swipe mode](./swipe-mode.md): one card per screen with vertical swipes, swipe-left to done, Undo, tap to expand, speed reading and close.

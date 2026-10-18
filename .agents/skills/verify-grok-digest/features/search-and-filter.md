@@ -9,8 +9,8 @@ A reader narrows the list by typing a search across all bookmarks, by picking a 
 - `search-slash` focuses search with the `/` key.
 - `search-empty` shows `No bookmarks match your search.` for a query with no match.
 - `topic-chip` filters by a topic chip. Tapping the chosen chip again, or `All topics`, clears it.
-- `sort` reorders the cards from `Sort by` in the `Sort and filter` menu, scrolls back to the top, and marks the button with a dot while it is not `Newest`.
-- `filter-done` shows done bookmarks, dimmed, with `Show done`. A search ignores it.
+- `sort` reorders the cards from `Newest` or `Oldest` in the `Sort and filter` menu, scrolls back to the top, and marks the button with a dot while it is not `Newest`.
+- `filter-done` shows done bookmarks, dimmed, with `Done` in `Sort and filter`. A search ignores it.
 - `filter-menu` opens below its button on desktop and full width under the top row on phones, floats over the list without moving it, and closes on a tap outside it or `Escape`.
 - `topic-row-scroll` scrolls the chosen chip into view in the one-row chip list on phones.
 - `topic-row-sideways` lets the phone chip row move only sideways: a vertical or diagonal drag on it never shifts the chips up or down. Chrome does not show the old fault, so check a diagonal drag in Safari in the iOS Simulator. In Chrome, `getComputedStyle` on the row gives `overflowY` `hidden` and `touchAction` `pan-x`.

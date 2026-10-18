@@ -70,7 +70,7 @@ function FiltersButton({ controls }: { controls: Controls }) {
         )}
       </Button>
       {filtersShown && (
-        <div className="absolute top-full z-20 mt-2 max-sm:inset-x-4 sm:right-0 sm:w-96">
+        <div className="absolute top-full z-20 mt-2 max-sm:inset-x-4 sm:right-0 sm:w-max">
           <FilterMenu controls={controls} />
         </div>
       )}

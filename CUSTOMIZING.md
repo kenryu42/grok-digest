@@ -17,11 +17,11 @@ The controls above the cards are React components, ejected as `.tsx` files. Each
 | `ControlsLayout` | Arranges the parts below, plus the Sort and filter button and the phone-only search button. Leave a part out to hide it. |
 | `SearchField`    | The search box and its Cancel button.                                                                                    |
 | `TopicChips`     | The topic filter chips.                                                                                                  |
-| `FilterMenu`     | The sort (Newest, Oldest) and the Show done filter.                                                                      |
+| `FilterMenu`     | One row: Newest, Oldest and the Done filter.                                                                             |
 | `StatusLine`     | The line that counts the bookmarks shown.                                                                                |
 | `KeyboardHints`  | The keyboard shortcuts on desktop and the swipe tip on phones.                                                           |
 | `UndoToast`      | The "Marked done" message with Undo.                                                                                     |
-| `DoneCleanup`    | With Show done on, Copy for Grok: a request for the Grok bot to remove the done bookmarks.                               |
+| `DoneCleanup`    | With Done on, Copy for Grok: a request for the Grok bot to remove the done bookmarks.                                    |
 
 `controls` holds the page's state and what changes it. The package keeps owning the behavior: filtering, the done marks, the sort and the Later order, the keyboard shortcuts, and swiping cards. A control only shows the state and calls these:
 

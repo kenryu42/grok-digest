@@ -195,7 +195,7 @@ To change one, edit its fields in place. Keep `id` and `saved_at`. Commit with `
 
 To remove one, delete its entry from `data/bookmarks.json` and add its id to `data/removed.json`, so a later share of the same post doesn't bring it back. Commit with `Remove bookmark (@handle)`.
 
-With **Show done** on, the page lets the owner copy a request to remove the bookmarks they have marked done, and send it to you:
+With the **Done** filter on, the page lets the owner copy a request to remove the bookmarks they have marked done, and send it to you:
 
 ```text
 Remove these bookmarks from my Grok Digest:

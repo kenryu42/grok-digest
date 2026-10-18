@@ -9,7 +9,7 @@ Each card in the list shows who posted, when it was saved and Grok's one-line ta
 - `card-post-images` shows each image under the post text it belongs to. A single image is uncropped; several images form a cropped grid.
 - `card-copy` copies a Markdown version of the card and shows `Copied`.
 - `card-open` opens the post on X in a new tab.
-- `card-linked` opens the card named in a `#b-<id>` link in full and scrolls to it. When the card is done it turns on `Show done`, so it always shows.
+- `card-linked` opens the card named in a `#b-<id>` link in full and scrolls to it. When the card is done it turns on `Done`, so it always shows.
 - `card-dates` shows the saved date in the header. On phones the posted date moves to the bottom of the opened card.
 
 ## How to get to it (user POV)

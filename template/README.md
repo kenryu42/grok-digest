@@ -61,7 +61,7 @@ Every later release reads version 1 files unchanged. The policy is in [MIGRATION
 
 The page opens on every bookmark you have not marked done, the most recently saved first, so a new bookmark is at the top. Each card shows its headline; tap or click it to open the whole card, with its **Done** button. Marking a card done takes it off the list, with **Undo** for a few seconds.
 
-The **Sort and filter** button next to the topics orders the list by **Newest** or **Oldest** saved. **Show done** puts done bookmarks back in the list, dimmed, with **Copy for Grok** to ask the bot to remove them. A search looks through every bookmark in the chosen topic, done or not. Done marks are kept in your browser, so another browser or device starts fresh.
+The **Sort and filter** button next to the topics orders the list by **Newest** or **Oldest** saved, and **Done** puts done bookmarks back in the list, dimmed, with **Copy for Grok** to ask the bot to remove them. A search looks through every bookmark in the chosen topic, done or not. Done marks are kept in your browser, so another browser or device starts fresh.
 
 The **Swipe** button right of the dark mode button opens swipe mode: one card per screen, in the list's order.
 
@@ -81,7 +81,7 @@ The search box, the topic chips, the sort, and the filters are stored in the pag
 - `?done=show` shows done bookmarks too.
 - They combine, as in `?q=tokyo&topic=japan-tech`.
 
-An unknown `topic` or `sort` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the card, and turns on **Show done** when the card is done, so the card always shows.
+An unknown `topic` or `sort` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the card, and turns on **Done** when the card is done, so the card always shows.
 
 The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item is titled with the tldr, dated when the bookmark was saved, links to the card on this page, and includes the summary, the action, the key points, the links with their preview images, the original post, and its images.
 
