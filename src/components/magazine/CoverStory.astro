@@ -1,0 +1,79 @@
+---
+import Block from "./Block.astro";
+import Byline from "./Byline.astro";
+import Kicker from "./Kicker.astro";
+import { cardKind } from "../../lib/card-kind";
+import type { BlockOf, FindBookmark } from "../../lib/magazine";
+import { cardHref } from "../../lib/paths";
+
+type Props = {
+  block: BlockOf<"cover-story">;
+  anchor: string;
+  find: FindBookmark;
+};
+
+const { block, anchor, find } = Astro.props;
+const bookmark = find(block.bookmark);
+const visual = cardKind(bookmark);
+const image = visual.kind === "photo" ? visual.image : undefined;
+const overlay = image !== undefined && block.variant === "overlay";
+const split = image !== undefined && block.variant === "split";
+
+const LAYOUT = {
+  stacked: "flex flex-col gap-6",
+  split: "grid gap-6 sm:grid-cols-[1.2fr_1fr] sm:items-center sm:gap-10",
+  overlay: "relative flex flex-col gap-6 sm:block sm:overflow-hidden sm:rounded-2xl",
+} satisfies Record<BlockOf<"cover-story">["variant"], string>;
+---
+
+<Block block={block} anchor={anchor}>
+  {image === undefined ? (
+    <article class="flex flex-col gap-5">
+      <span aria-hidden="true" class="h-2.5 w-24 rounded-full bg-brand" />
+      <Kicker topic={bookmark.topic} text={block.kicker} />
+      <h3 class="max-w-4xl font-(family-name:--issue-heading) text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
+        <a class="decoration-brand underline-offset-8 hover:underline" href={cardHref(bookmark.id)}>
+          {block.headline}
+        </a>
+      </h3>
+      {block.deck !== undefined && <p class="max-w-3xl text-xl text-pretty text-muted-foreground">{block.deck}</p>}
+      <p class="max-w-3xl text-pretty">{bookmark.summary}</p>
+      <Byline bookmark={bookmark} />
+    </article>
+  ) : (
+    <article class={LAYOUT[block.variant]}>
+      <div
+        data-cover
+        class:list={[
+          "overflow-hidden rounded-2xl bg-muted",
+          split ? "aspect-[4/3]" : "aspect-video",
+          overlay && "sm:absolute sm:inset-0 sm:aspect-auto sm:rounded-none",
+        ]}
+      >
+        <img
+          src={image.url}
+          alt={image.alt}
+          decoding="async"
+          class:list={["size-full", overlay ? "object-cover" : "object-contain"]}
+        />
+      </div>
+      <div
+        class:list={[
+          "flex flex-col gap-3",
+          overlay &&
+            "sm:relative sm:min-h-[30rem] sm:justify-end sm:bg-linear-to-t sm:from-black sm:via-black/85 sm:via-45% sm:to-black/30 sm:p-10 sm:text-white sm:[&_p]:text-white/85 sm:[&_span]:text-white/90",
+        ]}
+      >
+        <Kicker topic={bookmark.topic} text={block.kicker} />
+        <h3 class="font-(family-name:--issue-heading) text-[2rem] leading-[1.08] font-semibold tracking-tight text-balance sm:text-5xl">
+          <a class="decoration-brand underline-offset-8 hover:underline" href={cardHref(bookmark.id)}>
+            {block.headline}
+          </a>
+        </h3>
+        {block.deck !== undefined && <p class="text-xl text-pretty text-muted-foreground">{block.deck}</p>}
+        {!overlay && <p class="text-pretty">{bookmark.summary}</p>}
+        <Byline bookmark={bookmark} />
+      </div>
+    </article>
+  )}
+</Block>

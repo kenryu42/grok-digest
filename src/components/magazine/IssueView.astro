@@ -1,0 +1,79 @@
+---
+import IssueBlock from "./IssueBlock.astro";
+import {
+  issueDateLabel,
+  sectionHeading,
+  themeAttributes,
+  type FindBookmark,
+  type PublishedIssue,
+} from "../../lib/magazine";
+import { siteConfig } from "../../lib/site-config";
+
+type Props = {
+  issue: PublishedIssue;
+  find: FindBookmark;
+};
+
+const { issue, find } = Astro.props;
+const { date, number, title, subtitle, editor_note: editorNote, theme, sections } = issue;
+const anchorOf = (index: number): string => `s-${index + 1}`;
+const contents = sections.flatMap((block, index) => {
+  const heading = sectionHeading(block, find);
+  return heading === undefined ? [] : [{ heading, anchor: anchorOf(index) }];
+});
+---
+
+<article
+  data-issue={date}
+  {...themeAttributes(theme)}
+  class="overflow-hidden rounded-3xl bg-(--issue-paper) font-(family-name:--issue-body) text-[1.0625rem] leading-relaxed ring-1 ring-foreground/8"
+>
+  <header class="flex flex-col gap-3 bg-(--issue-band) px-5 py-7 text-white sm:px-10 sm:py-10">
+    <p class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-sans text-xs font-semibold tracking-widest uppercase">
+      <span class="font-(family-name:--issue-heading) text-base tracking-[0.2em]">{siteConfig.title} Magazine</span>
+      <span class="text-white/80">
+        No. {number} · <time datetime={date}>{issueDateLabel(date)}</time>
+      </span>
+    </p>
+    <h2 class="font-(family-name:--issue-heading) text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
+      {title}
+    </h2>
+    {subtitle !== undefined && <p class="max-w-3xl text-lg text-pretty text-white/85 sm:text-xl">{subtitle}</p>}
+  </header>
+  <div class="flex flex-col gap-12 px-5 py-8 sm:px-10 sm:py-10">
+    {(editorNote !== undefined || contents.length > 1) && (
+      <div class="grid gap-8 border-b border-border pb-10 min-[56.25rem]:grid-cols-[1.6fr_1fr]">
+        {editorNote !== undefined && (
+          <p class="border-l-4 border-brand pl-4 text-pretty whitespace-pre-line text-foreground/90 italic">
+            {editorNote}
+          </p>
+        )}
+        {contents.length > 1 && (
+          <nav aria-labelledby={`contents-${date}`} class="flex flex-col gap-2">
+            <h3
+              id={`contents-${date}`}
+              class="font-sans text-xs font-semibold tracking-widest text-brand-ink uppercase"
+            >
+              In this issue
+            </h3>
+            <ol class="flex flex-col gap-1.5 font-sans text-sm">
+              {contents.map(({ heading, anchor }, index) => (
+                <li class="flex gap-3">
+                  <span class="w-5 shrink-0 text-right text-muted-foreground tabular-nums">{index + 1}</span>
+                  <a class="decoration-brand underline-offset-4 hover:underline" href={`#${anchor}`}>
+                    {heading}
+                  </a>
+                </li>
+              ))}
+            </ol>
+          </nav>
+        )}
+      </div>
+    )}
+    <div class="grid items-start gap-12 min-[56.25rem]:grid-cols-2 min-[56.25rem]:gap-x-10">
+      {sections.map((block, index) => (
+        <IssueBlock block={block} anchor={anchorOf(index)} find={find} />
+      ))}
+    </div>
+  </div>
+</article>

@@ -2,6 +2,15 @@ import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
 import { parseBookmarks } from "../src/lib/bookmarks.ts";
 import { OVERRIDABLE_COMPONENTS, siteConfigSchema } from "../src/lib/custom.ts";
+import {
+  MAGAZINE_EMPHASES,
+  MAGAZINE_FONTS,
+  MAGAZINE_PALETTES,
+  MAGAZINE_SPANS,
+  magazineBlockSchema,
+  magazineIssueSchema,
+} from "../src/lib/magazine.ts";
+import { issueWarnings } from "../src/lib/magazine-check.ts";
 import { REMOVE_REQUEST } from "../src/lib/remove-request.ts";
 import { TOPIC_LABELS, TOPICS } from "../src/lib/topics.ts";
 
@@ -40,5 +49,29 @@ describe("BOT.md", () => {
 
   it("lists every component a site can eject", () => {
     for (const name of OVERRIDABLE_COMPONENTS) expect(manual).toContain(`| \`${name}\``);
+  });
+
+  it("shows a magazine issue the schema accepts, which follows its own advice", () => {
+    const example = /### The issue\s+```json\n([\s\S]*?)\n```/.exec(manual)?.[1];
+    const issue = magazineIssueSchema.parse(JSON.parse(example ?? ""));
+    const warnings = issueWarnings({ issue, bookmarks: [], latestToday: issue.date });
+    expect(warnings.filter(({ message }) => !message.includes("is not a bookmark id"))).toEqual([]);
+    for (const span of MAGAZINE_SPANS) expect(manual).toContain(`\`${span}\``);
+  });
+
+  it("lists every magazine block with its variants, and every palette, font pairing and emphasis", () => {
+    for (const option of magazineBlockSchema.options) {
+      const type = option.shape.type.value;
+      const row = manual.split("\n").find((line) => line.startsWith(`| \`${type}\``)) ?? "";
+      expect(row).not.toBe("");
+      expect(row).toContain(
+        option.shape.variant
+          .unwrap()
+          .options.map((variant) => `\`${variant}\``)
+          .join(", "),
+      );
+    }
+    for (const name of [...MAGAZINE_PALETTES, ...MAGAZINE_FONTS]) expect(manual).toContain(`| \`${name}\``);
+    for (const emphasis of MAGAZINE_EMPHASES) expect(manual).toContain(`\`${emphasis}\``);
   });
 });

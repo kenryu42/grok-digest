@@ -1,10 +1,8 @@
-import { spawn } from "node:child_process";
-import { once } from "node:events";
 import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { componentFile, OVERRIDABLE_COMPONENTS } from "../src/lib/custom.ts";
-import { CLI, linkedSite, startDevServer, stop } from "./linked-site.ts";
+import { linkedSite, runCli, startDevServer, stop, withoutBuildHashes } from "./linked-site.ts";
 
 const BUILD_TIMEOUT_MS = 60_000;
 const DEPENDENCY_OPTIMIZING_MS = 20_000;
@@ -13,15 +11,7 @@ const LOCAL_IMPORT = /(?:\bfrom\s*|\bimport\s*\(?\s*)["'](\/[^"']+)["']/g;
 
 let site = "";
 
-async function run(...args: string[]): Promise<{ code: number | null; output: string }> {
-  const { VITEST: _vitest, ...env } = process.env;
-  const child = spawn(process.execPath, [CLI, ...args], { cwd: site, env: { ...env, NO_COLOR: "1" } });
-  let output = "";
-  child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
-  child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
-  await once(child, "exit");
-  return { code: child.exitCode, output };
-}
+const run = (...args: string[]): Promise<{ code: number | null; output: string }> => runCli(site, args);
 
 async function build(): Promise<string> {
   const { code, output } = await run("build");
@@ -46,9 +36,6 @@ async function builtCss(): Promise<string> {
   const texts = await Promise.all(files.map((name) => read(`dist/_astro/${name}`)));
   return texts.join("\n");
 }
-
-const withoutBuildHashes = (html: string): string =>
-  html.replaceAll(/\/_astro\/[^"]+/g, "/_astro/*").replaceAll(/\suid="[^"]*"/g, "");
 
 async function islandFilesMissing(): Promise<string[]> {
   const html = await read("dist/index.html");

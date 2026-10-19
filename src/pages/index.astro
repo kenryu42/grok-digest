@@ -2,20 +2,22 @@
 import BookmarkCard from "virtual:grok-digest/components/BookmarkCard.astro";
 import Footer from "virtual:grok-digest/components/Footer.astro";
 import Header from "virtual:grok-digest/components/Header.astro";
+import issueFiles from "virtual:grok-digest/magazine";
 import { BookmarkControls } from "../components/BookmarkControls";
 import Layout from "../layouts/Layout.astro";
 import { bookmarks } from "../lib/load-bookmarks";
-import { siteHref } from "../lib/paths";
+import { issueHref, siteHref } from "../lib/paths";
 import { toSearchEntry } from "../lib/search";
 import { siteConfig } from "../lib/site-config";
 
 const entries = bookmarks.map(toSearchEntry);
 const { title, swipeMode } = siteConfig;
+const nav = issueFiles.length > 0 ? { href: issueHref(), label: "Magazine" } : undefined;
 ---
 
 <Layout title={title} description="Posts saved from X, summarized and sorted by topic." feedHref={siteHref("rss.xml")}>
   <div class="mx-auto flex min-h-dvh max-w-2xl flex-col px-safe-4 sm:px-safe-6">
-    <Header title={title} swipeMode={swipeMode} />
+    <Header title={title} swipeMode={swipeMode} nav={nav} />
 
     <noscript>
       <style is:inline>

@@ -1,0 +1,31 @@
+---
+import Block from "./Block.astro";
+import { TopicTile } from "../TopicTile";
+import type { BlockOf } from "../../lib/magazine";
+import { TOPIC_LABELS } from "../../lib/topics";
+
+type Props = {
+  block: BlockOf<"topic-divider">;
+  anchor: string;
+};
+
+const { block, anchor } = Astro.props;
+const label = block.label ?? TOPIC_LABELS[block.topic];
+---
+
+<Block block={block} anchor={anchor}>
+  {block.variant === "band" ? (
+    <div class="relative flex min-h-24 items-center overflow-hidden rounded-2xl px-6 py-5">
+      <TopicTile topic={block.topic} seed={block.topic} className="absolute inset-0" />
+      <span aria-hidden="true" class="absolute inset-0 bg-brand opacity-45 mix-blend-color" />
+      <h3 class="relative font-(family-name:--issue-heading) text-3xl font-semibold text-white drop-shadow-sm">
+        {label}
+      </h3>
+    </div>
+  ) : (
+    <div data-topic={block.topic} class="flex items-center gap-4">
+      <h3 class="font-(family-name:--issue-heading) text-2xl font-semibold text-topic">{label}</h3>
+      <span aria-hidden="true" class="h-0.5 flex-1 bg-topic" />
+    </div>
+  )}
+</Block>

@@ -8,9 +8,10 @@ import { Button } from "./ui/button";
 type Props = {
   title: string;
   swipeMode: boolean;
+  nav?: { href: string; label: string } | undefined;
 };
 
-const { title, swipeMode } = Astro.props;
+const { title, swipeMode, nav } = Astro.props;
 ---
 
 <header class="flex items-start justify-between gap-4 pt-safe-6 pb-4 sm:pt-safe-16 sm:pb-8">
@@ -19,6 +20,14 @@ const { title, swipeMode } = Astro.props;
     <h1 class="font-heading text-lg font-semibold tracking-tight sm:text-xl">{title}</h1>
   </div>
   <div class="flex items-center gap-1">
+    {nav && (
+      <a
+        href={nav.href}
+        class="inline-flex items-center justify-center gap-1 rounded-sm px-2 text-sm font-medium whitespace-nowrap text-foreground underline decoration-border underline-offset-4 transition-colors hover:decoration-brand focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none max-sm:h-10"
+      >
+        {nav.label}
+      </a>
+    )}
     <TextSizeControl client:load />
     <ThemeToggle client:load />
     {swipeMode && (

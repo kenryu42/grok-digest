@@ -1,0 +1,55 @@
+---
+import Block from "./Block.astro";
+import Byline from "./Byline.astro";
+import Kicker from "./Kicker.astro";
+import type { BlockOf, FindBookmark } from "../../lib/magazine";
+import { cardHref } from "../../lib/paths";
+
+type Props = {
+  block: BlockOf<"feature">;
+  anchor: string;
+  find: FindBookmark;
+};
+
+const { block, anchor, find } = Astro.props;
+const bookmark = find(block.bookmark);
+const aside = block.variant === "aside";
+---
+
+<Block block={block} anchor={anchor}>
+  <article class:list={["flex flex-col gap-4", aside && "sm:grid sm:grid-cols-[1.4fr_1fr] sm:gap-x-8"]}>
+    <header class="flex flex-col gap-2 sm:col-span-full">
+      <Kicker topic={bookmark.topic} />
+      <h3 class="font-(family-name:--issue-heading) text-[1.75rem] leading-tight font-semibold text-balance">
+        <a class="decoration-brand underline-offset-4 hover:underline" href={cardHref(bookmark.id)}>
+          {block.headline ?? bookmark.tldr}
+        </a>
+      </h3>
+      {block.deck !== undefined && <p class="text-lg text-pretty text-muted-foreground">{block.deck}</p>}
+    </header>
+    <p
+      class:list={[
+        "text-[1.1em] text-pretty",
+        block.variant === "drop-cap" &&
+          "first-letter:float-left first-letter:mt-1 first-letter:mr-2 first-letter:font-(family-name:--issue-heading) first-letter:text-[3.6em] first-letter:leading-[0.8] first-letter:font-bold first-letter:text-brand-ink",
+      ]}
+    >
+      {bookmark.summary}
+    </p>
+    {bookmark.keyPoints.length > 0 && (
+      <ul
+        class:list={[
+          "flex list-disc flex-col gap-2 pl-5 text-[0.94em] marker:text-brand",
+          aside && "rounded-xl bg-brand-soft py-4 pr-4 pl-9",
+        ]}
+      >
+        {bookmark.keyPoints.map((point) => (
+          <li class="text-pretty">{point}</li>
+        ))}
+      </ul>
+    )}
+    <div class="sm:col-span-full">
+      <Byline bookmark={bookmark} />
+    </div>
+  </article>
+</Block>

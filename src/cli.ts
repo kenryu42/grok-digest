@@ -16,8 +16,8 @@ Commands:
   preview              Serve the site built in dist/.
   validate [file ...]  Check data files against schema version ${SCHEMA_VERSION}. With no
                        file, checks <dir>/bookmarks.json and, when present,
-                       <dir>/processed.json, <dir>/removed.json and
-                       custom/config.json.
+                       <dir>/processed.json, <dir>/removed.json,
+                       custom/config.json and every <dir>/magazine/*.json.
   eject <component>    Copy a component into custom/components/ to change it.
                        Components: ${OVERRIDABLE_COMPONENTS.join(", ")}.
   merge                Bring each ejected component up to the installed
@@ -67,8 +67,12 @@ if (values.version === true) {
   const targets = files.length > 0 ? files : await defaultDataFiles({ cwd, dataDir });
   const reports = await validateFiles({ cwd, files: targets });
   for (const report of reports) {
-    if (report.ok) console.log(`✓ ${report.source}: ${report.summary}`);
-    else console.error(`✖ ${report.error}`);
+    if (report.ok) {
+      console.log(`✓ ${report.source}: ${report.summary}`);
+      for (const warning of report.warnings ?? []) console.warn(`⚠ ${report.source}: ${warning}`);
+    } else {
+      console.error(`✖ ${report.error}`);
+    }
   }
   if (reports.some((report) => !report.ok)) process.exitCode = 1;
 } else if (command === "eject") {

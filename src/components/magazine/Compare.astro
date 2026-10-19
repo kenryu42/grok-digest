@@ -1,0 +1,40 @@
+---
+import Block from "./Block.astro";
+import Byline from "./Byline.astro";
+import ItemTitle from "./ItemTitle.astro";
+import Kicker from "./Kicker.astro";
+import type { BlockOf, FindBookmark } from "../../lib/magazine";
+
+type Props = {
+  block: BlockOf<"compare">;
+  anchor: string;
+  find: FindBookmark;
+};
+
+const { block, anchor, find } = Astro.props;
+const sides = block.items.map(({ bookmark, label, note }) => ({ bookmark: find(bookmark), label, note }));
+const versus = block.variant === "versus";
+---
+
+<Block block={block} anchor={anchor} title={block.headline}>
+  <div class:list={["grid gap-5 sm:grid-cols-2", versus && "sm:gap-10"]}>
+    {sides.map(({ bookmark, label, note }, index) => (
+      <article
+        class:list={[
+          "flex flex-col gap-2",
+          versus
+            ? index > 0 && "border-t-2 border-brand pt-5 sm:border-t-0 sm:border-l-2 sm:pt-0 sm:pl-10"
+            : "rounded-xl bg-card p-5 ring-1 ring-border",
+        ]}
+      >
+        <Kicker topic={bookmark.topic} text={label} />
+        <ItemTitle id={bookmark.id} text={bookmark.tldr} />
+        {note !== undefined && <p class="text-[0.94em] text-pretty text-foreground/85">{note}</p>}
+        <div class="mt-auto pt-2">
+          <Byline bookmark={bookmark} />
+        </div>
+      </article>
+    ))}
+  </div>
+  {block.verdict !== undefined && <p class="rounded-xl bg-brand-soft px-5 py-4 font-medium">{block.verdict}</p>}
+</Block>

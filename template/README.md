@@ -37,7 +37,7 @@ Ask the Grok bot. It changes the page from a `custom/` folder in this repository
 
 ## Data files
 
-The page reads `data/bookmarks.json` only. `data/processed.json` and `data/removed.json` are arrays of id strings for the bot. `bun run validate` checks whichever of the three are present, against schema version 1.
+The page reads `data/bookmarks.json`, and the magazine issues in `data/magazine/` when there are any. `data/processed.json` and `data/removed.json` are arrays of id strings for the bot. `bun run validate` checks whichever of the three are present, against schema version 1, and every issue in `data/magazine/` against the bookmarks it shows.
 
 `data/bookmarks.json` is a JSON array with one object per bookmark. The bot's manual, [`BOT.md`](https://github.com/kenryu42/grok-digest/blob/main/BOT.md), lists every field with an example entry and the rules for each, and says how to save, change, and remove a bookmark. After `bun install`, the copy at `node_modules/grok-digest/BOT.md` matches the version this site builds with. Point a new Grok Bot at that file.
 
@@ -82,6 +82,8 @@ The search box, the topic chips, the sort, and the filters are stored in the pag
 - They combine, as in `?q=tokyo&topic=japan-tech`.
 
 An unknown `topic` or `sort` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the card, and turns on **Done** when the card is done, so the card always shows.
+
+If you ask the Grok bot for a magazine, it writes one issue a day from the bookmarks saved since the last one, into `data/magazine/<date>.json`. The header then shows a **Magazine** link to `magazine/`: a cover for every issue, newest first. Each issue is laid out for its day's posts, and the magazine has its own feed at `magazine/rss.xml`. Removing a bookmark never breaks an issue: the page leaves it out, and `bun run validate` warns until the bot tidies the issue.
 
 The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item is titled with the tldr, dated when the bookmark was saved, links to the card on this page, and includes the summary, the action, the key points, the links with their preview images, the original post, and its images.
 

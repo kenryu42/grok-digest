@@ -1,0 +1,20 @@
+---
+import { TOPIC_LABELS, type Topic } from "../../lib/topics";
+
+type Props = {
+  topic?: Topic | undefined;
+  text?: string | undefined;
+};
+
+const { topic, text } = Astro.props;
+---
+
+<p
+  data-topic={topic}
+  class:list={[
+    "font-sans text-xs font-semibold tracking-widest uppercase",
+    topic === undefined ? "text-brand-ink" : "text-topic",
+  ]}
+>
+  {text ?? (topic === undefined ? "" : TOPIC_LABELS[topic])}
+</p>

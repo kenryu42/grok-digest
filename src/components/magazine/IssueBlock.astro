@@ -1,0 +1,32 @@
+---
+import BriefGrid from "./BriefGrid.astro";
+import Compare from "./Compare.astro";
+import CoverStory from "./CoverStory.astro";
+import Feature from "./Feature.astro";
+import NumberedList from "./NumberedList.astro";
+import PhotoSpread from "./PhotoSpread.astro";
+import PullQuote from "./PullQuote.astro";
+import SidebarBox from "./SidebarBox.astro";
+import Timeline from "./Timeline.astro";
+import TopicDivider from "./TopicDivider.astro";
+import type { FindBookmark, MagazineBlock } from "../../lib/magazine";
+
+type Props = {
+  block: MagazineBlock;
+  anchor: string;
+  find: FindBookmark;
+};
+
+const { block, anchor, find } = Astro.props;
+---
+
+{block.type === "cover-story" && <CoverStory block={block} anchor={anchor} find={find} />}
+{block.type === "feature" && <Feature block={block} anchor={anchor} find={find} />}
+{block.type === "pull-quote" && <PullQuote block={block} anchor={anchor} find={find} />}
+{block.type === "photo-spread" && <PhotoSpread block={block} anchor={anchor} find={find} />}
+{block.type === "brief-grid" && <BriefGrid block={block} anchor={anchor} find={find} />}
+{block.type === "numbered-list" && <NumberedList block={block} anchor={anchor} find={find} />}
+{block.type === "compare" && <Compare block={block} anchor={anchor} find={find} />}
+{block.type === "timeline" && <Timeline block={block} anchor={anchor} find={find} />}
+{block.type === "topic-divider" && <TopicDivider block={block} anchor={anchor} />}
+{block.type === "sidebar-box" && <SidebarBox block={block} anchor={anchor} find={find} />}

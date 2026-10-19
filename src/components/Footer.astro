@@ -1,18 +1,39 @@
 ---
 import { siteHref } from "../lib/paths";
+
+type Props = {
+  feed?: "bookmarks" | "magazine";
+};
+
+const { feed = "bookmarks" } = Astro.props;
 ---
 
 <footer class="flex flex-col gap-2 border-t pt-8 pb-safe-8 text-sm text-muted-foreground">
-  <p>
-    <a class="underline decoration-border underline-offset-4 hover:decoration-brand" href={siteHref("rss.xml")}>
-      Follow new bookmarks
-    </a>{" "}
-    in a feed reader. Each topic has its own feed, such as{" "}
-    <a class="underline decoration-border underline-offset-4 hover:decoration-brand" href={siteHref("rss/design.xml")}>
-      Design
-    </a>
-    .
-  </p>
+  {feed === "magazine" ? (
+    <p>
+      <a
+        class="underline decoration-border underline-offset-4 hover:decoration-brand"
+        href={siteHref("magazine/rss.xml")}
+      >
+        Follow the magazine
+      </a>{" "}
+      in a feed reader, one item per issue.
+    </p>
+  ) : (
+    <p>
+      <a class="underline decoration-border underline-offset-4 hover:decoration-brand" href={siteHref("rss.xml")}>
+        Follow new bookmarks
+      </a>{" "}
+      in a feed reader. Each topic has its own feed, such as{" "}
+      <a
+        class="underline decoration-border underline-offset-4 hover:decoration-brand"
+        href={siteHref("rss/design.xml")}
+      >
+        Design
+      </a>
+      .
+    </p>
+  )}
   <p>This page is unlisted, not private. Anyone with the link can see it.</p>
   <p class="text-xs">Unofficial. Summaries created with Grok.</p>
 </footer>

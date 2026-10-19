@@ -1,0 +1,16 @@
+---
+import { cardHref } from "../../lib/paths";
+
+type Props = {
+  id: string;
+  text: string;
+};
+
+const { id, text } = Astro.props;
+---
+
+<h4 class="font-(family-name:--issue-heading) text-[1.1875rem] leading-snug font-semibold text-balance">
+  <a class="decoration-brand underline-offset-4 hover:underline" href={cardHref(id)}>
+    {text}
+  </a>
+</h4>

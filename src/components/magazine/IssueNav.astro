@@ -1,0 +1,34 @@
+---
+import type { MagazineIssue } from "../../lib/magazine";
+import { issueHref } from "../../lib/paths";
+
+type Props = {
+  older: MagazineIssue | undefined;
+  newer: MagazineIssue | undefined;
+};
+
+const { older, newer } = Astro.props;
+const link = "flex flex-col gap-0.5 font-medium underline decoration-border underline-offset-4 hover:decoration-brand";
+---
+
+<nav aria-label="Other issues" class="grid grid-cols-[1fr_auto_1fr] items-start gap-4 text-sm">
+  {older === undefined ? (
+    <span />
+  ) : (
+    <a rel="prev" href={issueHref(older.date)} class={link}>
+      <span class="text-xs font-normal text-muted-foreground">Previous issue</span>
+      {older.title}
+    </a>
+  )}
+  <a href={issueHref()} class={link}>
+    All issues
+  </a>
+  {newer === undefined ? (
+    <span />
+  ) : (
+    <a rel="next" href={issueHref(newer.date)} class:list={[link, "items-end text-right"]}>
+      <span class="text-xs font-normal text-muted-foreground">Next issue</span>
+      {newer.title}
+    </a>
+  )}
+</nav>

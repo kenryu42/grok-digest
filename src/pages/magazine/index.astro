@@ -1,0 +1,9 @@
+---
+import IssueGrid from "../../components/magazine/IssueGrid.astro";
+import MagazinePage from "../../components/magazine/MagazinePage.astro";
+import { findBookmark, issues } from "../../lib/load-magazine";
+---
+
+<MagazinePage pageTitle="Magazine" description="A daily magazine made from the posts saved from X.">
+  <IssueGrid issues={issues} find={findBookmark} />
+</MagazinePage>

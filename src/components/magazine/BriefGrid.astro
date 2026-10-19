@@ -1,0 +1,41 @@
+---
+import Block from "./Block.astro";
+import ItemTitle from "./ItemTitle.astro";
+import Kicker from "./Kicker.astro";
+import type { BlockOf, FindBookmark } from "../../lib/magazine";
+
+type Props = {
+  block: BlockOf<"brief-grid">;
+  anchor: string;
+  find: FindBookmark;
+};
+
+const { block, anchor, find } = Astro.props;
+const briefs = block.items.map(({ bookmark, headline, note }) => {
+  const found = find(bookmark);
+  return { bookmark: found, headline: headline ?? found.tldr, note };
+});
+
+const COLUMNS = {
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-2 min-[56.25rem]:grid-cols-3",
+  4: "sm:grid-cols-2 min-[56.25rem]:grid-cols-4",
+} satisfies Record<BlockOf<"brief-grid">["columns"], string>;
+
+const ITEM = {
+  cards: "rounded-xl bg-card p-4 ring-1 ring-border",
+  plain: "border-t-2 border-brand pt-3",
+} satisfies Record<BlockOf<"brief-grid">["variant"], string>;
+---
+
+<Block block={block} anchor={anchor} title={block.headline}>
+  <ul class:list={["grid gap-5", block.span === "full" && COLUMNS[block.columns]]}>
+    {briefs.map(({ bookmark, headline, note }) => (
+      <li class:list={["flex flex-col gap-1.5", ITEM[block.variant]]}>
+        <Kicker topic={bookmark.topic} />
+        <ItemTitle id={bookmark.id} text={headline} />
+        {note !== undefined && <p class="text-[0.94em] text-pretty text-foreground/85">{note}</p>}
+      </li>
+    ))}
+  </ul>
+</Block>

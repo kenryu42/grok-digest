@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { OVERRIDABLE_COMPONENTS } from "../dist/lib/custom.js";
@@ -32,17 +32,19 @@ function starterFromPackedTarball() {
 }
 
 const { siteDir, cleanUp } = starterFromPackedTarball();
+const buildUnderBasePath = () =>
+  execFileSync("bun", ["run", "build"], {
+    cwd: siteDir,
+    stdio: "inherit",
+    env: { ...process.env, SITE_URL: ORIGIN, BASE_PATH },
+  });
 try {
   execFileSync("bun", ["run", "validate"], { cwd: siteDir, stdio: "inherit" });
   expect(
     existsSync(path.join(siteDir, "node_modules/grok-digest/BOT.md")),
     "the installed package lacks BOT.md, the bot's manual",
   );
-  execFileSync("bun", ["run", "build"], {
-    cwd: siteDir,
-    stdio: "inherit",
-    env: { ...process.env, SITE_URL: ORIGIN, BASE_PATH },
-  });
+  buildUnderBasePath();
 
   const dist = path.join(siteDir, "dist");
   const read = (file) => readFileSync(path.join(dist, file), "utf8");
@@ -85,16 +87,42 @@ try {
   expect(feed.includes(`href="${ORIGIN}${BASE_PATH}/rss.xml"`), "rss.xml does not name its own address");
   expect(feed.includes(`${ORIGIN}${BASE_PATH}/#b-`), "rss.xml items do not link cards under the base path");
 
+  expect(!/magazine/i.test(html), "index.html mentions the magazine though the starter has no issues");
+  expect(!existsSync(path.join(dist, "magazine")), "the build wrote a magazine though the starter has no issues");
+
+  const [sample] = JSON.parse(readFileSync(path.join(siteDir, "data/bookmarks.json"), "utf8"));
+  const issueDate = "2026-01-20";
+  mkdirSync(path.join(siteDir, "data/magazine"));
+  writeFileSync(
+    path.join(siteDir, `data/magazine/${issueDate}.json`),
+    JSON.stringify({
+      date: issueDate,
+      title: "Starter issue",
+      theme: { palette: "forest", fonts: "serif" },
+      sections: [
+        { type: "cover-story", bookmark: sample.id, headline: "A starter cover" },
+        { type: "feature", bookmark: "a-removed-bookmark" },
+      ],
+    }),
+  );
+  execFileSync("bun", ["run", "validate"], { cwd: siteDir, stdio: "inherit" });
+  buildUnderBasePath();
+  expect(read("index.html").includes(`href="${BASE_PATH}/magazine/"`), "index.html does not link the magazine");
+  for (const file of ["magazine/index.html", `magazine/${issueDate}/index.html`, "magazine/rss.xml"]) {
+    expect(existsSync(path.join(dist, file)), `the build did not write ${file}`);
+  }
+  const issuePage = read(`magazine/${issueDate}/index.html`);
+  expect(issuePage.includes("A starter cover"), "the issue page lacks its cover story");
+  for (const [, url] of issuePage.matchAll(/(?:href|src)="(\/[^"]*)"/g)) {
+    expect(url.startsWith(`${BASE_PATH}/`), `the issue page links ${url}, outside ${BASE_PATH}/`);
+  }
+
   for (const component of OVERRIDABLE_COMPONENTS) {
     execFileSync("bunx", ["grok-digest", "eject", component], { cwd: siteDir, stdio: "inherit" });
   }
   writeFileSync(path.join(siteDir, "custom/config.json"), JSON.stringify({ title: "Starter Check" }));
   execFileSync("bun", ["run", "validate"], { cwd: siteDir, stdio: "inherit" });
-  execFileSync("bun", ["run", "build"], {
-    cwd: siteDir,
-    stdio: "inherit",
-    env: { ...process.env, SITE_URL: ORIGIN, BASE_PATH },
-  });
+  buildUnderBasePath();
   const customized = read("index.html");
   expect(customized.includes("<title>Starter Check</title>"), "custom/config.json did not rename the page");
   expect(
