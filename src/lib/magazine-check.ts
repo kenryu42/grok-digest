@@ -15,13 +15,15 @@ const collapseSpaces = (text: string): string => text.replaceAll(/\s+/g, " ").tr
 
 const hasItems = (block: MagazineBlock): block is ItemsBlock => Object.hasOwn(ITEM_LIMITS, block.type);
 
-function referenceProblem(block: MagazineBlock, id: string, bookmark: Bookmark | undefined): string | undefined {
-  if (bookmark === undefined) return `"${id}" is not a bookmark id in bookmarks.json`;
+type Problem = { message: string; field?: "quote" };
+
+function referenceProblem(block: MagazineBlock, id: string, bookmark: Bookmark | undefined): Problem | undefined {
+  if (bookmark === undefined) return { message: `"${id}" is not a bookmark id in bookmarks.json` };
   if (block.type === "pull-quote" && !collapseSpaces(bookmark.text).includes(collapseSpaces(block.quote))) {
-    return `the quote is not in the text of bookmark "${id}"`;
+    return { message: `the quote is not in the text of bookmark "${id}"`, field: "quote" };
   }
-  if (block.type === "photo-spread" && bookmark.media.length === 0) return `bookmark "${id}" has no media`;
-  if (block.type === "sidebar-box" && bookmark.action === "") return `bookmark "${id}" has no action`;
+  if (block.type === "photo-spread" && bookmark.media.length === 0) return { message: `bookmark "${id}" has no media` };
+  if (block.type === "sidebar-box" && bookmark.action === "") return { message: `bookmark "${id}" has no action` };
   return undefined;
 }
 
@@ -34,6 +36,24 @@ function referencesIn(block: MagazineBlock): Reference[] {
   return [];
 }
 
+function pairHalves(sections: readonly MagazineBlock[]): MagazineBlock[] {
+  const paired: MagazineBlock[] = [];
+  let index = 0;
+  while (index < sections.length) {
+    const block = sections[index];
+    const next = sections[index + 1];
+    if (block === undefined) break;
+    if (block.span === "half" && next?.span === "half") {
+      paired.push(block, next);
+      index += 2;
+    } else {
+      paired.push(block.span === "half" ? { ...block, span: "full" } : block);
+      index += 1;
+    }
+  }
+  return paired;
+}
+
 export function readableIssue<Issue extends MagazineIssue>(issue: Issue, byId: BookmarkIndex): Issue {
   const usable = (block: MagazineBlock, id: string): boolean => referenceProblem(block, id, byId.get(id)) === undefined;
   const sections = issue.sections.flatMap((block): MagazineBlock[] => {
@@ -43,7 +63,7 @@ export function readableIssue<Issue extends MagazineIssue>(issue: Issue, byId: B
     }
     return "bookmark" in block && !usable(block, block.bookmark) ? [] : [block];
   });
-  return { ...issue, sections };
+  return { ...issue, sections: pairHalves(sections) };
 }
 
 function leftOut(block: MagazineBlock, missing: number): string {
@@ -75,7 +95,10 @@ export function issueWarnings({
       return problem === undefined ? [] : [{ path, problem }];
     });
     for (const { path, problem } of problems) {
-      warnings.push({ path: ["sections", index, ...path], message: `${problem}; ${leftOut(block, problems.length)}` });
+      warnings.push({
+        path: ["sections", index, ...(problem.field === undefined ? path : [problem.field])],
+        message: `${problem.message}; ${leftOut(block, problems.length)}`,
+      });
     }
     for (const id of new Set(references.map((reference) => reference.id))) {
       blocksPerBookmark.set(id, [...(blocksPerBookmark.get(id) ?? []), index]);

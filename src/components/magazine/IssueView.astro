@@ -70,7 +70,7 @@ const contents = sections.flatMap((block, index) => {
         )}
       </div>
     )}
-    <div class="grid gap-12 min-[56.25rem]:grid-cols-2 min-[56.25rem]:gap-x-10">
+    <div class="grid items-start gap-12 min-[56.25rem]:grid-cols-2 min-[56.25rem]:gap-x-10">
       {sections.map((block, index) => (
         <IssueBlock block={block} anchor={anchorOf(index)} find={find} />
       ))}

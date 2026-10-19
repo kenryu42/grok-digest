@@ -12,7 +12,7 @@ type Props = {
 const { block, anchor, find } = Astro.props;
 const entries = block.items.map(({ bookmark, headline, note }) => {
   const found = find(bookmark);
-  return { bookmark: found, headline: headline ?? found.tldr, note: note ?? found.summary };
+  return { bookmark: found, headline: headline ?? found.tldr, note };
 });
 const large = block.variant === "large";
 ---
@@ -31,7 +31,7 @@ const large = block.variant === "large";
           {index + 1}
         </span>
         <ItemTitle id={bookmark.id} text={headline} />
-        <p class="text-[0.94em] text-pretty text-foreground/85">{note}</p>
+        {note !== undefined && <p class="text-[0.94em] text-pretty text-foreground/85">{note}</p>}
       </li>
     ))}
   </ol>

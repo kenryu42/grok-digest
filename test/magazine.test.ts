@@ -32,6 +32,9 @@ const typesOf = (raw: unknown) => readableIssue(parse(raw), byId).sections.map((
 const warningsOf = (raw: unknown, latestToday = "2026-10-20") =>
   issueWarnings({ issue: parse(raw), bookmarks, latestToday });
 
+const spansOf = (raw: unknown) => readableIssue(parse(raw), byId).sections.map(({ type, span }) => `${type}:${span}`);
+const half = (type: string, bookmark: string | undefined) => ({ type, bookmark, span: "half" });
+
 function errorOf(raw: unknown, source = SOURCE): string {
   try {
     parseMagazineIssue({ raw, source });
@@ -129,6 +132,29 @@ describe("magazine issue schema", () => {
 });
 
 describe("readableIssue", () => {
+  it("keeps two half blocks in a row side by side, and widens a half block left without a partner", () => {
+    expect(spansOf(withSections(half("feature", tokyo), half("feature", design)))).toEqual([
+      "feature:half",
+      "feature:half",
+    ]);
+    expect(
+      spansOf(
+        withSections(half("feature", tokyo), half("feature", design), half("feature", agents), issue.sections[0]),
+      ),
+    ).toEqual(["feature:half", "feature:half", "feature:full", "cover-story:full"]);
+    expect(spansOf(withSections(half("feature", tokyo), issue.sections[0], half("feature", design)))).toEqual([
+      "feature:full",
+      "cover-story:full",
+      "feature:full",
+    ]);
+  });
+
+  it("widens a half block whose partner the page leaves out", () => {
+    expect(spansOf(withSections(half("feature", "gone"), { ...half("pull-quote", agents), quote: QUOTE }))).toEqual([
+      "pull-quote:full",
+    ]);
+  });
+
   it("keeps every block whose bookmarks exist and fit it", () => {
     expect(typesOf(allBlocks)).toEqual(MAGAZINE_BLOCK_TYPES.filter((type) => type !== "photo-spread"));
   });
@@ -194,6 +220,31 @@ describe("issueWarnings", () => {
       {
         path: ["sections", 2, "items", 1, "bookmark"],
         message: '"406" is not a bookmark id in bookmarks.json; the page leaves the block out',
+      },
+    ]);
+  });
+
+  it("points a quote that is not in the post at the quote, and a bookmark that no longer fits at the bookmark", () => {
+    expect(
+      warningsOf(
+        withSections(
+          { type: "pull-quote", bookmark: agents, quote: "Agents never wait." },
+          { type: "sidebar-box", bookmark: tokyo },
+          { type: "photo-spread", items: [{ bookmark: design }] },
+        ),
+      ),
+    ).toEqual([
+      {
+        path: ["sections", 0, "quote"],
+        message: `the quote is not in the text of bookmark "${agents}"; the page leaves the block out`,
+      },
+      {
+        path: ["sections", 1, "bookmark"],
+        message: `bookmark "${tokyo}" has no action; the page leaves the block out`,
+      },
+      {
+        path: ["sections", 2, "items", 0, "bookmark"],
+        message: `bookmark "${design}" has no media; the page leaves the block out`,
       },
     ]);
   });
