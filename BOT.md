@@ -194,7 +194,7 @@ A post's own photos never go in `links`, and `text` keeps the post's exact words
 
 To change one, edit its fields in place. Keep `id` and `saved_at`. Commit with `Update bookmark (@handle)`, or `Update bookmarks (@a, @b)` for several.
 
-To remove one, delete its entry from `data/bookmarks.json` and add its id to `data/removed.json`, so a later share of the same post doesn't bring it back. If an issue in `data/magazine/` shows it, take it out of that issue too: drop its item from the block, or the block when nothing else is left in it. The page already leaves it out and `bun run validate` only warns, but the issue should say what the page shows. Commit with `Remove bookmark (@handle)`.
+To remove one, delete its entry from `data/bookmarks.json` and add its id to `data/removed.json`, so a later share of the same post doesn't bring it back. If an issue in `data/magazine/` shows it, take it out of that issue too: drop its item from the block, or the whole block when it shows only that bookmark or would keep fewer items than its type needs. The page already leaves it out and `bun run validate` only warns, but the issue should say what the page shows. Commit with `Remove bookmark (@handle)`.
 
 With the **Done** filter on, the page lets the owner copy a request to remove the bookmarks they have marked done, and send it to you:
 
@@ -326,7 +326,7 @@ If the owner wants a magazine, run this every morning:
 
 1. Pull `main`. Today is the date in the owner's time zone, written `YYYY-MM-DD`.
 2. If `data/magazine/<today>.json` exists, stop. Today's issue is written.
-3. The previous issue is the file in `data/magazine/` with the latest date. Pick the bookmarks whose `saved_at`, in the owner's time zone, falls on or after the previous issue's date and before today. A bookmark saved on the previous issue's date came in after that issue was written, so it belongs in this one. With no previous issue, pick the bookmarks saved in the 7 days before today.
+3. The previous issue is the file in `data/magazine/` with the latest date. Pick the bookmarks whose `saved_at`, in the owner's time zone, falls on or after the previous issue's date and before today. A bookmark saved on the previous issue's date usually came in after that issue was written, so it belongs in this one; leave out any the previous issue already shows. With no previous issue, pick the bookmarks saved in the 7 days before today.
 4. If you picked none, skip the day. Write nothing and push nothing.
 5. Write the issue below to `data/magazine/<today>.json`. Use the picked bookmarks; you may add an older bookmark when it explains a picked one.
 6. Run `bun run validate` and fix the issue until it passes with no `⚠` warning for it.
@@ -424,7 +424,7 @@ Every block takes three optional fields that change how it looks:
 | --------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------- |
 | `cover-story`   | The bookmark's first image with your headline, deck, and its summary. Without an image: a text cover with a big headline.            | `bookmark`, `headline`, optional `kicker` (default: its topic's label) and `deck`                                                                | `stacked`, `overlay`, `split`   |
 | `feature`       | A long read: headline, deck, the bookmark's summary and key points. The only block that shows key points.                            | `bookmark`, optional `headline` (default: its `tldr`) and `deck`                                                                                 | `standard`, `aside`, `drop-cap` |
-| `pull-quote`    | A quote from the post, with its author.                                                                                              | `bookmark`, `quote`: words copied exactly from the bookmark's `text`                                                                             | `centered`, `bar`               |
+| `pull-quote`    | A quote from the post, with its author.                                                                                              | `bookmark`, `quote`: words copied exactly from the bookmark's `text` (a line break may become a space)                                           | `centered`, `bar`               |
 | `photo-spread`  | The images of 1 to 6 bookmarks, each with a caption: a bookmark's first image large, the rest beside each other. Each needs `media`. | `items`: `bookmark`, optional `caption` (default: its `tldr`); optional `headline`                                                               | `grid`, `mosaic`, `filmstrip`   |
 | `brief-grid`    | 2 to 12 short items in 2, 3, or 4 columns: topic, headline, and your note.                                                           | `items`: `bookmark`, optional `headline` (default: its `tldr`) and `note` (default: none); optional `headline` and `columns` (default `2`)       | `cards`, `plain`                |
 | `numbered-list` | 2 to 10 numbered items: headline and your note.                                                                                      | `items`: `bookmark`, optional `headline` (default: its `tldr`) and `note` (default: none); optional `headline`                                   | `large`, `compact`              |
@@ -459,7 +459,7 @@ data/magazine/2026-10-19.json is invalid:
   → at theme.palette
 ```
 
-Everything that depends on the bookmarks is a warning instead, so a change to `data/bookmarks.json` never stops a deploy: a bookmark id that is not in `data/bookmarks.json`, a quote that is no longer in the post, a `photo-spread` bookmark without `media`, a `sidebar-box` bookmark without an `action`, a bookmark in more than two blocks, more than one `loud` block, and an issue dated in the future: later than today anywhere on Earth, that is, later than the current date in UTC+14, the first time zone to reach a new day. The page leaves out an item that does not fit, and the whole block when that leaves it with fewer items than it needs or it shows one bookmark. Fix every warning in the issue you are writing.
+Everything that depends on the bookmarks is a warning instead, so a change to `data/bookmarks.json` never stops a deploy: a bookmark id that is not in `data/bookmarks.json`, a quote that is no longer in the post, a `photo-spread` bookmark without `media`, a `sidebar-box` bookmark without an `action`, a bookmark in more than two blocks, more than one `loud` block, and an issue dated in the future: later than today anywhere on Earth, that is, later than the current date in UTC+14, the first time zone to reach a new day. The page leaves out an item that does not fit, and the whole block when that leaves it with fewer items than it needs, or when the block shows a single bookmark (`cover-story`, `feature`, `pull-quote`, `sidebar-box`) and that one does not fit. Fix every warning in the issue you are writing.
 
 ```text
 ✓ data/magazine/2026-10-19.json: 9 sections
@@ -467,7 +467,7 @@ Everything that depends on the bookmarks is a warning instead, so a change to `d
   → at sections[3].items[1].bookmark
 ```
 
-When you remove a bookmark, tidy the issues that show it in the same commit: drop its item from each block, or the block when nothing else is left in it. The page already leaves it out, but the issue file should say what the page shows.
+When you remove a bookmark, tidy the issues that show it in the same commit, as "Change or remove a bookmark" says.
 
 ## A daily digest (optional routine)
 
