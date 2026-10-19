@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { componentFile, OVERRIDABLE_COMPONENTS } from "../src/lib/custom.ts";
-import { linkedSite, runCli, startDevServer, stop } from "./linked-site.ts";
+import { linkedSite, runCli, startDevServer, stop, withoutBuildHashes } from "./linked-site.ts";
 
 const BUILD_TIMEOUT_MS = 60_000;
 const DEPENDENCY_OPTIMIZING_MS = 20_000;
@@ -36,9 +36,6 @@ async function builtCss(): Promise<string> {
   const texts = await Promise.all(files.map((name) => read(`dist/_astro/${name}`)));
   return texts.join("\n");
 }
-
-const withoutBuildHashes = (html: string): string =>
-  html.replaceAll(/\/_astro\/[^"]+/g, "/_astro/*").replaceAll(/\suid="[^"]*"/g, "");
 
 async function islandFilesMissing(): Promise<string[]> {
   const html = await read("dist/index.html");

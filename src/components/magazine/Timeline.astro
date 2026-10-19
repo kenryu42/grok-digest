@@ -1,31 +1,40 @@
 ---
 import Block from "./Block.astro";
-import { shortDateLabel, type BlockOf, type FindBookmark } from "../../lib/magazine";
-import { cardHref } from "../../lib/paths";
+import ItemTitle from "./ItemTitle.astro";
+import Kicker from "./Kicker.astro";
+import { postedDateLabel, type BlockOf, type FindBookmark } from "../../lib/magazine";
 
 type Props = {
   block: BlockOf<"timeline">;
+  anchor: string;
   find: FindBookmark;
 };
 
-const { block, find } = Astro.props;
+const { block, anchor, find } = Astro.props;
 const events = block.items
-  .map(({ bookmark, label }) => ({ bookmark: find(bookmark), label }))
+  .map(({ bookmark, label, note }) => ({ bookmark: find(bookmark), label, note }))
   .toSorted((a, b) => a.bookmark.postedAt.getTime() - b.bookmark.postedAt.getTime());
+const compact = block.variant === "compact";
 ---
 
-<Block block={block} title={block.headline}>
-  <ol class="mag-timeline">
-    {events.map(({ bookmark, label }) => (
-      <li class="mag-timeline-event">
-        <time datetime={bookmark.postedAt.toISOString()}>{shortDateLabel(bookmark.postedAt)}</time>
-        <div>
-          {label !== undefined && <p class="mag-kicker">{label}</p>}
-          <h4 class="mag-item-title">
-            <a href={cardHref(bookmark.id)}>{bookmark.tldr}</a>
-          </h4>
-          <p class="mag-item-text">{bookmark.summary}</p>
-        </div>
+<Block block={block} anchor={anchor} title={block.headline}>
+  <ol class="flex flex-col border-l-2 border-border">
+    {events.map(({ bookmark, label, note }) => (
+      <li
+        class:list={[
+          "relative flex flex-col gap-1 pl-6 before:absolute before:top-1.5 before:-left-[0.45rem] before:size-3 before:rounded-full before:bg-brand before:ring-4 before:ring-(--issue-paper)",
+          compact ? "pb-4" : "pb-7",
+        ]}
+      >
+        <time
+          class="font-sans text-[0.8125rem] text-muted-foreground tabular-nums"
+          datetime={bookmark.postedAt.toISOString()}
+        >
+          {postedDateLabel(bookmark.postedAt)}
+        </time>
+        {label !== undefined && <Kicker text={label} />}
+        <ItemTitle id={bookmark.id} text={bookmark.tldr} />
+        {!compact && note !== undefined && <p class="text-[0.94em] text-pretty text-foreground/85">{note}</p>}
       </li>
     ))}
   </ol>

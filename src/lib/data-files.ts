@@ -15,14 +15,11 @@ export async function readJsonFile({ file, source }: { file: string; source: str
   }
 }
 
-export const isIssueFileName = (name: string): boolean =>
-  name.endsWith(".json") && name !== BOOKMARKS_FILE && !STATE_FILES.some((state) => state === name);
-
-export async function issueFilesIn(dir: string): Promise<string[]> {
+export async function jsonFilesIn(dir: string): Promise<string[]> {
   try {
     const names = await readdir(dir);
     return names
-      .filter(isIssueFileName)
+      .filter((name) => name.endsWith(".json"))
       .toSorted()
       .map((name) => path.join(dir, name));
   } catch (error) {

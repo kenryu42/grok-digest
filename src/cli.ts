@@ -67,8 +67,12 @@ if (values.version === true) {
   const targets = files.length > 0 ? files : await defaultDataFiles({ cwd, dataDir });
   const reports = await validateFiles({ cwd, files: targets });
   for (const report of reports) {
-    if (report.ok) console.log(`✓ ${report.source}: ${report.summary}`);
-    else console.error(`✖ ${report.error}`);
+    if (report.ok) {
+      console.log(`✓ ${report.source}: ${report.summary}`);
+      for (const warning of report.warnings ?? []) console.warn(`⚠ ${report.source}: ${warning}`);
+    } else {
+      console.error(`✖ ${report.error}`);
+    }
   }
   if (reports.some((report) => !report.ok)) process.exitCode = 1;
 } else if (command === "eject") {

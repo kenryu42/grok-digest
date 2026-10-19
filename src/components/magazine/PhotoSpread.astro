@@ -6,32 +6,58 @@ import { cardHref } from "../../lib/paths";
 
 type Props = {
   block: BlockOf<"photo-spread">;
+  anchor: string;
   find: FindBookmark;
 };
 
-const { block, find } = Astro.props;
+const { block, anchor, find } = Astro.props;
 const photos = block.items.map(({ bookmark, caption }) => {
   const found = find(bookmark);
   return { bookmark: found, caption: caption ?? found.tldr, images: postImages(found) };
 });
+
+const ARRANGEMENT = {
+  grid: "grid gap-6 sm:grid-cols-2",
+  mosaic: "flex flex-col gap-8",
+  filmstrip:
+    "flex snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [&>figure]:w-[min(85%,26rem)] [&>figure]:shrink-0 [&>figure]:snap-start",
+} satisfies Record<BlockOf<"photo-spread">["variant"], string>;
+
+const spansRow = (index: number, count: number): boolean => index === 0 || (index === count - 1 && count % 2 === 0);
 ---
 
-<Block block={block} title={block.headline}>
-  <div class="mag-photos">
+<Block block={block} anchor={anchor} title={block.headline}>
+  <div class={ARRANGEMENT[block.variant]}>
     {photos.map(({ bookmark, caption, images }) => (
-      <figure class="mag-photo">
-        <ul class="mag-photo-images" data-count={images.length}>
-          {images.map((image) => (
-            <li>
-              <a href={image.url} target="_blank" rel="noopener noreferrer">
-                <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
+      <figure class="flex min-w-0 flex-col gap-2">
+        <ul class="grid grid-cols-2 gap-2">
+          {images.map((image, index) => (
+            <li class:list={[spansRow(index, images.length) && "col-span-2"]}>
+              <a
+                href={image.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                class="block overflow-hidden rounded-xl bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 focus-visible:outline-none"
+              >
+                <img
+                  src={image.url}
+                  alt={image.alt}
+                  loading="lazy"
+                  decoding="async"
+                  class:list={[
+                    "w-full object-contain",
+                    index === 0 ? "aspect-video" : spansRow(index, images.length) ? "aspect-[21/9]" : "aspect-[3/2]",
+                  ]}
+                />
               </a>
             </li>
           ))}
         </ul>
-        <figcaption>
-          <a href={cardHref(bookmark.id)}>{caption}</a>
-          <span class="mag-byline-handle">@{bookmark.author.handle}</span>
+        <figcaption class="flex flex-wrap gap-x-2 font-sans text-sm">
+          <a class="font-medium decoration-brand underline-offset-4 hover:underline" href={cardHref(bookmark.id)}>
+            {caption}
+          </a>
+          <span class="text-muted-foreground">@{bookmark.author.handle}</span>
         </figcaption>
       </figure>
     ))}

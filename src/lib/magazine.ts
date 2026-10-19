@@ -1,14 +1,17 @@
 import { z } from "zod";
 import { parseDataFile, type Bookmark } from "./bookmarks.ts";
-import { TOPICS } from "./topics.ts";
+import { TOPIC_LABELS, TOPICS } from "./topics.ts";
 
 export const MAGAZINE_DIR = "magazine";
 export const MAGAZINE_PALETTES = ["classic", "newsprint", "ocean", "forest", "sunset", "plum"] as const;
 export const MAGAZINE_FONTS = ["serif", "sans", "serif-sans", "sans-serif", "mono-serif"] as const;
 export const MAGAZINE_EMPHASES = ["quiet", "normal", "loud"] as const;
+export const MAGAZINE_SPANS = ["full", "half"] as const;
 
 const ISSUE_FILE_NAME = /^(\d{4}-\d{2}-\d{2})\.json$/;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
+
+export const isIssueFileName = (name: string): boolean => ISSUE_FILE_NAME.test(name);
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);
 const headline = shortText(120);
@@ -20,7 +23,16 @@ const bookmarkId = z.string().trim().min(1);
 const blockStyle = <const Variants extends readonly [string, ...string[]]>(variants: Variants) => ({
   variant: z.enum(variants).default(variants[0]),
   emphasis: z.enum(MAGAZINE_EMPHASES).default("normal"),
+  span: z.enum(MAGAZINE_SPANS).default("full"),
 });
+
+export const ITEM_LIMITS = {
+  "photo-spread": { min: 1, max: 6 },
+  "brief-grid": { min: 2, max: 12 },
+  "numbered-list": { min: 2, max: 10 },
+  compare: { min: 2, max: 2 },
+  timeline: { min: 2, max: 12 },
+} as const;
 
 const items = <Shape extends z.ZodRawShape>(shape: Shape, { min, max }: { min: number; max: number }) =>
   z
@@ -53,33 +65,33 @@ const blockSchemas = [
   z.strictObject({
     type: z.literal("photo-spread"),
     headline: headline.optional(),
-    items: items({ caption: note.optional() }, { min: 1, max: 6 }),
+    items: items({ caption: note.optional() }, ITEM_LIMITS["photo-spread"]),
     ...blockStyle(["grid", "mosaic", "filmstrip"]),
   }),
   z.strictObject({
     type: z.literal("brief-grid"),
     headline: headline.optional(),
     columns: z.literal([2, 3, 4]).default(2),
-    items: items({ headline: headline.optional() }, { min: 2, max: 12 }),
+    items: items({ headline: headline.optional(), note: note.optional() }, ITEM_LIMITS["brief-grid"]),
     ...blockStyle(["cards", "plain"]),
   }),
   z.strictObject({
     type: z.literal("numbered-list"),
     headline: headline.optional(),
-    items: items({ headline: headline.optional(), note: note.optional() }, { min: 2, max: 10 }),
+    items: items({ headline: headline.optional(), note: note.optional() }, ITEM_LIMITS["numbered-list"]),
     ...blockStyle(["large", "compact"]),
   }),
   z.strictObject({
     type: z.literal("compare"),
     headline: headline.optional(),
-    items: items({ label: label.optional() }, { min: 2, max: 2 }),
+    items: items({ label: label.optional(), note: note.optional() }, ITEM_LIMITS.compare),
     verdict: deck.optional(),
     ...blockStyle(["cards", "versus"]),
   }),
   z.strictObject({
     type: z.literal("timeline"),
     headline: headline.optional(),
-    items: items({ label: label.optional() }, { min: 2, max: 12 }),
+    items: items({ label: label.optional(), note: note.optional() }, ITEM_LIMITS.timeline),
     ...blockStyle(["vertical", "compact"]),
   }),
   z.strictObject({
@@ -117,119 +129,86 @@ export type MagazineIssue = z.output<typeof magazineIssueSchema>;
 export type MagazineBlock = MagazineIssue["sections"][number];
 type MagazineBlockType = MagazineBlock["type"];
 export type BlockOf<Type extends MagazineBlockType> = Extract<MagazineBlock, { type: Type }>;
+export type ItemsBlock = BlockOf<keyof typeof ITEM_LIMITS>;
+export type PublishedIssue = MagazineIssue & { number: number };
 export type FindBookmark = (id: string) => Bookmark;
-
-type Reference = { path: (string | number)[]; id: string };
-
-const referencesIn = (block: MagazineBlock): Reference[] => {
-  if ("bookmark" in block) return [{ path: ["bookmark"], id: block.bookmark }];
-  if ("items" in block)
-    return block.items.map(({ bookmark }, index) => ({ path: ["items", index, "bookmark"], id: bookmark }));
-  return [];
-};
-
-export const referencedIds = (issue: MagazineIssue): string[] => [
-  ...new Set(issue.sections.flatMap((block) => referencesIn(block).map(({ id }) => id))),
-];
-
-const collapseSpaces = (text: string): string => text.replaceAll(/\s+/g, " ").trim();
-
-function blockProblems(block: MagazineBlock, bookmark: Bookmark): { field: string; message: string } | undefined {
-  if (block.type === "pull-quote" && !collapseSpaces(bookmark.text).includes(collapseSpaces(block.quote))) {
-    return { field: "quote", message: `must be copied word for word from the text of bookmark "${bookmark.id}"` };
-  }
-  if (block.type === "photo-spread" && bookmark.media.length === 0) {
-    return { field: "bookmark", message: `bookmark "${bookmark.id}" has no media to show` };
-  }
-  if (block.type === "sidebar-box" && bookmark.action === "") {
-    return { field: "bookmark", message: `bookmark "${bookmark.id}" has no action to show` };
-  }
-  return undefined;
-}
 
 const issueFileName = (source: string): string => source.split(/[/\\]/).at(-1) ?? source;
 
-type BookmarkIndex = ReadonlyMap<string, Bookmark>;
-
-const indexBookmarks = (bookmarks: readonly Bookmark[]): BookmarkIndex =>
-  new Map(bookmarks.map((bookmark) => [bookmark.id, bookmark]));
-
-function issueFileSchema({ source, byId }: { source: string; byId: BookmarkIndex }) {
+export function parseMagazineIssue({ raw, source }: { raw: unknown; source: string }): MagazineIssue {
   const fileName = issueFileName(source);
   const fileDate = ISSUE_FILE_NAME.exec(fileName)?.[1];
-  return magazineIssueSchema.superRefine((issue, ctx) => {
-    if (fileDate === undefined) {
-      ctx.addIssue({
-        code: "custom",
-        path: [],
-        message: `the file name must be the issue's date, such as ${issue.date}.json`,
-      });
-    } else if (issue.date !== fileDate) {
-      ctx.addIssue({
-        code: "custom",
-        path: ["date"],
-        message: `"${issue.date}" does not match the file name ${fileName}`,
-      });
-    }
-    issue.sections.forEach((block, index) => {
-      for (const { path, id } of referencesIn(block)) {
-        const bookmark = byId.get(id);
-        if (bookmark === undefined) {
-          ctx.addIssue({
-            code: "custom",
-            path: ["sections", index, ...path],
-            message: `"${id}" is not a bookmark id in bookmarks.json`,
-          });
-          continue;
-        }
-        const problem = blockProblems(block, bookmark);
-        if (problem !== undefined) {
-          const field = problem.field === "bookmark" ? path : [problem.field];
-          ctx.addIssue({ code: "custom", path: ["sections", index, ...field], message: problem.message });
-        }
-      }
-    });
+  if (fileDate === undefined) {
+    throw new Error(`${source} is not an issue: name an issue after its date, such as 2026-10-19.json`);
+  }
+  const schema = magazineIssueSchema.refine((issue) => issue.date === fileDate, {
+    path: ["date"],
+    message: `must match the file name ${fileName}`,
   });
-}
-
-export function parseMagazineIssue({
-  raw,
-  source,
-  bookmarks,
-}: {
-  raw: unknown;
-  source: string;
-  bookmarks: readonly Bookmark[];
-}): MagazineIssue {
-  return parseDataFile({ schema: issueFileSchema({ source, byId: indexBookmarks(bookmarks) }), raw, source });
+  return parseDataFile({ schema, raw, source });
 }
 
 export type IssueFile = { source: string; raw: unknown };
 
-export function parseMagazine({
-  files,
-  bookmarks,
-}: {
-  files: readonly IssueFile[];
-  bookmarks: readonly Bookmark[];
-}): MagazineIssue[] {
-  const byId = indexBookmarks(bookmarks);
-  return files
-    .map(({ raw, source }) => parseDataFile({ schema: issueFileSchema({ source, byId }), raw, source }))
-    .toSorted((a, b) => b.date.localeCompare(a.date));
+export const parseMagazine = (files: readonly IssueFile[]): MagazineIssue[] =>
+  files.map(parseMagazineIssue).toSorted((a, b) => b.date.localeCompare(a.date));
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+] as const;
+const WEEKDAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"] as const;
+const SAKAMOTO_MONTH_OFFSETS = [0, 3, 2, 5, 0, 3, 5, 1, 4, 6, 2, 4] as const;
+
+function dateParts(date: string): { year: number; month: number; day: number } {
+  const [year = 0, month = 1, day = 1] = date.split("-").map(Number);
+  return { year, month, day };
 }
 
-export function bookmarkFinder(bookmarks: readonly Bookmark[]): FindBookmark {
-  const byId = indexBookmarks(bookmarks);
-  return (id) => {
-    const bookmark = byId.get(id);
-    if (bookmark === undefined) throw new Error(`No bookmark with id "${id}"`);
-    return bookmark;
-  };
+function weekdayOf({ year, month, day }: { year: number; month: number; day: number }): number {
+  const shifted = month < 3 ? year - 1 : year;
+  const leapDays = Math.floor(shifted / 4) - Math.floor(shifted / 100) + Math.floor(shifted / 400);
+  return (shifted + leapDays + (SAKAMOTO_MONTH_OFFSETS[month - 1] ?? 0) + day) % 7;
 }
 
-const issueDateFormat = new Intl.DateTimeFormat("en", { dateStyle: "full", timeZone: "UTC" });
-const shortDateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
+export function issueDateLabel(date: string): string {
+  const parts = dateParts(date);
+  return `${WEEKDAYS[weekdayOf(parts)]}, ${MONTHS[parts.month - 1]} ${parts.day}, ${parts.year}`;
+}
 
-export const issueDateLabel = (date: string): string => issueDateFormat.format(new Date(date));
-export const shortDateLabel = (date: Date): string => shortDateFormat.format(date);
+export function issueShortDateLabel(date: string): string {
+  const { year, month, day } = dateParts(date);
+  return `${MONTHS[month - 1]?.slice(0, 3)} ${day}, ${year}`;
+}
+
+export function issueDay(date: string): Date {
+  const { year, month, day } = dateParts(date);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+export const themeAttributes = ({ palette, fonts, accent }: MagazineIssue["theme"]) => ({
+  "data-palette": palette,
+  "data-fonts": fonts,
+  style: accent === undefined ? undefined : { "--issue-accent": accent },
+});
+
+export function sectionHeading(block: MagazineBlock, find: FindBookmark): string | undefined {
+  if (block.type === "pull-quote" || block.type === "sidebar-box") return undefined;
+  if (block.type === "feature") return block.headline ?? find(block.bookmark).tldr;
+  if (block.type === "topic-divider") return block.label ?? TOPIC_LABELS[block.topic];
+  return block.headline;
+}
+
+const postedDateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
+
+export const postedDateLabel = (date: Date): string => postedDateFormat.format(date);

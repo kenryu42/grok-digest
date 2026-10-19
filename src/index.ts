@@ -6,7 +6,7 @@ import type { AstroIntegration } from "astro";
 import type { Plugin, ViteDevServer } from "vite";
 import { existsSync } from "node:fs";
 import { componentFile, CONFIG_FILE, CUSTOM_DIR, OVERRIDABLE_COMPONENTS, THEME_FILE } from "./lib/custom.ts";
-import { BOOKMARKS_FILE, issueFilesIn, readJsonFile } from "./lib/data-files.ts";
+import { BOOKMARKS_FILE, jsonFilesIn, readJsonFile } from "./lib/data-files.ts";
 import {
   conflictedOverrides,
   defaultComponentFile,
@@ -16,7 +16,7 @@ import {
   overrideFile,
   staleOverrides,
 } from "./lib/eject.ts";
-import { MAGAZINE_DIR } from "./lib/magazine.ts";
+import { isIssueFileName, MAGAZINE_DIR } from "./lib/magazine.ts";
 
 export type GrokDigestOptions = {
   dataDir?: string;
@@ -117,11 +117,14 @@ function bookmarksModule({ file, source }: { file: string; source: string }): Pl
   };
 }
 
+const issueFilesIn = async (dir: string): Promise<string[]> =>
+  (await jsonFilesIn(dir)).filter((file) => isIssueFileName(path.basename(file)));
+
 function magazineModule({ root, dir }: { root: string; dir: string }): Plugin {
   return {
     name: "grok-digest:magazine",
     configureServer: (server) =>
-      whenFilesComeOrGo(server, { dir, extension: ".json" }, () => server.watcher.emit("change", dir)),
+      whenFilesComeOrGo(server, { dir, named: isIssueFileName }, () => server.watcher.emit("change", dir)),
     resolveId: (id) => (id === MAGAZINE_MODULE_ID ? RESOLVED_MAGAZINE_MODULE_ID : undefined),
     async load(id) {
       if (id !== RESOLVED_MAGAZINE_MODULE_ID) return undefined;
@@ -142,12 +145,12 @@ const RESTART_DELAY_MS = 200;
 
 function whenFilesComeOrGo(
   server: ViteDevServer,
-  { dir, extension = "" }: { dir: string; extension?: string },
+  { dir, named = () => true }: { dir: string; named?: (name: string) => boolean },
   respond: () => void,
 ): void {
   let pending: ReturnType<typeof setTimeout> | undefined;
   const reactToFileInDir = (file: string): void => {
-    if (!file.startsWith(`${dir}${path.sep}`) || !file.endsWith(extension)) return;
+    if (!file.startsWith(`${dir}${path.sep}`) || !named(path.basename(file))) return;
     clearTimeout(pending);
     pending = setTimeout(respond, RESTART_DELAY_MS);
   };

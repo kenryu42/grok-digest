@@ -1,5 +1,4 @@
 ---
-import "../../styles/magazine.css";
 import Footer from "virtual:grok-digest/components/Footer.astro";
 import Header from "virtual:grok-digest/components/Header.astro";
 import Layout from "../../layouts/Layout.astro";
@@ -21,11 +20,11 @@ const { title } = siteConfig;
   feedHref={siteHref("magazine/rss.xml")}
   feedTitle="Magazine"
 >
-  <div class="mag-page">
+  <div class="mx-auto flex min-h-dvh max-w-6xl flex-col px-safe-4 sm:px-safe-6">
     <Header title={title} swipeMode={false} nav={{ href: siteHref(""), label: "Bookmarks" }} />
-    <main class="mag-main">
+    <main class="flex flex-1 flex-col gap-12 pb-16">
       <slot />
     </main>
-    <Footer />
+    <Footer feed="magazine" />
   </div>
 </Layout>

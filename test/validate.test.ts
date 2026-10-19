@@ -20,16 +20,17 @@ beforeEach(async () => {
 });
 
 describe("defaultDataFiles", () => {
-  it("lists every issue in data/magazine/ after the other data files", async () => {
+  it("lists every JSON file in data/magazine/ after the other data files", async () => {
     await writeData({
       "bookmarks.json": "[]",
       "magazine/2026-10-19.json": "{}",
+      "magazine/notes.json": "{}",
       "magazine/notes.txt": "",
-      "magazine/processed.json": "[]",
     });
     expect(await defaultDataFiles({ cwd, dataDir: "data" })).toEqual([
       path.join("data", "bookmarks.json"),
       path.join("data", "magazine", "2026-10-19.json"),
+      path.join("data", "magazine", "notes.json"),
     ]);
   });
 
@@ -41,6 +42,13 @@ describe("defaultDataFiles", () => {
     ]);
   });
 });
+
+const issue = {
+  date: "2026-10-19",
+  title: "Issue",
+  theme: { palette: "ocean", fonts: "serif" },
+  sections: [{ type: "feature", bookmark: templateSamples[0]?.id }],
+};
 
 describe("validateFiles", () => {
   it("checks each file against the schema its name implies", async () => {
@@ -66,13 +74,7 @@ describe("validateFiles", () => {
     expect(errorOf(report)).toMatch(/data\/bookmarks\.json is invalid:[\s\S]*\[0\]\.topic/);
   });
 
-  it("checks a magazine issue against the bookmarks next to it, naming the file and the field", async () => {
-    const issue = {
-      date: "2026-10-19",
-      title: "Issue",
-      theme: { palette: "ocean", fonts: "serif" },
-      sections: [{ type: "feature", bookmark: templateSamples[0]?.id }],
-    };
+  it("warns about an issue's missing bookmark, naming the file and the field, without failing", async () => {
     await writeData({
       "bookmarks.json": JSON.stringify(templateSamples),
       "magazine/2026-10-19.json": JSON.stringify(issue),
@@ -85,15 +87,47 @@ describe("validateFiles", () => {
     const reports = await validateFiles({
       cwd,
       files: ["data/magazine/2026-10-19.json", "data/magazine/2026-10-20.json"],
+      now: new Date("2026-10-20T12:00:00Z"),
     });
-    expect(reports[0]).toEqual({ source: "data/magazine/2026-10-19.json", ok: true, summary: "1 section" });
-    expect(errorOf(reports[1])).toMatch(
-      /data\/magazine\/2026-10-20\.json is invalid:\n✖ "9" is not a bookmark id in bookmarks\.json\n {2}→ at sections\[0\]\.bookmark/,
-    );
+    expect(reports).toEqual([
+      { source: "data/magazine/2026-10-19.json", ok: true, summary: "1 section" },
+      {
+        source: "data/magazine/2026-10-20.json",
+        ok: true,
+        summary: "1 section",
+        warnings: [
+          '"9" is not a bookmark id in bookmarks.json; the page leaves the block out\n  → at sections[0].bookmark',
+        ],
+      },
+    ]);
+  });
+
+  it("still fails an issue that breaks the schema", async () => {
+    await writeData({
+      "bookmarks.json": JSON.stringify(templateSamples),
+      "magazine/2026-10-19.json": JSON.stringify({ ...issue, theme: { palette: "rainbow", fonts: "serif" } }),
+    });
+    const [report] = await validateFiles({ cwd, files: ["data/magazine/2026-10-19.json"] });
+    expect(errorOf(report)).toMatch(/data\/magazine\/2026-10-19\.json is invalid:[\s\S]*→ at theme\.palette/);
+  });
+
+  it("warns about a JSON file in data/magazine/ not named after a date, and ignores it", async () => {
+    await writeData({ "magazine/notes.json": "not even JSON" });
+    const [report] = await validateFiles({ cwd, files: ["data/magazine/notes.json"] });
+    expect(report).toEqual({
+      source: "data/magazine/notes.json",
+      ok: true,
+      summary: "not an issue, so the page ignores it",
+      warnings: ["name an issue after its date, such as 2026-10-19.json"],
+    });
   });
 
   it("reports an issue as unchecked while the bookmarks it names are invalid", async () => {
-    await writeData({ "bookmarks.json": "[{}]", "magazine/2026-10-19.json": "{}", "magazine/2026-10-20.json": "{}" });
+    await writeData({
+      "bookmarks.json": "[{}]",
+      "magazine/2026-10-19.json": JSON.stringify(issue),
+      "magazine/2026-10-20.json": JSON.stringify({ ...issue, date: "2026-10-20" }),
+    });
     const reports = await validateFiles({
       cwd,
       files: ["data/bookmarks.json", "data/magazine/2026-10-19.json", "data/magazine/2026-10-20.json"],

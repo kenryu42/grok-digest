@@ -6,22 +6,34 @@ import { cardHref } from "../../lib/paths";
 
 type Props = {
   block: BlockOf<"sidebar-box">;
+  anchor: string;
   find: FindBookmark;
 };
 
-const { block, find } = Astro.props;
+const { block, anchor, find } = Astro.props;
 const bookmark = find(block.bookmark);
 ---
 
-<Block block={block}>
-  <aside class="mag-sidebar">
-    <p class="mag-sidebar-title">
-      <ZapIcon className="mag-sidebar-icon" aria-hidden="true" />
+<Block block={block} anchor={anchor}>
+  <aside
+    class:list={[
+      "flex flex-col gap-2 bg-brand-soft",
+      block.variant === "callout"
+        ? "rounded-r-xl border-l-[6px] border-brand p-6"
+        : "max-w-xl rounded-xl p-5 ring-1 ring-brand/40",
+    ]}
+  >
+    <p class="flex items-center gap-1.5 font-sans text-[0.8125rem] font-semibold tracking-widest text-brand-ink uppercase">
+      <ZapIcon className="size-4 fill-brand text-brand-ink" aria-hidden="true" />
       {block.headline ?? "Try this"}
     </p>
-    <p class="mag-sidebar-action">{bookmark.action}</p>
-    <p class="mag-sidebar-source">
-      From <a href={cardHref(bookmark.id)}>{bookmark.tldr}</a>
+    <p class="text-[1.05em] font-medium text-pretty">{bookmark.action}</p>
+    <p class="font-sans text-sm text-muted-foreground">
+      From{" "}
+      <a class="underline decoration-border underline-offset-4 hover:decoration-brand" href={cardHref(bookmark.id)}>
+        “{bookmark.tldr}”
+      </a>{" "}
+      by @{bookmark.author.handle}
     </p>
   </aside>
 </Block>

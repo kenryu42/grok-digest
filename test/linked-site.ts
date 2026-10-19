@@ -65,3 +65,6 @@ export async function stop(child: ChildProcess | undefined): Promise<void> {
   child.kill();
   await once(child, "exit");
 }
+
+export const withoutBuildHashes = (html: string): string =>
+  html.replaceAll(/\/_astro\/[^"]+/g, "/_astro/*").replaceAll(/\suid="[^"]*"/g, "");

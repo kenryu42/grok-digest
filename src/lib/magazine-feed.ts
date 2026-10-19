@@ -1,5 +1,6 @@
 import { cardUrl, escapeHtml, selfLink, siteRoot } from "./feed.ts";
-import { referencedIds, type FindBookmark, type MagazineIssue } from "./magazine.ts";
+import { issueDay, type FindBookmark, type MagazineIssue } from "./magazine.ts";
+import { referencedIds } from "./magazine-check.ts";
 
 type IssueFeedItem = {
   title: string;
@@ -44,6 +45,6 @@ function issueItem({ issue, find, page }: { issue: MagazineIssue; find: FindBook
       .flatMap((text) => (text === undefined ? [] : [`<p>${escapeHtml(text)}</p>`]))
       .concat(stories === "" ? [] : [`<ul>${stories}</ul>`])
       .join(""),
-    pubDate: new Date(date),
+    pubDate: issueDay(date),
   };
 }

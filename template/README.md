@@ -83,7 +83,7 @@ The search box, the topic chips, the sort, and the filters are stored in the pag
 
 An unknown `topic` or `sort` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the card, and turns on **Done** when the card is done, so the card always shows.
 
-If you ask the Grok bot for a magazine, it writes one issue a day from the bookmarks saved since the last one, into `data/magazine/<date>.json`. The header then shows a **Magazine** link to `magazine/`: the latest issue and a list of all of them. Each issue is laid out for its day's posts, and the magazine has its own feed at `magazine/rss.xml`.
+If you ask the Grok bot for a magazine, it writes one issue a day from the bookmarks saved since the last one, into `data/magazine/<date>.json`. The header then shows a **Magazine** link to `magazine/`: a cover for every issue, newest first. Each issue is laid out for its day's posts, and the magazine has its own feed at `magazine/rss.xml`. Removing a bookmark never breaks an issue: the page leaves it out, and `bun run validate` warns until the bot tidies the issue.
 
 The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item is titled with the tldr, dated when the bookmark was saved, links to the card on this page, and includes the summary, the action, the key points, the links with their preview images, the original post, and its images.
 

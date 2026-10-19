@@ -4,23 +4,37 @@ import type { BlockOf, FindBookmark } from "../../lib/magazine";
 
 type Props = {
   block: BlockOf<"pull-quote">;
+  anchor: string;
   find: FindBookmark;
 };
 
-const { block, find } = Astro.props;
+const { block, anchor, find } = Astro.props;
 const { url, author } = find(block.bookmark);
+const centered = block.variant === "centered";
 ---
 
-<Block block={block}>
-  <figure class="mag-quote">
+<Block block={block} anchor={anchor}>
+  <figure
+    class:list={[
+      "flex max-w-3xl flex-col gap-4",
+      centered ? "mx-auto items-center text-center" : "border-l-4 border-brand pl-5",
+    ]}
+  >
     <blockquote cite={url}>
-      <p>“{block.quote}”</p>
+      <p class="font-(family-name:--issue-heading) text-[1.75rem] leading-snug text-balance text-brand-ink italic sm:text-[2rem]">
+        “{block.quote}”
+      </p>
     </blockquote>
-    <figcaption>
-      <a href={url} target="_blank" rel="noopener noreferrer">
+    <figcaption class="flex flex-wrap gap-x-2 font-sans text-sm">
+      <a
+        class="font-medium underline decoration-border underline-offset-4 hover:decoration-brand"
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         {author.name}
       </a>
-      <span class="mag-byline-handle">@{author.handle}</span>
+      <span class="text-muted-foreground">@{author.handle}</span>
     </figcaption>
   </figure>
 </Block>

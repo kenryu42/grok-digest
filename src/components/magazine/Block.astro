@@ -3,13 +3,35 @@ import type { MagazineBlock } from "../../lib/magazine";
 
 type Props = {
   block: MagazineBlock;
+  anchor: string;
   title?: string | undefined;
 };
 
-const { block, title } = Astro.props;
+const { block, anchor, title } = Astro.props;
+
+const EMPHASIS = {
+  quiet: "text-[0.94em] text-foreground/85",
+  normal: "",
+  loud: "rounded-2xl bg-brand-soft p-5 sm:p-8",
+} satisfies Record<MagazineBlock["emphasis"], string>;
 ---
 
-<section class="mag-block" data-block={block.type} data-variant={block.variant} data-emphasis={block.emphasis}>
-  {title !== undefined && <h3 class="mag-section-title">{title}</h3>}
+<section
+  id={anchor}
+  data-block={block.type}
+  data-variant={block.variant}
+  data-emphasis={block.emphasis}
+  data-span={block.span}
+  class:list={[
+    "flex min-w-0 scroll-mt-6 flex-col gap-5",
+    block.span === "full" && "min-[56.25rem]:col-span-2",
+    EMPHASIS[block.emphasis],
+  ]}
+>
+  {title !== undefined && (
+    <h3 class="border-b border-border pb-2 font-(family-name:--issue-heading) text-2xl leading-tight font-semibold text-balance">
+      {title}
+    </h3>
+  )}
   <slot />
 </section>

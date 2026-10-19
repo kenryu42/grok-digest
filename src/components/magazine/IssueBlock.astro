@@ -13,19 +13,20 @@ import type { FindBookmark, MagazineBlock } from "../../lib/magazine";
 
 type Props = {
   block: MagazineBlock;
+  anchor: string;
   find: FindBookmark;
 };
 
-const { block, find } = Astro.props;
+const { block, anchor, find } = Astro.props;
 ---
 
-{block.type === "cover-story" && <CoverStory block={block} find={find} />}
-{block.type === "feature" && <Feature block={block} find={find} />}
-{block.type === "pull-quote" && <PullQuote block={block} find={find} />}
-{block.type === "photo-spread" && <PhotoSpread block={block} find={find} />}
-{block.type === "brief-grid" && <BriefGrid block={block} find={find} />}
-{block.type === "numbered-list" && <NumberedList block={block} find={find} />}
-{block.type === "compare" && <Compare block={block} find={find} />}
-{block.type === "timeline" && <Timeline block={block} find={find} />}
-{block.type === "topic-divider" && <TopicDivider block={block} />}
-{block.type === "sidebar-box" && <SidebarBox block={block} find={find} />}
+{block.type === "cover-story" && <CoverStory block={block} anchor={anchor} find={find} />}
+{block.type === "feature" && <Feature block={block} anchor={anchor} find={find} />}
+{block.type === "pull-quote" && <PullQuote block={block} anchor={anchor} find={find} />}
+{block.type === "photo-spread" && <PhotoSpread block={block} anchor={anchor} find={find} />}
+{block.type === "brief-grid" && <BriefGrid block={block} anchor={anchor} find={find} />}
+{block.type === "numbered-list" && <NumberedList block={block} anchor={anchor} find={find} />}
+{block.type === "compare" && <Compare block={block} anchor={anchor} find={find} />}
+{block.type === "timeline" && <Timeline block={block} anchor={anchor} find={find} />}
+{block.type === "topic-divider" && <TopicDivider block={block} anchor={anchor} />}
+{block.type === "sidebar-box" && <SidebarBox block={block} anchor={anchor} find={find} />}

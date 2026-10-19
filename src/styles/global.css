@@ -5,9 +5,6 @@
 @import "@fontsource-variable/source-serif-4";
 
 @source "..";
-@source not "../components/magazine";
-@source not "../pages/magazine";
-@source not "./magazine.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -184,6 +181,64 @@
 [data-topic="other"] {
   --topic-hue: 70;
   --topic-chroma: 0.15;
+}
+
+[data-palette] {
+  --palette-hue: 70;
+  --palette-chroma: 1;
+  --brand: var(--issue-accent, oklch(0.6 calc(0.16 * var(--palette-chroma)) var(--palette-hue)));
+  --brand-ink: color-mix(in oklab, var(--brand) 70%, var(--foreground));
+  --brand-soft: color-mix(in oklab, var(--brand) 20%, var(--card));
+  --issue-paper: color-mix(in oklab, var(--brand) 9%, var(--card));
+  --issue-band: color-mix(in oklab, var(--brand) 85%, var(--foreground));
+  --issue-heading: "Source Serif 4 Variable", ui-serif, Georgia, serif;
+  --issue-body: "Source Serif 4 Variable", ui-serif, Georgia, serif;
+}
+
+.dark [data-palette] {
+  --brand: var(--issue-accent, oklch(0.74 calc(0.14 * var(--palette-chroma)) var(--palette-hue)));
+  --brand-soft: color-mix(in oklab, var(--brand) 22%, var(--card));
+  --issue-paper: color-mix(in oklab, var(--brand) 10%, var(--card));
+  --issue-band: color-mix(in oklab, var(--brand) 45%, var(--card));
+}
+
+[data-palette="newsprint"] {
+  --palette-hue: 30;
+  --palette-chroma: 0.15;
+}
+[data-palette="ocean"] {
+  --palette-hue: 240;
+}
+[data-palette="forest"] {
+  --palette-hue: 150;
+  --palette-chroma: 1.1;
+}
+[data-palette="sunset"] {
+  --palette-hue: 40;
+  --palette-chroma: 1.2;
+}
+[data-palette="plum"] {
+  --palette-hue: 320;
+}
+
+[data-fonts="sans"],
+[data-fonts="sans-serif"] {
+  --issue-heading: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+}
+[data-fonts="sans"],
+[data-fonts="serif-sans"] {
+  --issue-body: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+}
+[data-fonts="mono-serif"] {
+  --issue-heading: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+[data-palette] [data-topic] {
+  --topic: color-mix(in oklab, oklch(0.5 calc(0.11 * var(--topic-chroma)) var(--topic-hue)) 50%, var(--brand-ink));
+}
+
+.dark [data-palette] [data-topic] {
+  --topic: color-mix(in oklab, oklch(0.8 calc(0.1 * var(--topic-chroma)) var(--topic-hue)) 50%, var(--brand-ink));
 }
 
 @utility px-safe-* {

@@ -7,12 +7,14 @@ The page's parts are [Astro components](https://docs.astro.build/en/basics/astro
 | Component      | What it is                                                             | It gets                                               |
 | -------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
 | `Header`       | The mascot, the title, and the text size, dark mode and Swipe buttons. | `title` and `swipeMode`, from the settings, and `nav` |
-| `Footer`       | The feed links and the notes at the bottom.                            | Nothing                                               |
+| `Footer`       | The feed links and the notes at the bottom.                            | `feed`                                                |
 | `BookmarkCard` | One bookmark's card. The page renders one per bookmark.                | `bookmark`, the parsed entry                          |
 
 `nav` is a link to the site's other page, `{ href, label }`, or `undefined`. On the bookmarks page it is the Magazine link, and it is `undefined` until the first magazine issue exists. On the magazine's pages it links back to the bookmarks, and `swipeMode` is `false`. An ejected `Header` without `nav` shows no such link.
 
-The magazine's pages and blocks cannot be ejected. The package owns how an issue looks, and the bot changes it only through the issue's data: its theme, blocks, variants, and emphasis, described in `BOT.md` under "Write a magazine issue". `custom/theme.css` reaches them, though: an issue is an `article[data-issue]` with `data-palette` and `data-fonts`, and each block is a `section[data-block]` with `data-variant` and `data-emphasis`.
+`feed` is `"bookmarks"` (the default) or `"magazine"`. The bookmarks page leaves it out, so the footer links the bookmark feeds; the magazine's pages pass `"magazine"`, so it links `magazine/rss.xml`. An ejected `Footer` without `feed` links the bookmark feeds on every page.
+
+The magazine's pages and blocks cannot be ejected. The package owns how an issue looks, and the bot changes it only through the issue's data: its theme, blocks, variants, and emphasis, described in `BOT.md` under "Write a magazine issue". `custom/theme.css` reaches them, though: an issue is an `article[data-issue]` with `data-palette` and `data-fonts`, and each block is a `section[data-block]` with `data-variant`, `data-emphasis`, and `data-span`. A palette is a set of CSS variables on `[data-palette="<name>"]`: `--palette-hue` and `--palette-chroma`, from which the page works out `--brand` and the rest, and `--issue-heading` and `--issue-body` for the fonts. Setting one in `custom/theme.css`, such as `[data-palette="forest"] { --palette-hue: 160; }`, changes every issue that uses that palette.
 
 The controls above the cards are React components, ejected as `.tsx` files. Each gets one prop, `controls`, and must keep its named export, such as `export function FilterMenu`:
 

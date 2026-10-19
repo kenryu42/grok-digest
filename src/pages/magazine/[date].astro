@@ -3,12 +3,12 @@ import IssueNav from "../../components/magazine/IssueNav.astro";
 import IssueView from "../../components/magazine/IssueView.astro";
 import MagazinePage from "../../components/magazine/MagazinePage.astro";
 import { findBookmark, issues } from "../../lib/load-magazine";
-import type { MagazineIssue } from "../../lib/magazine";
+import type { PublishedIssue } from "../../lib/magazine";
 
 type Props = {
-  issue: MagazineIssue;
-  newer: MagazineIssue | undefined;
-  older: MagazineIssue | undefined;
+  issue: PublishedIssue;
+  newer: PublishedIssue | undefined;
+  older: PublishedIssue | undefined;
 };
 
 export function getStaticPaths() {

@@ -1,13 +1,9 @@
 ---
-import ArchiveList from "../../components/magazine/ArchiveList.astro";
-import IssueView from "../../components/magazine/IssueView.astro";
+import IssueGrid from "../../components/magazine/IssueGrid.astro";
 import MagazinePage from "../../components/magazine/MagazinePage.astro";
 import { findBookmark, issues } from "../../lib/load-magazine";
-
-const [latest] = issues;
 ---
 
 <MagazinePage pageTitle="Magazine" description="A daily magazine made from the posts saved from X.">
-  {latest !== undefined && <IssueView issue={latest} find={findBookmark} />}
-  <ArchiveList issues={issues} />
+  <IssueGrid issues={issues} find={findBookmark} />
 </MagazinePage>

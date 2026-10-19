@@ -14,6 +14,7 @@ export {
   MAGAZINE_EMPHASES,
   MAGAZINE_FONTS,
   MAGAZINE_PALETTES,
+  MAGAZINE_SPANS,
   magazineBlockSchema,
   magazineIssueSchema,
   parseMagazineIssue,

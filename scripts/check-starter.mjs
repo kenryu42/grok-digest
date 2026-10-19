@@ -99,7 +99,10 @@ try {
       date: issueDate,
       title: "Starter issue",
       theme: { palette: "forest", fonts: "serif" },
-      sections: [{ type: "cover-story", bookmark: sample.id, headline: "A starter cover" }],
+      sections: [
+        { type: "cover-story", bookmark: sample.id, headline: "A starter cover" },
+        { type: "feature", bookmark: "a-removed-bookmark" },
+      ],
     }),
   );
   execFileSync("bun", ["run", "validate"], { cwd: siteDir, stdio: "inherit" });
