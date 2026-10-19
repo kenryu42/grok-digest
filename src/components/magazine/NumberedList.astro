@@ -1,0 +1,29 @@
+---
+import Block from "./Block.astro";
+import type { BlockOf, FindBookmark } from "../../lib/magazine";
+import { cardHref } from "../../lib/paths";
+
+type Props = {
+  block: BlockOf<"numbered-list">;
+  find: FindBookmark;
+};
+
+const { block, find } = Astro.props;
+const entries = block.items.map(({ bookmark, headline, note }) => {
+  const found = find(bookmark);
+  return { bookmark: found, headline: headline ?? found.tldr, note: note ?? found.summary };
+});
+---
+
+<Block block={block} title={block.headline}>
+  <ol class="mag-numbered">
+    {entries.map(({ bookmark, headline, note }) => (
+      <li class="mag-numbered-item">
+        <h4 class="mag-item-title">
+          <a href={cardHref(bookmark.id)}>{headline}</a>
+        </h4>
+        <p class="mag-item-text">{note}</p>
+      </li>
+    ))}
+  </ol>
+</Block>

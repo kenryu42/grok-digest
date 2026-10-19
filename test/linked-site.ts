@@ -6,7 +6,15 @@ import path from "node:path";
 
 const REPOSITORY = path.resolve(".");
 
-export const CLI = path.join(REPOSITORY, "src/cli.ts");
+const CLI = path.join(REPOSITORY, "src/cli.ts");
+const VITEST_ENV = new Set(["VITEST", "BASE_URL", "MODE", "DEV", "PROD", "SSR", "NODE_ENV"]);
+
+const siteEnv = (extra: Record<string, string> = {}): NodeJS.ProcessEnv => ({
+  ...Object.fromEntries(Object.entries(process.env).filter(([name]) => !VITEST_ENV.has(name))),
+  NO_COLOR: "1",
+  ...extra,
+});
+
 const LOCAL_ADDRESS = /Local\s+(http:\/\/\S+?)\/?\s/;
 
 export async function linkedSite(bookmarks?: readonly unknown[]): Promise<string> {
@@ -20,12 +28,24 @@ export async function linkedSite(bookmarks?: readonly unknown[]): Promise<string
   return root;
 }
 
+export async function runCli(
+  cwd: string,
+  args: string[],
+  extraEnv: Record<string, string> = {},
+): Promise<{ code: number | null; output: string }> {
+  const child = spawn(process.execPath, [CLI, ...args], { cwd, env: siteEnv(extraEnv) });
+  let output = "";
+  child.stdout.on("data", (chunk: Buffer) => (output += chunk.toString()));
+  child.stderr.on("data", (chunk: Buffer) => (output += chunk.toString()));
+  await once(child, "exit");
+  return { code: child.exitCode, output };
+}
+
 export async function startDevServer(
   cwd: string,
   args: string[] = [],
 ): Promise<{ child: ChildProcess; address: string; output: () => string }> {
-  const { VITEST: _vitest, ...env } = process.env;
-  const child = spawn(process.execPath, [CLI, "dev", ...args], { cwd, env: { ...env, NO_COLOR: "1" } });
+  const child = spawn(process.execPath, [CLI, "dev", ...args], { cwd, env: siteEnv() });
   let output = "";
   const address = new Promise<string>((resolve, reject) => {
     const collect = (chunk: Buffer): void => {

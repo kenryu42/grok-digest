@@ -1,0 +1,15 @@
+---
+type Props = {
+  points: readonly string[];
+};
+
+const { points } = Astro.props;
+---
+
+{points.length > 0 && (
+  <ul class="mag-points">
+    {points.map((point) => (
+      <li>{point}</li>
+    ))}
+  </ul>
+)}

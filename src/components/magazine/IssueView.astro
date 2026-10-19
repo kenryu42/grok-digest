@@ -1,0 +1,34 @@
+---
+import IssueBlock from "./IssueBlock.astro";
+import { issueDateLabel, type FindBookmark, type MagazineIssue } from "../../lib/magazine";
+
+type Props = {
+  issue: MagazineIssue;
+  find: FindBookmark;
+};
+
+const { issue, find } = Astro.props;
+const { date, title, subtitle, editor_note: editorNote, theme, sections } = issue;
+---
+
+<article
+  class="mag-issue"
+  data-issue={date}
+  data-palette={theme.palette}
+  data-fonts={theme.fonts}
+  style={theme.accent === undefined ? undefined : { "--issue-accent": theme.accent }}
+>
+  <header class="mag-masthead">
+    <p class="mag-issue-date">
+      <time datetime={date}>{issueDateLabel(date)}</time>
+    </p>
+    <h2 class="mag-title">{title}</h2>
+    {subtitle !== undefined && <p class="mag-subtitle">{subtitle}</p>}
+    {editorNote !== undefined && <p class="mag-editor-note">{editorNote}</p>}
+  </header>
+  <div class="mag-sections">
+    {sections.map((block) => (
+      <IssueBlock block={block} find={find} />
+    ))}
+  </div>
+</article>

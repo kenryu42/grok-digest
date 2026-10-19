@@ -1,0 +1,15 @@
+---
+import type { MagazineBlock } from "../../lib/magazine";
+
+type Props = {
+  block: MagazineBlock;
+  title?: string | undefined;
+};
+
+const { block, title } = Astro.props;
+---
+
+<section class="mag-block" data-block={block.type} data-variant={block.variant} data-emphasis={block.emphasis}>
+  {title !== undefined && <h3 class="mag-section-title">{title}</h3>}
+  <slot />
+</section>

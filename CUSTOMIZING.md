@@ -4,11 +4,15 @@ Reference for editing a component ejected with `bunx grok-digest eject <Componen
 
 The page's parts are [Astro components](https://docs.astro.build/en/basics/astro-components/), ejected as `.astro` files:
 
-| Component      | What it is                                                             | It gets                                    |
-| -------------- | ---------------------------------------------------------------------- | ------------------------------------------ |
-| `Header`       | The mascot, the title, and the text size, dark mode and Swipe buttons. | `title` and `swipeMode`, from the settings |
-| `Footer`       | The feed links and the notes at the bottom.                            | Nothing                                    |
-| `BookmarkCard` | One bookmark's card. The page renders one per bookmark.                | `bookmark`, the parsed entry               |
+| Component      | What it is                                                             | It gets                                               |
+| -------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
+| `Header`       | The mascot, the title, and the text size, dark mode and Swipe buttons. | `title` and `swipeMode`, from the settings, and `nav` |
+| `Footer`       | The feed links and the notes at the bottom.                            | Nothing                                               |
+| `BookmarkCard` | One bookmark's card. The page renders one per bookmark.                | `bookmark`, the parsed entry                          |
+
+`nav` is a link to the site's other page, `{ href, label }`, or `undefined`. On the bookmarks page it is the Magazine link, and it is `undefined` until the first magazine issue exists. On the magazine's pages it links back to the bookmarks, and `swipeMode` is `false`. An ejected `Header` without `nav` shows no such link.
+
+The magazine's pages and blocks cannot be ejected. The package owns how an issue looks, and the bot changes it only through the issue's data: its theme, blocks, variants, and emphasis, described in `BOT.md` under "Write a magazine issue". `custom/theme.css` reaches them, though: an issue is an `article[data-issue]` with `data-palette` and `data-fonts`, and each block is a `section[data-block]` with `data-variant` and `data-emphasis`.
 
 The controls above the cards are React components, ejected as `.tsx` files. Each gets one prop, `controls`, and must keep its named export, such as `export function FilterMenu`:
 

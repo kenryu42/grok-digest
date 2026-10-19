@@ -1,0 +1,14 @@
+---
+import { TOPIC_LABELS, type Topic } from "../../lib/topics";
+
+type Props = {
+  topic: Topic;
+  text?: string | undefined;
+};
+
+const { topic, text } = Astro.props;
+---
+
+<p class="mag-kicker" data-topic={topic}>
+  {text ?? TOPIC_LABELS[topic]}
+</p>

@@ -1,0 +1,20 @@
+---
+import { TopicTile } from "../TopicTile";
+import type { Bookmark } from "../../lib/bookmarks";
+import { cardKind } from "../../lib/card-kind";
+
+type Props = {
+  bookmark: Bookmark;
+  class?: string;
+};
+
+const { bookmark, class: className } = Astro.props;
+const visual = cardKind(bookmark);
+---
+
+<div data-cover class:list={["mag-cover", className]}>
+  <TopicTile topic={bookmark.topic} seed={bookmark.id} className="mag-cover-fill" />
+  {visual.kind === "photo" && (
+    <img src={visual.image.url} alt={visual.image.alt} decoding="async" class="mag-cover-fill" />
+  )}
+</div>

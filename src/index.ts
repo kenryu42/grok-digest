@@ -3,10 +3,10 @@ import { fileURLToPath } from "node:url";
 import react from "@astrojs/react";
 import tailwindcss from "@tailwindcss/vite";
 import type { AstroIntegration } from "astro";
-import type { Plugin } from "vite";
+import type { Plugin, ViteDevServer } from "vite";
 import { existsSync } from "node:fs";
 import { componentFile, CONFIG_FILE, CUSTOM_DIR, OVERRIDABLE_COMPONENTS, THEME_FILE } from "./lib/custom.ts";
-import { BOOKMARKS_FILE, readJsonFile } from "./lib/data-files.ts";
+import { BOOKMARKS_FILE, issueFilesIn, readJsonFile } from "./lib/data-files.ts";
 import {
   conflictedOverrides,
   defaultComponentFile,
@@ -16,6 +16,7 @@ import {
   overrideFile,
   staleOverrides,
 } from "./lib/eject.ts";
+import { MAGAZINE_DIR } from "./lib/magazine.ts";
 
 export type GrokDigestOptions = {
   dataDir?: string;
@@ -26,6 +27,8 @@ const BOOKMARKS_MODULE_ID = "virtual:grok-digest/bookmarks";
 const RESOLVED_BOOKMARKS_MODULE_ID = `\0${BOOKMARKS_MODULE_ID}`;
 const CONFIG_MODULE_ID = "virtual:grok-digest/config";
 const RESOLVED_CONFIG_MODULE_ID = `\0${CONFIG_MODULE_ID}`;
+const MAGAZINE_MODULE_ID = "virtual:grok-digest/magazine";
+const RESOLVED_MAGAZINE_MODULE_ID = `\0${MAGAZINE_MODULE_ID}`;
 const THEME_MODULE_ID = "virtual:grok-digest/theme.css";
 const COMPONENT_MODULE = /^virtual:grok-digest\/components\/(\w+)(\.astro)?$/;
 const SCRIPT_EXTENSION = path.extname(fileURLToPath(import.meta.url));
@@ -38,6 +41,12 @@ const ROUTES = [
   { pattern: "/robots.txt", entrypoint: `routes/robots.txt${SCRIPT_EXTENSION}` },
   { pattern: "/manifest.webmanifest", entrypoint: `routes/manifest.webmanifest${SCRIPT_EXTENSION}` },
   { pattern: "/icon-[size].png", entrypoint: `routes/icon-[size].png${SCRIPT_EXTENSION}` },
+];
+
+const MAGAZINE_ROUTES = [
+  { pattern: "/magazine", entrypoint: "pages/magazine/index.astro" },
+  { pattern: "/magazine/[date]", entrypoint: "pages/magazine/[date].astro" },
+  { pattern: "/magazine/rss.xml", entrypoint: `pages/magazine/rss.xml${SCRIPT_EXTENSION}` },
 ];
 
 const RENDERER_PACKAGES = ["@astrojs/react", "react", "react-dom"];
@@ -108,7 +117,44 @@ function bookmarksModule({ file, source }: { file: string; source: string }): Pl
   };
 }
 
+function magazineModule({ root, dir }: { root: string; dir: string }): Plugin {
+  return {
+    name: "grok-digest:magazine",
+    configureServer: (server) =>
+      whenFilesComeOrGo(server, { dir, extension: ".json" }, () => server.watcher.emit("change", dir)),
+    resolveId: (id) => (id === MAGAZINE_MODULE_ID ? RESOLVED_MAGAZINE_MODULE_ID : undefined),
+    async load(id) {
+      if (id !== RESOLVED_MAGAZINE_MODULE_ID) return undefined;
+      const files = await issueFilesIn(dir);
+      const issues = await Promise.all(
+        files.map(async (file) => {
+          this.addWatchFile(file);
+          const source = displayPath(root, file);
+          return { source, raw: await readJsonFile({ file, source }) };
+        }),
+      );
+      return `export default ${JSON.stringify(issues)};`;
+    },
+  };
+}
+
 const RESTART_DELAY_MS = 200;
+
+function whenFilesComeOrGo(
+  server: ViteDevServer,
+  { dir, extension = "" }: { dir: string; extension?: string },
+  respond: () => void,
+): void {
+  let pending: ReturnType<typeof setTimeout> | undefined;
+  const reactToFileInDir = (file: string): void => {
+    if (!file.startsWith(`${dir}${path.sep}`) || !file.endsWith(extension)) return;
+    clearTimeout(pending);
+    pending = setTimeout(respond, RESTART_DELAY_MS);
+  };
+  server.watcher.add(dir);
+  server.watcher.on("add", reactToFileInDir);
+  server.watcher.on("unlink", reactToFileInDir);
+}
 const IMPORT_SPECIFIER = /(\b(?:from|import)\s*\(?\s*)(["'])([^"'\s]+)\2/g;
 const isBareImport = (id: string): boolean => !/^(?:[./\0]|[a-z][a-z\d+.-]*:)/i.test(id);
 
@@ -120,17 +166,7 @@ function customModules(root: string): Plugin {
   return {
     name: "grok-digest:custom",
     enforce: "pre",
-    configureServer(server) {
-      let pending: ReturnType<typeof setTimeout> | undefined;
-      const restartOnCustomFile = (file: string): void => {
-        if (!file.startsWith(`${customDir}${path.sep}`)) return;
-        clearTimeout(pending);
-        pending = setTimeout(() => void server.restart(), RESTART_DELAY_MS);
-      };
-      server.watcher.add(customDir);
-      server.watcher.on("add", restartOnCustomFile);
-      server.watcher.on("unlink", restartOnCustomFile);
-    },
+    configureServer: (server) => whenFilesComeOrGo(server, { dir: customDir }, () => void server.restart()),
     resolveId(id) {
       if (id === CONFIG_MODULE_ID) return RESOLVED_CONFIG_MODULE_ID;
       if (id === THEME_MODULE_ID)
@@ -186,10 +222,11 @@ export default function grokDigest({ dataDir = "data" }: GrokDigestOptions = {})
   return {
     name: PACKAGE_NAME,
     hooks: {
-      "astro:config:setup": async ({ config, updateConfig, injectRoute, logger }) => {
+      "astro:config:setup": async ({ config, updateConfig, injectRoute, addWatchFile, logger }) => {
         const root = fileURLToPath(config.root);
         const file = path.resolve(root, dataDir, BOOKMARKS_FILE);
         const source = displayPath(root, file);
+        const magazineDir = path.resolve(root, dataDir, MAGAZINE_DIR);
         updateConfig({
           integrations: [react()],
           vite: {
@@ -199,10 +236,13 @@ export default function grokDigest({ dataDir = "data" }: GrokDigestOptions = {})
               tailwindcss(),
               bookmarksModule({ file, source }),
               customModules(root),
+              magazineModule({ root, dir: magazineDir }),
             ],
           },
         });
-        for (const { pattern, entrypoint } of ROUTES) {
+        addWatchFile(magazineDir);
+        const hasIssues = (await issueFilesIn(magazineDir)).length > 0;
+        for (const { pattern, entrypoint } of [...ROUTES, ...(hasIssues ? MAGAZINE_ROUTES : [])]) {
           injectRoute({ pattern, entrypoint: new URL(entrypoint, import.meta.url) });
         }
         const conflicted = await conflictedOverrides(root);

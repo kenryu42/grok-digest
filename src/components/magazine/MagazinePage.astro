@@ -1,0 +1,31 @@
+---
+import "../../styles/magazine.css";
+import Footer from "virtual:grok-digest/components/Footer.astro";
+import Header from "virtual:grok-digest/components/Header.astro";
+import Layout from "../../layouts/Layout.astro";
+import { siteHref } from "../../lib/paths";
+import { siteConfig } from "../../lib/site-config";
+
+type Props = {
+  pageTitle: string;
+  description: string;
+};
+
+const { pageTitle, description } = Astro.props;
+const { title } = siteConfig;
+---
+
+<Layout
+  title={`${pageTitle} · ${title}`}
+  description={description}
+  feedHref={siteHref("magazine/rss.xml")}
+  feedTitle="Magazine"
+>
+  <div class="mag-page">
+    <Header title={title} swipeMode={false} nav={{ href: siteHref(""), label: "Bookmarks" }} />
+    <main class="mag-main">
+      <slot />
+    </main>
+    <Footer />
+  </div>
+</Layout>

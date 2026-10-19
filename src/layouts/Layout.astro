@@ -9,9 +9,10 @@ type Props = {
   title: string;
   description: string;
   feedHref?: string;
+  feedTitle?: string;
 };
 
-const { title, description, feedHref } = Astro.props;
+const { title, description, feedHref, feedTitle = "Bookmarks" } = Astro.props;
 ---
 
 <!doctype html>
@@ -29,7 +30,7 @@ const { title, description, feedHref } = Astro.props;
     <meta name="apple-mobile-web-app-title" content={title} />
     <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f9f6f1" />
     <meta name="theme-color" media="(prefers-color-scheme: dark)" content="#151311" />
-    {feedHref && <link rel="alternate" type="application/rss+xml" title="Bookmarks" href={feedHref} />}
+    {feedHref && <link rel="alternate" type="application/rss+xml" title={feedTitle} href={feedHref} />}
     <title>{title}</title>
     <script is:inline define:vars={{ storageKey: THEME_STORAGE_KEY, darkQuery: DARK_QUERY }}>
       const media = window.matchMedia(darkQuery);

@@ -1,0 +1,31 @@
+---
+import type { MagazineIssue } from "../../lib/magazine";
+import { issueHref } from "../../lib/paths";
+
+type Props = {
+  older: MagazineIssue | undefined;
+  newer: MagazineIssue | undefined;
+};
+
+const { older, newer } = Astro.props;
+---
+
+<nav class="mag-issue-nav" aria-label="Other issues">
+  {older === undefined ? (
+    <span />
+  ) : (
+    <a rel="prev" href={issueHref(older.date)} data-older>
+      <span class="mag-issue-nav-label">Previous issue</span>
+      {older.title}
+    </a>
+  )}
+  <a href={issueHref()}>All issues</a>
+  {newer === undefined ? (
+    <span />
+  ) : (
+    <a rel="next" href={issueHref(newer.date)} data-newer>
+      <span class="mag-issue-nav-label">Next issue</span>
+      {newer.title}
+    </a>
+  )}
+</nav>

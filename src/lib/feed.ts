@@ -27,6 +27,20 @@ export function feedOrigin(site: URL | undefined): string {
   return site?.origin ?? LOCAL_ORIGIN;
 }
 
+export const siteRoot = ({ origin, base }: { origin: string; base: string }): URL =>
+  new URL(base.endsWith("/") ? base : `${base}/`, origin);
+
+export function cardUrl(page: URL, id: string): URL {
+  const card = new URL(page.href);
+  card.hash = `b-${id}`;
+  return card;
+}
+
+export const selfLink = (self: URL): Pick<FeedConfig, "customData" | "xmlns"> => ({
+  customData: `<atom:link href="${escapeHtml(self.href)}" rel="self" type="application/rss+xml"/>`,
+  xmlns: { atom: "http://www.w3.org/2005/Atom" },
+});
+
 export function feedConfig({
   bookmarks,
   topic,
@@ -38,7 +52,7 @@ export function feedConfig({
   origin: string;
   base: string;
 }): FeedConfig {
-  const page = new URL(base.endsWith("/") ? base : `${base}/`, origin);
+  const page = siteRoot({ origin, base });
   const label = topic === null ? null : TOPIC_LABELS[topic];
   const self = new URL(topic === null ? "rss.xml" : `rss/${topic}.xml`, page);
   return {
@@ -48,8 +62,7 @@ export function feedConfig({
     items: bookmarks
       .filter((bookmark) => topic === null || bookmark.topic === topic)
       .map((bookmark) => feedItem(bookmark, page)),
-    customData: `<atom:link href="${escapeHtml(self.href)}" rel="self" type="application/rss+xml"/>`,
-    xmlns: { atom: "http://www.w3.org/2005/Atom" },
+    ...selfLink(self),
   };
 }
 
@@ -75,8 +88,7 @@ function linkedText(text: string): string {
 
 function feedItem(bookmark: Bookmark, page: URL): FeedItem {
   const { author, tldr, summary, text, keyPoints, action, links, topic, url, savedAt, id } = bookmark;
-  const link = new URL(page.href);
-  link.hash = `b-${id}`;
+  const link = cardUrl(page, id);
   const points = keyPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
   const quoted = postParts(bookmark)
     .flatMap((part) => {
@@ -108,7 +120,7 @@ function feedItem(bookmark: Bookmark, page: URL): FeedItem {
   };
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value
     .replaceAll("&", "&amp;")
     .replaceAll("<", "&lt;")

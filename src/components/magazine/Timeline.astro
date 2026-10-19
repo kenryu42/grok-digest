@@ -1,0 +1,32 @@
+---
+import Block from "./Block.astro";
+import { shortDateLabel, type BlockOf, type FindBookmark } from "../../lib/magazine";
+import { cardHref } from "../../lib/paths";
+
+type Props = {
+  block: BlockOf<"timeline">;
+  find: FindBookmark;
+};
+
+const { block, find } = Astro.props;
+const events = block.items
+  .map(({ bookmark, label }) => ({ bookmark: find(bookmark), label }))
+  .toSorted((a, b) => a.bookmark.postedAt.getTime() - b.bookmark.postedAt.getTime());
+---
+
+<Block block={block} title={block.headline}>
+  <ol class="mag-timeline">
+    {events.map(({ bookmark, label }) => (
+      <li class="mag-timeline-event">
+        <time datetime={bookmark.postedAt.toISOString()}>{shortDateLabel(bookmark.postedAt)}</time>
+        <div>
+          {label !== undefined && <p class="mag-kicker">{label}</p>}
+          <h4 class="mag-item-title">
+            <a href={cardHref(bookmark.id)}>{bookmark.tldr}</a>
+          </h4>
+          <p class="mag-item-text">{bookmark.summary}</p>
+        </div>
+      </li>
+    ))}
+  </ol>
+</Block>

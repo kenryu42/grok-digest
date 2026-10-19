@@ -12,4 +12,9 @@ declare module "virtual:grok-digest/config" {
   export default raw;
 }
 
+declare module "virtual:grok-digest/magazine" {
+  const files: import("./lib/magazine.ts").IssueFile[];
+  export default files;
+}
+
 declare module "virtual:grok-digest/theme.css";

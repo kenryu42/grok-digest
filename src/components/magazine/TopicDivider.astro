@@ -1,0 +1,19 @@
+---
+import Block from "./Block.astro";
+import { TopicTile } from "../TopicTile";
+import type { BlockOf } from "../../lib/magazine";
+import { TOPIC_LABELS } from "../../lib/topics";
+
+type Props = {
+  block: BlockOf<"topic-divider">;
+};
+
+const { block } = Astro.props;
+---
+
+<Block block={block}>
+  <div class="mag-divider" data-topic={block.topic}>
+    {block.variant === "band" && <TopicTile topic={block.topic} seed={block.topic} className="mag-divider-tile" />}
+    <h3 class="mag-divider-label">{block.label ?? TOPIC_LABELS[block.topic]}</h3>
+  </div>
+</Block>

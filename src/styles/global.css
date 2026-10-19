@@ -5,6 +5,9 @@
 @import "@fontsource-variable/source-serif-4";
 
 @source "..";
+@source not "../components/magazine";
+@source not "../pages/magazine";
+@source not "./magazine.css";
 
 @custom-variant dark (&:is(.dark *));
 

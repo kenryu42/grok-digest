@@ -1,0 +1,39 @@
+---
+import Block from "./Block.astro";
+import type { BlockOf, FindBookmark } from "../../lib/magazine";
+import { postImages } from "../../lib/media";
+import { cardHref } from "../../lib/paths";
+
+type Props = {
+  block: BlockOf<"photo-spread">;
+  find: FindBookmark;
+};
+
+const { block, find } = Astro.props;
+const photos = block.items.map(({ bookmark, caption }) => {
+  const found = find(bookmark);
+  return { bookmark: found, caption: caption ?? found.tldr, images: postImages(found) };
+});
+---
+
+<Block block={block} title={block.headline}>
+  <div class="mag-photos">
+    {photos.map(({ bookmark, caption, images }) => (
+      <figure class="mag-photo">
+        <ul class="mag-photo-images" data-count={images.length}>
+          {images.map((image) => (
+            <li>
+              <a href={image.url} target="_blank" rel="noopener noreferrer">
+                <img src={image.url} alt={image.alt} loading="lazy" decoding="async" />
+              </a>
+            </li>
+          ))}
+        </ul>
+        <figcaption>
+          <a href={cardHref(bookmark.id)}>{caption}</a>
+          <span class="mag-byline-handle">@{bookmark.author.handle}</span>
+        </figcaption>
+      </figure>
+    ))}
+  </div>
+</Block>

@@ -1,0 +1,26 @@
+---
+import Block from "./Block.astro";
+import type { BlockOf, FindBookmark } from "../../lib/magazine";
+
+type Props = {
+  block: BlockOf<"pull-quote">;
+  find: FindBookmark;
+};
+
+const { block, find } = Astro.props;
+const { url, author } = find(block.bookmark);
+---
+
+<Block block={block}>
+  <figure class="mag-quote">
+    <blockquote cite={url}>
+      <p>“{block.quote}”</p>
+    </blockquote>
+    <figcaption>
+      <a href={url} target="_blank" rel="noopener noreferrer">
+        {author.name}
+      </a>
+      <span class="mag-byline-handle">@{author.handle}</span>
+    </figcaption>
+  </figure>
+</Block>

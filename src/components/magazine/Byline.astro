@@ -1,0 +1,21 @@
+---
+import type { Bookmark } from "../../lib/bookmarks";
+import { cardHref } from "../../lib/paths";
+
+type Props = {
+  bookmark: Bookmark;
+};
+
+const { id, url, author } = Astro.props.bookmark;
+---
+
+<p class="mag-byline">
+  <span class="mag-byline-author">{author.name}</span>
+  <span class="mag-byline-handle">@{author.handle}</span>
+  <span class="mag-byline-links">
+    <a href={cardHref(id)}>Read the card</a>
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      Open on X
+    </a>
+  </span>
+</p>

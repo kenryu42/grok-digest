@@ -67,4 +67,7 @@ export function postParts({ author, text, media, links }: Bookmark): PostPart[] 
   );
 }
 
+export const postImages = (bookmark: Bookmark): Image[] =>
+  postParts(bookmark).flatMap((part) => (part.kind === "images" ? part.images : []));
+
 export const listedLinks = (links: readonly PostLink[]): PostLink[] => links.filter((link) => link.short === undefined);

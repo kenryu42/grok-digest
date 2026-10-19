@@ -1,0 +1,27 @@
+---
+import { issueDateLabel, type MagazineIssue } from "../../lib/magazine";
+import { issueHref } from "../../lib/paths";
+
+type Props = {
+  issues: readonly MagazineIssue[];
+};
+
+const { issues } = Astro.props;
+---
+
+<section class="mag-archive" aria-labelledby="mag-archive-title">
+  <h2 id="mag-archive-title" class="mag-section-title">
+    All issues
+  </h2>
+  <ol>
+    {issues.map(({ date, title, subtitle }) => (
+      <li>
+        <a href={issueHref(date)}>
+          <time datetime={date}>{issueDateLabel(date)}</time>
+          <span class="mag-archive-title">{title}</span>
+        </a>
+        {subtitle !== undefined && <p>{subtitle}</p>}
+      </li>
+    ))}
+  </ol>
+</section>

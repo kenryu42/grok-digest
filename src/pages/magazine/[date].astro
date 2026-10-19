@@ -1,0 +1,27 @@
+---
+import IssueNav from "../../components/magazine/IssueNav.astro";
+import IssueView from "../../components/magazine/IssueView.astro";
+import MagazinePage from "../../components/magazine/MagazinePage.astro";
+import { findBookmark, issues } from "../../lib/load-magazine";
+import type { MagazineIssue } from "../../lib/magazine";
+
+type Props = {
+  issue: MagazineIssue;
+  newer: MagazineIssue | undefined;
+  older: MagazineIssue | undefined;
+};
+
+export function getStaticPaths() {
+  return issues.map((issue, index) => ({
+    params: { date: issue.date },
+    props: { issue, newer: issues[index - 1], older: issues[index + 1] },
+  }));
+}
+
+const { issue, newer, older } = Astro.props;
+---
+
+<MagazinePage pageTitle={issue.title} description={issue.subtitle ?? issue.title}>
+  <IssueView issue={issue} find={findBookmark} />
+  <IssueNav older={older} newer={newer} />
+</MagazinePage>

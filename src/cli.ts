@@ -16,8 +16,8 @@ Commands:
   preview              Serve the site built in dist/.
   validate [file ...]  Check data files against schema version ${SCHEMA_VERSION}. With no
                        file, checks <dir>/bookmarks.json and, when present,
-                       <dir>/processed.json, <dir>/removed.json and
-                       custom/config.json.
+                       <dir>/processed.json, <dir>/removed.json,
+                       custom/config.json and every <dir>/magazine/*.json.
   eject <component>    Copy a component into custom/components/ to change it.
                        Components: ${OVERRIDABLE_COMPONENTS.join(", ")}.
   merge                Bring each ejected component up to the installed
