@@ -8,7 +8,6 @@ import {
   type PointerEvent,
   type RefObject,
 } from "react";
-import { flushSync } from "react-dom";
 import { shows, type Depth } from "./depth.ts";
 import type { PostLink } from "./bookmarks.ts";
 import { withoutUrls, type PostPart } from "./media.ts";
@@ -38,7 +37,6 @@ const CURRENT_LINE = 0.4;
 const SWIPE_SAMPLES = 6;
 const SPRING_BACK = "transform 500ms var(--ease-spring)";
 const FLY_OFF = "transform 250ms ease-in";
-const FLY_OFF_MS = 250;
 const FLY_OFF_RESET_MS = 900;
 const SPRING_BACK_MS = 500;
 export const CARD_DEPTH: Depth = "points";
@@ -83,14 +81,13 @@ type Gesture = {
 
 type OpenSide = "left" | "right";
 
-type TrayAction = "done" | "later" | "share" | "copy";
+type TrayAction = "done" | "share" | "copy";
 
 type Options = {
   cards: HTMLElement[];
   start: number;
   done: ReadonlySet<string>;
   onToggleDone: (id: string) => Promise<void>;
-  onLater: (id: string) => Promise<void>;
   onClose: (last: HTMLElement | undefined) => void;
 };
 
@@ -160,13 +157,6 @@ function traysOf(mover: HTMLElement | null): SwipeTrays {
   return { left: tray("left"), right: tray("right") };
 }
 
-function deck(pages: readonly SwipePage[], later: readonly string[]): SwipePage[] {
-  return [
-    ...pages.filter(({ id }) => !later.includes(id)),
-    ...later.flatMap((id) => pages.filter((page) => page.id === id)),
-  ];
-}
-
 function storedSpeed(): number {
   const stored = readStored(SPEED_KEY);
   return typeof stored === "number" && stored >= SPEED.min && stored <= SPEED.max ? stored : SPEED.start;
@@ -181,7 +171,6 @@ export type SwipeControls = {
   done: ReadonlySet<string>;
   pageDone: boolean;
   toggleDone: () => void;
-  later: () => void;
   undoPending: boolean;
   undo: () => void;
   copied: boolean;
@@ -220,13 +209,11 @@ type SwipeFrame = {
   };
 };
 
-export function useSwipeMode({ cards, start, done, onToggleDone, onLater, onClose }: Options): {
+export function useSwipeMode({ cards, start, done, onToggleDone, onClose }: Options): {
   swipe: SwipeControls;
   frame: SwipeFrame;
 } {
-  const allPages = useMemo(() => cards.map(pageFrom), [cards]);
-  const [later, setLater] = useState<readonly string[]>([]);
-  const pages = useMemo(() => deck(allPages, later), [allPages, later]);
+  const pages = useMemo(() => cards.map(pageFrom), [cards]);
   const openRef = useRef<OpenSide | null>(null);
   const [canShare] = useState(() => typeof navigator.share === "function");
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -260,12 +247,6 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onLater, onClos
     },
     [pages.length],
   );
-
-  const stayAt = (index: number): void => {
-    const pager = pagerRef.current;
-    const target = pager?.children[index];
-    if (pager !== null && target instanceof HTMLElement) pager.scrollTop = target.offsetTop;
-  };
 
   const close = (): void => dialogRef.current?.close();
 
@@ -350,28 +331,6 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onLater, onClos
     }, FLY_OFF_RESET_MS);
   };
 
-  const laterCurrent = (): void => {
-    if (page === undefined) return;
-    const { id } = page;
-    void onLater(id);
-    if (current === pages.length - 1) {
-      closeActions();
-      return;
-    }
-    const mover = moverRef.current;
-    flyOff(mover);
-    setTimeout(
-      () => {
-        flushSync(() => setLater((previous) => [...previous.filter((other) => other !== id), id]));
-        stayAt(current);
-        moveCard(mover, "", "");
-        showActions(mover, null);
-        arrive();
-      },
-      prefersReducedMotion() ? 0 : FLY_OFF_MS,
-    );
-  };
-
   const undoDone = (): void => {
     if (undo === null) return;
     setUndo(null);
@@ -397,7 +356,6 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onLater, onClos
   const act = (action: TrayAction): void => {
     const actions: Record<TrayAction, () => void> = {
       done: leaveDone,
-      later: laterCurrent,
       share: shareCurrent,
       copy: copyCurrent,
     };
@@ -577,9 +535,6 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onLater, onClos
       case "e":
         toggleCurrentDone();
         break;
-      case "l":
-        laterCurrent();
-        break;
       case "u":
         undoDone();
         break;
@@ -621,7 +576,6 @@ export function useSwipeMode({ cards, start, done, onToggleDone, onLater, onClos
     done,
     pageDone: page !== undefined && done.has(page.id),
     toggleDone: toggleCurrentDone,
-    later: laterCurrent,
     undoPending: undo !== null,
     undo: undoDone,
     copied,

@@ -60,14 +60,10 @@ type Swipe = {
   start: number;
   done: ReadonlySet<string>;
   toggleDone: (id: string) => Promise<void>;
-  later: (id: string) => Promise<void>;
   close: (last: HTMLElement | undefined) => void;
 };
 
-type CardAction = "done" | "later";
-
 const DONE_KEY = `${STORAGE_PREFIX}done`;
-const LATER_KEY = `${STORAGE_PREFIX}later`;
 const UNDO_MS = 5000;
 const COPIED_MS = 2000;
 const SWIPE_CLICK_GUARD_MS = 400;
@@ -86,12 +82,6 @@ function isStringArray(value: unknown): value is string[] {
 function storedDone(): Set<string> {
   const stored = readStored(DONE_KEY);
   return new Set(isStringArray(stored) ? stored : []);
-}
-
-function storedLater(entries: readonly SearchEntry[]): string[] {
-  const stored = readStored(LATER_KEY);
-  const ids = new Set(entries.map(({ id }) => id));
-  return isStringArray(stored) ? stored.filter((id) => ids.has(id)) : [];
 }
 
 function withId(ids: ReadonlySet<string>, id: string, present: boolean): Set<string> {
@@ -187,7 +177,6 @@ function copyFrom(button: HTMLElement | null | undefined): void {
 export function useBookmarkControls({ entries, settings }: Props) {
   const [filter, setFilter] = useState(initialFilter);
   const [done, setDone] = useState(storedDone);
-  const [later, setLater] = useState(() => storedLater(entries));
   const [doneRequestCopied, setDoneRequestCopied] = useState(false);
   const [undo, setUndo] = useState<{ id: string } | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -214,14 +203,13 @@ export function useBookmarkControls({ entries, settings }: Props) {
   useLayoutEffect(() => {
     const list = document.querySelector("[data-bookmark-list]");
     const byId = new Map(cards().map((card) => [card.dataset["bookmarkId"] ?? "", card]));
-    const moved = new Set(later);
-    for (const id of [...order.filter((other) => !moved.has(other)), ...later]) {
+    for (const id of order) {
       const card = byId.get(id);
       if (card === undefined) continue;
       list?.append(card);
       returnSwiped(card);
     }
-  }, [order, later]);
+  }, [order]);
 
   useLayoutEffect(() => {
     doneRef.current = done;
@@ -239,10 +227,6 @@ export function useBookmarkControls({ entries, settings }: Props) {
   useEffect(() => {
     writeStored(DONE_KEY, [...done]);
   }, [done]);
-
-  useEffect(() => {
-    writeStored(LATER_KEY, later);
-  }, [later]);
 
   useEffect(() => {
     if (!doneRequestCopied) return undefined;
@@ -321,10 +305,6 @@ export function useBookmarkControls({ entries, settings }: Props) {
     );
   }, []);
 
-  const moveLater = useCallback((id: string): Promise<void> => {
-    return morph(() => flushSync(() => setLater((previous) => [...previous.filter((other) => other !== id), id])));
-  }, []);
-
   const undoDone = useCallback((): void => {
     const pending = undoRef.current;
     if (pending === null) return;
@@ -398,19 +378,16 @@ export function useBookmarkControls({ entries, settings }: Props) {
       if (surface !== null) moveSurface(surface, 0, SPRING_BACK);
     };
 
-    const act = (card: HTMLElement, action: CardAction): Promise<void> => {
-      const id = card.dataset["bookmarkId"] ?? "";
-      return action === "done" ? toggleDone(id) : moveLater(id);
-    };
+    const markDone = (card: HTMLElement): Promise<void> => toggleDone(card.dataset["bookmarkId"] ?? "");
 
-    const flyOff = (card: HTMLElement, action: CardAction, ms: number): void => {
+    const flyOff = (card: HTMLElement, ms: number): void => {
       const surface = card.querySelector<HTMLElement>("[data-swipe-surface]");
       card.toggleAttribute("data-swiped", true);
       if (surface !== null) {
         surface.style.transition = ms === 0 ? "" : `transform ${ms}ms ${FLY_OFF_EASING}`;
         surface.style.transform = "translateX(-100%)";
       }
-      setTimeout(() => void act(card, action), ms);
+      setTimeout(() => void markDone(card), ms);
     };
 
     const onPointerDown = (event: PointerEvent): void => {
@@ -503,22 +480,20 @@ export function useBookmarkControls({ entries, settings }: Props) {
       if (event.target.closest("[data-open-swipe]") !== null) openSwipe();
       const card = event.target.closest<HTMLElement>("[data-bookmark-id]");
       if (card === null) return;
-      const trayAction = event.target.closest<HTMLElement>("[data-swipe-action]")?.dataset["swipeAction"];
-      if (trayAction === "done" || trayAction === "later") {
-        flyOff(card, trayAction, prefersReducedMotion() ? 0 : FLY_OFF_ACTION_MS);
+      if (event.target.closest("[data-swipe-action]") !== null) {
+        flyOff(card, prefersReducedMotion() ? 0 : FLY_OFF_ACTION_MS);
         return;
       }
-      if (event.target.closest("[data-done-toggle]") !== null) void act(card, "done");
-      if (event.target.closest("[data-later]") !== null) void act(card, "later");
+      if (event.target.closest("[data-done-toggle]") !== null) void markDone(card);
       if (event.target.closest("[data-card-head]") !== null) toggleCard(card);
     };
 
-    const actOnFocused = (current: HTMLElement | null, shown: HTMLElement[], action: CardAction): void => {
+    const markFocusedDone = (current: HTMLElement | null, shown: HTMLElement[]): void => {
       if (current === null) return;
       const index = shown.indexOf(current);
       const neighbor = shown[index + 1] ?? shown[index - 1];
-      const settled = act(current, action);
-      if (action === "done" && !current.hidden && !current.inert) return;
+      const settled = markDone(current);
+      if (!current.hidden && !current.inert) return;
       neighbor?.querySelector<HTMLElement>("[data-card-toggle]")?.focus({ preventScroll: true });
       void settled.then(() => focusCard(neighbor));
     };
@@ -541,10 +516,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
           focusCard(shown[Math.max(index - 1, 0)]);
           break;
         case "e":
-          actOnFocused(current, shown, "done");
-          break;
-        case "l":
-          actOnFocused(current, shown, "later");
+          markFocusedDone(current, shown);
           break;
         case "c":
           copyFrom(current?.querySelector<HTMLElement>("[data-copy]"));
@@ -588,7 +560,7 @@ export function useBookmarkControls({ entries, settings }: Props) {
       document.removeEventListener("pointerup", endSwipe);
       document.removeEventListener("pointercancel", endSwipe);
     };
-  }, [moveLater, openSwipe, toggleCard, toggleDone, undoDone]);
+  }, [openSwipe, toggleCard, toggleDone, undoDone]);
 
   useEffect(() => {
     if (!filtersOpen) return undefined;
@@ -654,7 +626,6 @@ export function useBookmarkControls({ entries, settings }: Props) {
     doneRequestCopied,
     openSwipe,
   };
-  const swipe: Swipe | null =
-    swiping === null ? null : { ...swiping, done, toggleDone, later: moveLater, close: closeSwipe };
+  const swipe: Swipe | null = swiping === null ? null : { ...swiping, done, toggleDone, close: closeSwipe };
   return { controls, swipe };
 }

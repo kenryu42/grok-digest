@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { CheckIcon, ClockIcon, CopyIcon, InboxIcon, ShareIcon } from "lucide-react";
+import { CheckIcon, CopyIcon, InboxIcon, ShareIcon } from "lucide-react";
 import { cn } from "cn";
 import { SwipeCard } from "virtual:grok-digest/components/SwipeCard";
 import { SwipeEnd } from "virtual:grok-digest/components/SwipeEnd";
@@ -61,9 +61,6 @@ export function SwipeMode(props: Props) {
                     data-swipe-tray="left"
                     className="invisible absolute inset-y-0 right-0 flex items-center gap-4 px-safe-4 group-data-[swiping=left]/page:visible"
                   >
-                    <TrayButton label="Later" tone="bg-brand text-black" onClick={() => act("later")}>
-                      <ClockIcon />
-                    </TrayButton>
                     {swipe.pageDone ? (
                       <TrayButton label="Inbox" tone="bg-muted-foreground text-background" onClick={() => act("done")}>
                         <InboxIcon />

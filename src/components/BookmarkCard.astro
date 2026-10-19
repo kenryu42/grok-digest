@@ -1,14 +1,5 @@
 ---
-import {
-  ArrowUpRightIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  ClockIcon,
-  CopyIcon,
-  ImagesIcon,
-  InboxIcon,
-  ZapIcon,
-} from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, ImagesIcon, InboxIcon, ZapIcon } from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { LinkCard } from "./LinkCard";
@@ -48,16 +39,6 @@ const visual = cardKind(bookmark);
     data-swipe-actions
     class="invisible absolute top-0 right-0 flex h-full items-center gap-4 px-4 group-data-[actions]/bookmark:visible group-data-[swiped]/bookmark:visible group-data-[swiping]/bookmark:visible"
   >
-    <button
-      type="button"
-      data-swipe-action="later"
-      class="flex flex-col items-center gap-1.5 text-xs font-medium text-muted-foreground outline-none"
-    >
-      <span class="flex size-12 items-center justify-center rounded-full bg-brand text-black shadow-sm">
-        <ClockIcon className="size-5" aria-hidden="true" />
-      </span>
-      Later
-    </button>
     <button
       type="button"
       data-swipe-action="done"
@@ -241,18 +222,7 @@ const visual = cardKind(bookmark);
       data-level="points"
       class="flex flex-col gap-3 px-(--card-spacing) pb-(--card-spacing) sm:flex-row sm:justify-end"
     >
-      <div class="grid grid-cols-3 gap-2 pointer-fine:grid-cols-4 sm:flex sm:items-center sm:gap-3">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          data-later
-          aria-label="Later"
-          title="Move to the end (l)"
-          className="rounded-full text-muted-foreground pointer-coarse:hidden max-sm:h-10 sm:size-7 sm:px-0"
-        >
-          <ClockIcon aria-hidden="true" />
-        </Button>
+      <div class="grid grid-cols-3 gap-2 sm:flex sm:items-center sm:gap-3">
         <Button
           type="button"
           variant="ghost"

@@ -6,7 +6,7 @@ This directory is the maintained source for verifying what Grok Digest users see
 
 - `$V launch` with the default fixture: 15 bookmarks across all 7 topics, four marked `News`, one thread (`A dashboard redesign told across a three-post thread`, author `@thread_lab`, id `1000000000000000200`) whose images sit between its posts, and five entries titled `サンプル: a Tokyo meetup on local-first apps`.
 - `$V doctor "$RUN"` prints only `✓` lines.
-- Start every recipe with `$V open "$RUN" <path> --viewport <mobile|desktop> --fresh`, so no done marks, Later order or speed-reading settings carry over.
+- Start every recipe with `$V open "$RUN" <path> --viewport <mobile|desktop> --fresh`, so no done marks or speed-reading settings carry over.
 - Never drive a server this run did not start.
 
 ## Driving conventions

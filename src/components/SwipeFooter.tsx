@@ -1,4 +1,4 @@
-import { ArrowUpRightIcon, CheckIcon, ClockIcon, CopyIcon, PauseIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
+import { ArrowUpRightIcon, CheckIcon, CopyIcon, PauseIcon, PlayIcon, RotateCcwIcon } from "lucide-react";
 import { Button } from "./ui/button.tsx";
 import { SPEED, type SwipeControls } from "../lib/swipe-mode.ts";
 
@@ -17,7 +17,6 @@ export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
     copied,
     pageDone,
     toggleDone,
-    later,
   } = swipe;
   return (
     <footer className="relative mx-auto flex w-full max-w-2xl flex-col gap-3 border-t px-safe-4 pt-3 pb-safe-4">
@@ -87,17 +86,6 @@ export function SwipeFooter({ swipe }: { swipe: SwipeControls }) {
           >
             {copied ? <CheckIcon aria-hidden="true" /> : <CopyIcon aria-hidden="true" />}
             {copied ? "Copied" : "Copy"}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            onClick={later}
-            aria-label="Later"
-            title="Move to the end (l)"
-            className="size-11 rounded-full text-muted-foreground pointer-coarse:hidden"
-          >
-            <ClockIcon aria-hidden="true" />
           </Button>
           <Button
             type="button"

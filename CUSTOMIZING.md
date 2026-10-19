@@ -29,7 +29,7 @@ The controls above the cards are React components, ejected as `.tsx` files. Each
 | `UndoToast`      | The "Marked done" message with Undo.                                                                                     |
 | `DoneCleanup`    | With Done on, Copy for Grok: a request for the Grok bot to remove the done bookmarks.                                    |
 
-`controls` holds the page's state and what changes it. The package keeps owning the behavior: filtering, the done marks, the sort and the Later order, the keyboard shortcuts, and swiping cards. A control only shows the state and calls these:
+`controls` holds the page's state and what changes it. The package keeps owning the behavior: filtering, the done marks, the sort, the keyboard shortcuts, and swiping cards. A control only shows the state and calls these:
 
 | Field                                                           | What it is                                                                                                                                                          |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -54,7 +54,7 @@ Swipe mode shows one card per screen. The package keeps its frame: the full-scre
 | ------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------- |
 | `SwipeHeader` | The top bar: Close, the "3 / 12" counter, the Speed read button, and the reading progress.                   |                                                |
 | `SwipeCard`   | What one card shows: topic, author, headline, summary, key points, "Try:", the links, and the original post. | `page`, and `current` when it is the open card |
-| `SwipeFooter` | The bottom bar: the speed reading controls, Copy, Later, Done, Open on X, and the "Marked done" message.     |                                                |
+| `SwipeFooter` | The bottom bar: the speed reading controls, Copy, Done, Open on X, and the "Marked done" message.            |                                                |
 | `SwipeEnd`    | The screen after the last card, with Start over and Close.                                                   |                                                |
 
 `page` is one card: `id`, `author`, `topic`, `url`, `headline`, and `blocks`, its text in order. Each block has a `kind` (`"summary"`, `"point"`, `"action"`, or `"post"`) and its `text`; speed reading reads these, so `"post"` text leaves out web addresses. `links` are the post's links that are not shown inside it, each with its `url`, `title` and, when it has one that loaded, `image`. The ejected copy shows them with `LinkCard`, as the package does. `post` is the original post in order: `{ kind: "text", text }`, `{ kind: "images", images }` with each image's `url` and `alt`, and `{ kind: "link", link }` for a link shown where its short link was. The ejected copy shows it with `PostBody`. `cover` is the post's first image as `{ url, alt }`, or `undefined` when the post has none; without one, the package shows a `TopicTile` instead. `page.card` is the bookmark's card element on the page, so `SwipeCard` can show anything else that card shows.
@@ -65,7 +65,6 @@ Swipe mode shows one card per screen. The package keeps its frame: the full-scre
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
 | `pages`, `current`, `page`, `goTo(index)`, `close()`  | Every card, the open card's index and its `page`, moving to a card (`pages.length` is the end screen), and closing swipe mode. |
 | `done`, `pageDone`, `toggleDone()`                    | The ids marked done, whether the open card is, and marking it done or not done.                                                |
-| `later()`                                             | Moving the open card to the end of the deck and of the list.                                                                   |
 | `undoPending`, `undo()`                               | Whether a card was just marked done, and undoing it.                                                                           |
 | `copied`, `copy()`                                    | Whether the open card was just copied, and copying it for an AI assistant.                                                     |
 | `canShare`, `share()`                                 | Whether the browser can share, and opening its share sheet for the open card's post.                                           |

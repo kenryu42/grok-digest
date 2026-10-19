@@ -300,7 +300,7 @@ These are the components you can eject. What each one is, the props it gets, and
 | `SwipeFooter`    | `.tsx`   |
 | `SwipeEnd`       | `.tsx`   |
 
-In `BookmarkCard`, keep every `data-` attribute and the element it is on. The page finds the card, its buttons, and its text by them for Done, Later, Copy, opening a card, swiping, and swipe mode. Move them, restyle them, or add elements around them, but don't remove them.
+In `BookmarkCard`, keep every `data-` attribute and the element it is on. The page finds the card, its buttons, and its text by them for Done, Copy, opening a card, swiping, and swipe mode. Move them, restyle them, or add elements around them, but don't remove them.
 
 Imports from `grok-digest/internal/…` reach the package's own parts, such as `grok-digest/internal/components/ui/button`. They can change in any release, and `bunx grok-digest merge` brings in those changes.
 
