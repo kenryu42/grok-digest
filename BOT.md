@@ -316,6 +316,8 @@ A release can change a component you ejected. The build then warns that `custom/
 
 A release can also remove a component. The page then ignores its file in `custom/components/`: delete that file and its copy in `.ejected/`, and run `merge` so an ejected `ControlsLayout` stops importing it. 0.5.8 removed `ViewTabs` and `DetailControl`.
 
+A release can also take something away from a component. 0.5.10 removed Later: `swipe.later()`, the card's Later button, and the `l` key are gone. After `merge`, delete any Later button, `later()` call, or `l` hint left in an ejected `SwipeFooter`, `BookmarkCard`, or `KeyboardHints`; the build does not catch them, and a leftover button does nothing or throws when tapped.
+
 `eject` and `merge` write only inside `custom/components/`. They never touch `package.json` or `bun.lock`, and you never commit those two files either way.
 
 ## Write a magazine issue (optional routine)
