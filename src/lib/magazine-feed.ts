@@ -1,6 +1,9 @@
 import { cardUrl, escapeHtml, selfLink, siteRoot } from "./feed.ts";
+import type { ImageMetadata } from "astro";
 import { issueDay, type FindBookmark, type MagazineIssue } from "./magazine.ts";
 import { referencedIds } from "./magazine-check.ts";
+
+type FeedIssue = MagazineIssue & { cover?: ImageMetadata | undefined };
 
 type IssueFeedItem = {
   title: string;
@@ -16,7 +19,7 @@ export function magazineFeedConfig({
   origin,
   base,
 }: {
-  issues: readonly MagazineIssue[];
+  issues: readonly FeedIssue[];
   find: FindBookmark;
   origin: string;
   base: string;
@@ -31,20 +34,22 @@ export function magazineFeedConfig({
   };
 }
 
-function issueItem({ issue, find, page }: { issue: MagazineIssue; find: FindBookmark; page: URL }): IssueFeedItem {
-  const { date, title, subtitle, editor_note: editorNote } = issue;
+function issueItem({ issue, find, page }: { issue: FeedIssue; find: FindBookmark; page: URL }): IssueFeedItem {
+  const { date, title, subtitle, editor_note: editorNote, cover } = issue;
   const stories = referencedIds(issue)
     .map(find)
     .map(({ id, tldr }) => `<li><a href="${escapeHtml(cardUrl(page, id).href)}">${escapeHtml(tldr)}</a></li>`)
     .join("");
+  const coverImage =
+    cover === undefined ? [] : [`<p><img src="${escapeHtml(new URL(cover.src, page).href)}" alt=""></p>`];
+  const paragraphs = [subtitle, editorNote].flatMap((text) =>
+    text === undefined ? [] : [`<p>${escapeHtml(text)}</p>`],
+  );
   return {
     title,
     link: new URL(`magazine/${date}/`, page).href,
     description: subtitle ?? editorNote ?? title,
-    content: [subtitle, editorNote]
-      .flatMap((text) => (text === undefined ? [] : [`<p>${escapeHtml(text)}</p>`]))
-      .concat(stories === "" ? [] : [`<ul>${stories}</ul>`])
-      .join(""),
+    content: [...coverImage, ...paragraphs, ...(stories === "" ? [] : [`<ul>${stories}</ul>`])].join(""),
     pubDate: issueDay(date),
   };
 }

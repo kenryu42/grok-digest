@@ -1,3 +1,4 @@
+import type { ImageMetadata } from "astro";
 import { z } from "zod";
 import { parseDataFile, type Bookmark } from "./bookmarks.ts";
 import { TOPIC_LABELS, TOPICS } from "./topics.ts";
@@ -9,9 +10,13 @@ export const MAGAZINE_EMPHASES = ["quiet", "normal", "loud"] as const;
 export const MAGAZINE_SPANS = ["full", "half"] as const;
 
 const ISSUE_FILE_NAME = /^(\d{4}-\d{2}-\d{2})\.json$/;
+export const COVER_EXTENSIONS = [".jpg", ".png", ".webp"] as const;
+const COVER_FILE_NAME = /^\d{4}-\d{2}-\d{2}\.(?:jpg|png|webp)$/;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export const isIssueFileName = (name: string): boolean => ISSUE_FILE_NAME.test(name);
+export const isCoverFileName = (name: string): boolean => COVER_FILE_NAME.test(name);
+export const coverFileNames = (date: string): string[] => COVER_EXTENSIONS.map((extension) => `${date}${extension}`);
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);
 const headline = shortText(120);
@@ -130,7 +135,8 @@ export type MagazineBlock = MagazineIssue["sections"][number];
 type MagazineBlockType = MagazineBlock["type"];
 export type BlockOf<Type extends MagazineBlockType> = Extract<MagazineBlock, { type: Type }>;
 export type ItemsBlock = BlockOf<keyof typeof ITEM_LIMITS>;
-export type PublishedIssue = MagazineIssue & { number: number };
+export type CoveredIssue = MagazineIssue & { cover: ImageMetadata | undefined };
+export type PublishedIssue = CoveredIssue & { number: number };
 export type FindBookmark = (id: string) => Bookmark;
 
 const issueFileName = (source: string): string => source.split(/[/\\]/).at(-1) ?? source;
@@ -148,10 +154,12 @@ export function parseMagazineIssue({ raw, source }: { raw: unknown; source: stri
   return parseDataFile({ schema, raw, source });
 }
 
-export type IssueFile = { source: string; raw: unknown };
+export type IssueFile = { source: string; raw: unknown; cover?: ImageMetadata | undefined };
 
-export const parseMagazine = (files: readonly IssueFile[]): MagazineIssue[] =>
-  files.map(parseMagazineIssue).toSorted((a, b) => b.date.localeCompare(a.date));
+export const parseMagazine = (files: readonly IssueFile[]): CoveredIssue[] =>
+  files
+    .map((file) => ({ ...parseMagazineIssue(file), cover: file.cover }))
+    .toSorted((a, b) => b.date.localeCompare(a.date));
 
 const MONTHS = [
   "January",
@@ -189,6 +197,11 @@ export function issueDateLabel(date: string): string {
 export function issueShortDateLabel(date: string): string {
   const { year, month, day } = dateParts(date);
   return `${MONTHS[month - 1]?.slice(0, 3)} ${day}, ${year}`;
+}
+
+export function issueMonthLabel(date: string): string {
+  const { year, month } = dateParts(date);
+  return `${MONTHS[month - 1]} ${year}`;
 }
 
 export function issueDay(date: string): Date {

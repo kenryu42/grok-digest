@@ -1,0 +1,147 @@
+---
+import IssueCover from "./IssueCover.astro";
+import {
+  issueMonthLabel,
+  issueShortDateLabel,
+  sectionHeading,
+  themeAttributes,
+  type FindBookmark,
+  type PublishedIssue,
+} from "../../lib/magazine";
+import { issueHref } from "../../lib/paths";
+
+type Props = {
+  issues: readonly PublishedIssue[];
+  find: FindBookmark;
+};
+
+const LEAD_COVER_SIZES = "(min-width: 40rem) 32rem, 100vw";
+const SHELF_COVER_SIZES = "(min-width: 64rem) 13rem, (min-width: 40rem) 30vw, 50vw";
+const LEAD_CONTENTS_SHOWN = 4;
+
+const { issues, find } = Astro.props;
+const [latest, ...backIssues] = issues;
+const leadContents = (latest?.sections ?? [])
+  .flatMap((block) => sectionHeading(block, find) ?? [])
+  .slice(0, LEAD_CONTENTS_SHOWN);
+const months = Map.groupBy(backIssues, (issue) => issueMonthLabel(issue.date));
+---
+
+<section aria-labelledby="magazine-issues" class="flex flex-col">
+  <div class="flex items-baseline justify-between gap-4 border-b-2 border-foreground pb-2">
+    <h2 id="magazine-issues" class="font-heading text-4xl font-semibold tracking-tight sm:text-6xl">
+      Magazine
+    </h2>
+    <p class="font-sans text-xs font-semibold tracking-widest text-muted-foreground uppercase tabular-nums">
+      {issues.length} {issues.length === 1 ? "issue" : "issues"}
+    </p>
+  </div>
+
+  {latest !== undefined && (
+    <article
+      {...themeAttributes(latest.theme)}
+      class="grid gap-6 border-b border-border py-8 sm:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] sm:items-end sm:gap-10 sm:py-10"
+    >
+      <a href={issueHref(latest.date)} tabindex="-1" aria-hidden="true" class="group block">
+        <IssueCover
+          issue={latest}
+          sizes={LEAD_COVER_SIZES}
+          eager
+          class="ring-1 ring-foreground/10 transition-[translate,box-shadow] duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-xl motion-reduce:transition-none"
+        />
+      </a>
+      <div class="flex flex-col gap-4">
+        <p class="font-sans text-xs font-semibold tracking-widest text-brand-ink uppercase tabular-nums">
+          Latest · No. {latest.number} · <time datetime={latest.date}>{issueShortDateLabel(latest.date)}</time>
+        </p>
+        <h3 class="font-(family-name:--issue-heading) text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-5xl">
+          <a
+            href={issueHref(latest.date)}
+            class="decoration-brand underline-offset-8 hover:underline focus-visible:underline focus-visible:outline-none"
+          >
+            {latest.title}
+          </a>
+        </h3>
+        {latest.subtitle !== undefined && (
+          <p class="font-(family-name:--issue-body) text-lg text-pretty text-muted-foreground sm:text-xl">
+            {latest.subtitle}
+          </p>
+        )}
+        {leadContents.length > 0 && (
+          <ul class="flex flex-col border-t border-border font-(family-name:--issue-body)">
+            {leadContents.map((heading) => (
+              <li class="border-b border-border py-2 text-pretty">{heading}</li>
+            ))}
+          </ul>
+        )}
+        <a
+          href={issueHref(latest.date)}
+          aria-hidden="true"
+          tabindex="-1"
+          class="self-start font-sans text-sm font-semibold underline decoration-brand underline-offset-4"
+        >
+          Read the issue →
+        </a>
+      </div>
+    </article>
+  )}
+
+  {months.size > 0 && (
+    <section aria-labelledby="back-issues" class="flex flex-col gap-8 pt-10">
+      <h3 id="back-issues" class="font-heading text-2xl font-semibold tracking-tight">
+        Back issues
+      </h3>
+      {[...months].map(([month, monthIssues]) => (
+        <section aria-label={month} class="flex flex-col gap-5">
+          <h4 class="border-t border-border pt-2 font-sans text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+            {month}
+          </h4>
+          <ol data-shelf class="grid grid-cols-2 gap-x-5 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+            {monthIssues.map((issue) => (
+              <li {...themeAttributes(issue.theme)}>
+                <a href={issueHref(issue.date)} class="group flex flex-col gap-3 focus-visible:outline-none">
+                  <IssueCover
+                    issue={issue}
+                    sizes={SHELF_COVER_SIZES}
+                    class="ring-1 ring-foreground/10 transition-[translate,box-shadow] duration-300 ease-out group-hover:-translate-y-1 group-hover:shadow-lg group-focus-visible:ring-3 group-focus-visible:ring-ring motion-reduce:transition-none"
+                  />
+                  <span class="flex flex-col gap-1">
+                    <span class="font-sans text-[0.6875rem] font-semibold tracking-widest text-muted-foreground uppercase tabular-nums">
+                      No. {issue.number} · <time datetime={issue.date}>{issueShortDateLabel(issue.date)}</time>
+                    </span>
+                    <span class="line-clamp-2 font-heading text-base leading-snug font-semibold text-balance decoration-brand underline-offset-4 group-hover:underline">
+                      {issue.title}
+                    </span>
+                  </span>
+                </a>
+              </li>
+            ))}
+          </ol>
+        </section>
+      ))}
+    </section>
+  )}
+</section>
+
+<script is:inline>
+  const coverFor = (url) =>
+    url === undefined || url === null
+      ? null
+      : document.querySelector(`[data-issue-cover="${CSS.escape(new URL(url).pathname)}"]`);
+
+  const nameDuring = (cover, done) => {
+    if (cover === null) return;
+    cover.style.viewTransitionName = "issue-cover";
+    const unname = () => (cover.style.viewTransitionName = "");
+    done.then(unname, unname);
+  };
+
+  addEventListener("pageswap", (event) => {
+    if (event.viewTransition !== null) nameDuring(coverFor(event.activation?.entry.url), event.viewTransition.finished);
+  });
+
+  addEventListener("pagereveal", (event) => {
+    if (event.viewTransition !== null)
+      nameDuring(coverFor(globalThis.navigation?.activation?.from?.url), event.viewTransition.ready);
+  });
+</script>

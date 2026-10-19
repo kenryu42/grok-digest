@@ -78,11 +78,13 @@ describe("validateFiles", () => {
     await writeData({
       "bookmarks.json": JSON.stringify(templateSamples),
       "magazine/2026-10-19.json": JSON.stringify(issue),
+      "magazine/2026-10-19.jpg": "",
       "magazine/2026-10-20.json": JSON.stringify({
         ...issue,
         date: "2026-10-20",
         sections: [{ type: "feature", bookmark: "9" }],
       }),
+      "magazine/2026-10-20.webp": "",
     });
     const reports = await validateFiles({
       cwd,
@@ -97,6 +99,33 @@ describe("validateFiles", () => {
         summary: "1 section",
         warnings: [
           '"9" is not a bookmark id in bookmarks.json; the page leaves the block out\n  → at sections[0].bookmark',
+        ],
+      },
+    ]);
+  });
+
+  it("warns about an issue without a cover image named after its date", async () => {
+    await writeData({
+      "bookmarks.json": JSON.stringify(templateSamples),
+      "magazine/2026-10-18.json": JSON.stringify({ ...issue, date: "2026-10-18" }),
+      "magazine/2026-10-18.png": "",
+      "magazine/2026-10-19.json": JSON.stringify(issue),
+      "magazine/2026-10-20.jpg": "",
+      "magazine/cover.jpg": "",
+    });
+    const reports = await validateFiles({
+      cwd,
+      files: ["data/magazine/2026-10-18.json", "data/magazine/2026-10-19.json"],
+      now: new Date("2026-10-20T12:00:00Z"),
+    });
+    expect(reports).toEqual([
+      { source: "data/magazine/2026-10-18.json", ok: true, summary: "1 section" },
+      {
+        source: "data/magazine/2026-10-19.json",
+        ok: true,
+        summary: "1 section",
+        warnings: [
+          "no cover image; add data/magazine/2026-10-19.jpg (or .png, .webp), a 3:4 portrait picture made for this issue",
         ],
       },
     ]);

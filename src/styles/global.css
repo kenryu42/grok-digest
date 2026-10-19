@@ -241,6 +241,32 @@
   --topic: color-mix(in oklab, oklch(0.8 calc(0.1 * var(--topic-chroma)) var(--topic-hue)) 50%, var(--brand-ink));
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  @view-transition {
+    navigation: auto;
+  }
+
+  ::view-transition-group(issue-cover) {
+    animation-duration: 0.45s;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  @supports (animation-timeline: view()) {
+    [data-shelf] > li {
+      animation: shelf-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 70%;
+    }
+  }
+}
+
+@keyframes shelf-rise {
+  from {
+    opacity: 0;
+    translate: 0 1.5rem;
+  }
+}
+
 @utility px-safe-* {
   padding-left: max(--spacing(--value(integer)), env(safe-area-inset-left));
   padding-right: max(--spacing(--value(integer)), env(safe-area-inset-right));

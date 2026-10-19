@@ -1,4 +1,4 @@
-import { readdir, readFile } from "node:fs/promises";
+import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 export const BOOKMARKS_FILE = "bookmarks.json";
@@ -26,4 +26,19 @@ export async function jsonFilesIn(dir: string): Promise<string[]> {
     if (error instanceof Error && "code" in error && error.code === "ENOENT") return [];
     throw error;
   }
+}
+
+export async function fileExists(file: string): Promise<boolean> {
+  try {
+    await access(file);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function firstFileIn(dir: string, names: readonly string[]): Promise<string | undefined> {
+  const files = names.map((name) => path.join(dir, name));
+  const present = await Promise.all(files.map(fileExists));
+  return files.find((_, index) => present[index]);
 }

@@ -105,6 +105,7 @@ try {
       ],
     }),
   );
+  cpSync(path.resolve("src/assets/icon-512.png"), path.join(siteDir, `data/magazine/${issueDate}.png`));
   execFileSync("bun", ["run", "validate"], { cwd: siteDir, stdio: "inherit" });
   buildUnderBasePath();
   expect(read("index.html").includes(`href="${BASE_PATH}/magazine/"`), "index.html does not link the magazine");
@@ -115,6 +116,11 @@ try {
   expect(issuePage.includes("A starter cover"), "the issue page lacks its cover story");
   for (const [, url] of issuePage.matchAll(/(?:href|src)="(\/[^"]*)"/g)) {
     expect(url.startsWith(`${BASE_PATH}/`), `the issue page links ${url}, outside ${BASE_PATH}/`);
+  }
+  const coverSources = [...(/<img[^>]*srcset="([^"]+)"/.exec(issuePage)?.[1] ?? "").matchAll(/(\S+) \d+w/g)];
+  expect(coverSources.length > 1, "the issue page does not show its cover picture in several sizes");
+  for (const [, url] of coverSources) {
+    expect(existsSync(path.join(dist, url.slice(BASE_PATH.length))), `the cover picture ${url} was not built`);
   }
 
   for (const component of OVERRIDABLE_COMPONENTS) {

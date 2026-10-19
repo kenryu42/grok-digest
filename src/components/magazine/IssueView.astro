@@ -1,5 +1,6 @@
 ---
 import IssueBlock from "./IssueBlock.astro";
+import IssueCover from "./IssueCover.astro";
 import {
   issueDateLabel,
   sectionHeading,
@@ -16,6 +17,7 @@ type Props = {
 
 const { issue, find } = Astro.props;
 const { date, number, title, subtitle, editor_note: editorNote, theme, sections } = issue;
+const COVER_SIZES = "(min-width: 72rem) 26rem, (min-width: 40rem) 36vw, 15rem";
 const anchorOf = (index: number): string => `s-${index + 1}`;
 const contents = sections.flatMap((block, index) => {
   const heading = sectionHeading(block, find);
@@ -28,17 +30,29 @@ const contents = sections.flatMap((block, index) => {
   {...themeAttributes(theme)}
   class="overflow-hidden rounded-3xl bg-(--issue-paper) font-(family-name:--issue-body) text-[1.0625rem] leading-relaxed ring-1 ring-foreground/8"
 >
-  <header class="flex flex-col gap-3 bg-(--issue-band) px-5 py-7 text-white sm:px-10 sm:py-10">
-    <p class="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 font-sans text-xs font-semibold tracking-widest uppercase">
-      <span class="font-(family-name:--issue-heading) text-base tracking-[0.2em]">{siteConfig.title} Magazine</span>
-      <span class="text-white/80">
-        No. {number} · <time datetime={date}>{issueDateLabel(date)}</time>
-      </span>
-    </p>
-    <h2 class="font-(family-name:--issue-heading) text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
-      {title}
-    </h2>
-    {subtitle !== undefined && <p class="max-w-3xl text-lg text-pretty text-white/85 sm:text-xl">{subtitle}</p>}
+  <header class="grid gap-6 px-5 pt-5 sm:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] sm:items-end sm:gap-10 sm:px-10 sm:pt-10">
+    <IssueCover
+      issue={issue}
+      sizes={COVER_SIZES}
+      eager
+      class="w-full max-w-60 ring-1 ring-foreground/10 [view-transition-name:issue-cover] sm:max-w-none"
+    />
+    <div class="flex flex-col gap-3">
+      <p class="flex flex-col gap-1 font-sans text-xs font-semibold tracking-widest uppercase">
+        <span class="font-(family-name:--issue-heading) text-base tracking-[0.2em] text-brand-ink">
+          {siteConfig.title} Magazine
+        </span>
+        <span class="text-muted-foreground">
+          No. {number} · <time datetime={date}>{issueDateLabel(date)}</time>
+        </span>
+      </p>
+      <h2 class="font-(family-name:--issue-heading) text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
+        {title}
+      </h2>
+      {subtitle !== undefined && (
+        <p class="max-w-3xl text-lg text-pretty text-muted-foreground sm:text-xl">{subtitle}</p>
+      )}
+    </div>
   </header>
   <div class="flex flex-col gap-12 px-5 py-8 sm:px-10 sm:py-10">
     {(editorNote !== undefined || contents.length > 1) && (

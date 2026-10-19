@@ -25,6 +25,7 @@ export async function linkedSite(bookmarks?: readonly unknown[]): Promise<string
   await mkdir(path.join(root, "node_modules"));
   await symlink(REPOSITORY, path.join(root, "node_modules/grok-digest"));
   await symlink(path.join(REPOSITORY, "node_modules/astro"), path.join(root, "node_modules/astro"));
+  await symlink(path.join(REPOSITORY, "node_modules/sharp"), path.join(root, "node_modules/sharp"));
   return root;
 }
 

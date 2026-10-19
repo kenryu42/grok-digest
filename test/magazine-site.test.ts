@@ -1,4 +1,4 @@
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import samples from "../template/data/bookmarks.json";
@@ -8,6 +8,7 @@ const BUILD_TIMEOUT_MS = 60_000;
 const ORIGIN = "https://example.github.io";
 const BASE_PATH = "/mag-check";
 const [agents, tokyo, design] = samples.map(({ id }) => id);
+const COVER_PICTURE = path.resolve("src/assets/icon-512.png");
 
 let site = "";
 
@@ -33,6 +34,9 @@ async function builtFiles(dir = "dist"): Promise<string[]> {
 }
 
 const theme = { palette: "plum", fonts: "sans-serif" };
+
+const coverOf = (page: string, date: string): string =>
+  new RegExp(`<div data-issue-cover="${BASE_PATH}/magazine/${date}/"[\\s\\S]*?</div>`).exec(page)?.[0] ?? "";
 
 beforeEach(async () => {
   site = await linkedSite();
@@ -129,6 +133,41 @@ describe("a site with magazine issues", () => {
   );
 
   it(
+    "shows an issue's own picture on its covers and in the feed, and a lettered cover for an issue without one",
+    async () => {
+      await copyFile(COVER_PICTURE, path.join(site, "data/magazine/2026-10-19.png"));
+      await build({ SITE_URL: ORIGIN, BASE_PATH });
+      const archive = await read("dist/magazine/index.html");
+      const newest = await read("dist/magazine/2026-10-19/index.html");
+      const older = await read("dist/magazine/2026-10-18/index.html");
+
+      const sources = [coverOf(archive, "2026-10-19"), coverOf(newest, "2026-10-19")].map((cover) =>
+        [...(/srcset="([^"]+)"/.exec(cover)?.[1] ?? "").matchAll(/(\S+) \d+w/g)].map(([, url]) => url ?? ""),
+      );
+      expect(sources.map((urls) => urls.length > 1)).toEqual([true, true]);
+      const built = sources.flat().map((url) => (url.startsWith(`${BASE_PATH}/`) ? url.slice(BASE_PATH.length) : url));
+      const sizes = await Promise.all(
+        built.map(async (file) => (await readFile(path.join(site, "dist", file))).length),
+      );
+      expect(sizes.every((size) => size > 0)).toBe(true);
+      for (const cover of [coverOf(archive, "2026-10-18"), coverOf(older, "2026-10-18")]) {
+        expect(cover).not.toContain("<img");
+        expect(cover).toContain("Older &lt;script&gt;alert(1)&lt;/script&gt;");
+      }
+
+      const feed = await read("dist/magazine/rss.xml");
+      const pictures = [...feed.matchAll(new RegExp(`&lt;img src=&quot;${ORIGIN}${BASE_PATH}(/[^&]+)&quot;`, "g"))].map(
+        ([, file]) => file ?? "",
+      );
+      expect(pictures).toHaveLength(1);
+      await expect(readFile(path.join(site, "dist", pictures[0] ?? ""))).resolves.toEqual(
+        await readFile(COVER_PICTURE),
+      );
+    },
+    BUILD_TIMEOUT_MS,
+  );
+
+  it(
     "lets custom/theme.css change a palette",
     async () => {
       await mkdir(path.join(site, "custom"));
@@ -206,6 +245,11 @@ describe("dev", () => {
         });
         await vi.waitFor(async () => expect(await status()).toBe(200), waitFor);
         expect(await linked()).toBe(true);
+        await copyFile(COVER_PICTURE, path.join(site, "data/magazine/2026-10-19.jpg"));
+        await vi.waitFor(async () => {
+          const archive = await (await fetch(new URL("magazine/", dev.address))).text();
+          expect(archive).toMatch(/<div data-issue-cover="\/magazine\/2026-10-19\/"[^>]*>\s*<img/);
+        }, waitFor);
         await rm(path.join(site, "data/magazine/2026-10-19.json"));
         await vi.waitFor(async () => expect(await status()).toBe(404), waitFor);
         expect(await linked()).toBe(false);

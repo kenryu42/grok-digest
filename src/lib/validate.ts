@@ -1,10 +1,9 @@
-import { access } from "node:fs/promises";
 import path from "node:path";
 import { isDeepStrictEqual } from "node:util";
 import { bookmarksFileSchema, parseBookmarks, parseDataFile, stateFileSchema, type Bookmark } from "./bookmarks.ts";
 import { CONFIG_FILE, CUSTOM_DIR, siteConfigSchema } from "./custom.ts";
-import { BOOKMARKS_FILE, jsonFilesIn, readJsonFile, STATE_FILES } from "./data-files.ts";
-import { isIssueFileName, MAGAZINE_DIR, parseMagazineIssue } from "./magazine.ts";
+import { BOOKMARKS_FILE, fileExists, firstFileIn, jsonFilesIn, readJsonFile, STATE_FILES } from "./data-files.ts";
+import { COVER_EXTENSIONS, coverFileNames, isIssueFileName, MAGAZINE_DIR, parseMagazineIssue } from "./magazine.ts";
 import { issueWarnings, type IssueWarning } from "./magazine-check.ts";
 
 type FileReport =
@@ -34,19 +33,10 @@ const warningLine = ({ path: keys, message }: IssueWarning): string =>
 const latestDateOnEarth = (now: Date): string =>
   new Date(now.getTime() + EARLIEST_TIME_ZONE_OFFSET_MS).toISOString().slice(0, 10);
 
-async function exists(file: string): Promise<boolean> {
-  try {
-    await access(file);
-    return true;
-  } catch {
-    return false;
-  }
-}
-
 export async function defaultDataFiles({ cwd, dataDir }: { cwd: string; dataDir: string }): Promise<string[]> {
   const stateFiles = STATE_FILES.map((name) => path.join(dataDir, name));
   const optional = [...stateFiles, CONFIG_PATH];
-  const present = await Promise.all(optional.map((file) => exists(path.resolve(cwd, file))));
+  const present = await Promise.all(optional.map((file) => fileExists(path.resolve(cwd, file))));
   const magazineDir = path.join(dataDir, MAGAZINE_DIR);
   const magazineFiles = (await jsonFilesIn(path.resolve(cwd, magazineDir))).map((file) =>
     path.join(magazineDir, path.basename(file)),
@@ -84,6 +74,12 @@ async function validateIssue({ file, source, context }: { file: string; source: 
     );
   });
   const warnings = issueWarnings({ issue, bookmarks, latestToday: context.latestToday }).map(warningLine);
+  const cover = await firstFileIn(path.resolve(context.cwd, path.dirname(file)), coverFileNames(issue.date));
+  if (cover === undefined) {
+    warnings.push(
+      `no cover image; add ${toSource(path.join(path.dirname(file), issue.date))}${COVER_EXTENSIONS[0]} (or ${COVER_EXTENSIONS.slice(1).join(", ")}), a 3:4 portrait picture made for this issue`,
+    );
+  }
   return { sections: issue.sections.length, warnings };
 }
 
