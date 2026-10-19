@@ -1,0 +1,29 @@
+{
+  "date": "2026-01-27",
+  "title": "The quiet issue",
+  "subtitle": "A short week, told in three cards",
+  "theme": {
+    "palette": "newsprint",
+    "fonts": "mono-serif"
+  },
+  "sections": [
+    {
+      "type": "numbered-list",
+      "headline": "Three things worth your time",
+      "items": [
+        {
+          "bookmark": "1000000000000000001",
+          "note": "The plan-first habit."
+        },
+        {
+          "bookmark": "1000000000000000002",
+          "note": "A meetup to watch."
+        },
+        {
+          "bookmark": "1000000000000000003"
+        }
+      ],
+      "variant": "large"
+    }
+  ]
+}

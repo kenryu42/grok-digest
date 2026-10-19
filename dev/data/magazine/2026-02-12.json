@@ -1,0 +1,52 @@
+{
+  "date": "2026-02-12",
+  "title": "Agents that ask first",
+  "subtitle": "Plans before edits, and why waiting for a yes makes agents faster",
+  "editor_note": "Every post this week argues the same thing: slow the agent down at the start, and the rest of the day goes quicker.",
+  "theme": {
+    "palette": "ocean",
+    "fonts": "serif-sans"
+  },
+  "sections": [
+    {
+      "type": "cover-story",
+      "bookmark": "1000000000000000001",
+      "kicker": "Cover story",
+      "headline": "Make the agent plan before it touches a file",
+      "deck": "A plan you can read beats a diff you have to untangle.",
+      "variant": "split"
+    },
+    {
+      "type": "pull-quote",
+      "bookmark": "1000000000000000002",
+      "quote": "東京でローカルファーストの勉強会を開きました",
+      "span": "half"
+    },
+    {
+      "type": "sidebar-box",
+      "bookmark": "1000000000000000001",
+      "span": "half",
+      "variant": "callout"
+    },
+    {
+      "type": "topic-divider",
+      "topic": "japan-tech",
+      "variant": "band"
+    },
+    {
+      "type": "brief-grid",
+      "headline": "In brief",
+      "columns": 2,
+      "items": [
+        {
+          "bookmark": "1000000000000000002",
+          "note": "Local-first apps get their own Tokyo meetup."
+        },
+        {
+          "bookmark": "1000000000000000003",
+          "headline": "A card with nothing but a headline"
+        }
+      ]
+    }
+  ]
+}

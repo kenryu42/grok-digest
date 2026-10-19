@@ -128,11 +128,13 @@ You need Bun 1.4 and Node.js 22.12 or later.
 
 ```sh
 bun install
-bun run dev      # builds the package, then serves template/ at http://localhost:4321 and the printed Network address
+bun run dev      # builds the package, then serves template/ with dev/data at http://localhost:4321 and the printed Network address
 bun run test
 bun run check    # typecheck, oxlint, oxfmt, comment lint, jscpd, knip, tests, starter build
 bun run format
 ```
+
+`bun run dev` reads `dev/data/`, not the starter's own `template/data/`: the starter's sample bookmarks plus a few magazine issues with covers, so the magazine shows while you work on it. One issue has no cover, to show the lettered one.
 
 `bun run check` ends by packing the package with `bun pm pack`, installing the tarball into a copy of `template/` outside the repository, and building it with `SITE_URL=https://example.github.io` and `BASE_PATH=/bm-check`. It checks that the written links stay under that path. This is the same install a site's deploy does.
 

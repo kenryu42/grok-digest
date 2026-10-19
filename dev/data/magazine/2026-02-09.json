@@ -1,0 +1,39 @@
+{
+  "date": "2026-02-09",
+  "title": "Tokyo goes local-first",
+  "subtitle": "A meetup, a design note, and an agent that waits",
+  "theme": {
+    "palette": "sunset",
+    "fonts": "serif"
+  },
+  "sections": [
+    {
+      "type": "cover-story",
+      "bookmark": "1000000000000000002",
+      "headline": "Tokyo's local-first crowd finds a room",
+      "deck": "Apps that keep working offline, argued over in Japanese.",
+      "variant": "stacked"
+    },
+    {
+      "type": "timeline",
+      "headline": "How the week unfolded",
+      "items": [
+        {
+          "bookmark": "1000000000000000003",
+          "label": "Dec 28",
+          "note": "The quiet card that started it."
+        },
+        {
+          "bookmark": "1000000000000000002",
+          "label": "Jan 9",
+          "note": "The meetup."
+        },
+        {
+          "bookmark": "1000000000000000001",
+          "label": "Jan 15",
+          "note": "Agents learn to wait."
+        }
+      ]
+    }
+  ]
+}

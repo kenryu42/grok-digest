@@ -181,3 +181,16 @@ describe("validateFiles", () => {
     expect(errorOf(report)).toContain("data/removed.json is not valid JSON");
   });
 });
+
+describe("the sample data bun run dev shows", () => {
+  it("passes validate, warning only about the issue left without a cover to show the lettered one", async () => {
+    const repository = path.resolve(".");
+    const files = await defaultDataFiles({ cwd: repository, dataDir: "dev/data" });
+    const reports = await validateFiles({ cwd: repository, files, now: new Date("2026-02-12T12:00:00Z") });
+    expect(reports.every((report) => report.ok)).toBe(true);
+    expect(reports.flatMap((report) => (report.ok ? (report.warnings ?? []) : []))).toEqual([
+      "no cover image; add dev/data/magazine/2026-01-27.jpg (or .png, .webp), a 3:4 portrait picture made for this issue",
+    ]);
+    expect(reports.filter((report) => report.source.includes("/magazine/"))).toHaveLength(6);
+  });
+});

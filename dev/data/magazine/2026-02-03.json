@@ -1,0 +1,35 @@
+{
+  "date": "2026-02-03",
+  "title": "Two ways to slow down",
+  "theme": {
+    "palette": "plum",
+    "fonts": "sans-serif"
+  },
+  "sections": [
+    {
+      "type": "compare",
+      "headline": "Plan first, or ship small?",
+      "items": [
+        {
+          "bookmark": "1000000000000000001",
+          "label": "Plan first",
+          "note": "Write the plan, wait for a yes."
+        },
+        {
+          "bookmark": "1000000000000000003",
+          "label": "Ship small",
+          "note": "Say less, change less."
+        }
+      ],
+      "verdict": "Both buy the same thing: fewer surprises.",
+      "variant": "versus"
+    },
+    {
+      "type": "feature",
+      "bookmark": "1000000000000000002",
+      "headline": "What a meetup can teach a codebase",
+      "variant": "drop-cap",
+      "emphasis": "loud"
+    }
+  ]
+}

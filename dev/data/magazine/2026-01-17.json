@@ -1,0 +1,30 @@
+{
+  "date": "2026-01-17",
+  "title": "The first issue",
+  "subtitle": "Where the magazine begins",
+  "theme": {
+    "palette": "classic",
+    "fonts": "serif"
+  },
+  "sections": [
+    {
+      "type": "cover-story",
+      "bookmark": "1000000000000000001",
+      "headline": "An agent that waits for a yes",
+      "variant": "overlay"
+    },
+    {
+      "type": "numbered-list",
+      "headline": "Also saved",
+      "variant": "compact",
+      "items": [
+        {
+          "bookmark": "1000000000000000002"
+        },
+        {
+          "bookmark": "1000000000000000003"
+        }
+      ]
+    }
+  ]
+}

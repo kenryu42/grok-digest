@@ -1,0 +1,30 @@
+{
+  "date": "2026-01-20",
+  "title": "Small models, big week",
+  "subtitle": "Everything shipped at once",
+  "theme": {
+    "palette": "forest",
+    "fonts": "sans"
+  },
+  "sections": [
+    {
+      "type": "feature",
+      "bookmark": "1000000000000000001",
+      "variant": "aside"
+    },
+    {
+      "type": "brief-grid",
+      "headline": "Also this week",
+      "columns": 3,
+      "variant": "plain",
+      "items": [
+        {
+          "bookmark": "1000000000000000002"
+        },
+        {
+          "bookmark": "1000000000000000003"
+        }
+      ]
+    }
+  ]
+}
