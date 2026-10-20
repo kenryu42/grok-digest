@@ -1,7 +1,7 @@
 import { cardUrl, escapeHtml, selfLink, siteRoot } from "./feed.ts";
 import type { ImageMetadata } from "astro";
-import { issueDay, type FindBookmark, type MagazineIssue } from "./magazine.ts";
-import { referencedIds } from "./magazine-check.ts";
+import { issueDay, type FindEntry, type MagazineIssue } from "./magazine.ts";
+import { referencedPosts } from "./magazine-check.ts";
 
 type FeedIssue = MagazineIssue & { cover?: ImageMetadata | undefined };
 
@@ -20,7 +20,7 @@ export function magazineFeedConfig({
   base,
 }: {
   issues: readonly FeedIssue[];
-  find: FindBookmark;
+  find: FindEntry;
   origin: string;
   base: string;
 }) {
@@ -34,11 +34,14 @@ export function magazineFeedConfig({
   };
 }
 
-function issueItem({ issue, find, page }: { issue: FeedIssue; find: FindBookmark; page: URL }): IssueFeedItem {
+function issueItem({ issue, find, page }: { issue: FeedIssue; find: FindEntry; page: URL }): IssueFeedItem {
   const { date, title, subtitle, editor_note: editorNote, cover } = issue;
-  const stories = referencedIds(issue)
+  const stories = referencedPosts(issue)
     .map(find)
-    .map(({ id, tldr }) => `<li><a href="${escapeHtml(cardUrl(page, id).href)}">${escapeHtml(tldr)}</a></li>`)
+    .map(({ id, url, tldr, onPage }) => {
+      const href = onPage ? cardUrl(page, id).href : url;
+      return `<li><a href="${escapeHtml(href)}">${escapeHtml(tldr)}</a></li>`;
+    })
     .join("");
   const coverImage =
     cover === undefined ? [] : [`<p><img src="${escapeHtml(new URL(cover.src, page).href)}" alt=""></p>`];

@@ -1,6 +1,8 @@
 ---
 import BriefGrid from "./BriefGrid.astro";
+import Closer from "./Closer.astro";
 import Compare from "./Compare.astro";
+import Corner from "./Corner.astro";
 import CoverStory from "./CoverStory.astro";
 import Feature from "./Feature.astro";
 import NumberedList from "./NumberedList.astro";
@@ -9,12 +11,12 @@ import PullQuote from "./PullQuote.astro";
 import SidebarBox from "./SidebarBox.astro";
 import Timeline from "./Timeline.astro";
 import TopicDivider from "./TopicDivider.astro";
-import type { FindBookmark, MagazineBlock } from "../../lib/magazine";
+import type { FindEntry, MagazineBlock } from "../../lib/magazine";
 
 type Props = {
   block: MagazineBlock;
   anchor: string;
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const { block, anchor, find } = Astro.props;
@@ -30,3 +32,5 @@ const { block, anchor, find } = Astro.props;
 {block.type === "timeline" && <Timeline block={block} anchor={anchor} find={find} />}
 {block.type === "topic-divider" && <TopicDivider block={block} anchor={anchor} />}
 {block.type === "sidebar-box" && <SidebarBox block={block} anchor={anchor} find={find} />}
+{block.type === "corner" && <Corner block={block} anchor={anchor} />}
+{block.type === "closer" && <Closer block={block} anchor={anchor} find={find} />}

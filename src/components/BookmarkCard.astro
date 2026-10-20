@@ -1,22 +1,34 @@
 ---
-import { ArrowUpRightIcon, CheckIcon, ChevronDownIcon, CopyIcon, ImagesIcon, InboxIcon, ZapIcon } from "lucide-react";
+import {
+  ArrowUpRightIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CopyIcon,
+  ImagesIcon,
+  InboxIcon,
+  RadarIcon,
+  ZapIcon,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { LinkCard } from "./LinkCard";
 import { PostBody } from "./PostBody";
 import { TopicTile } from "./TopicTile";
-import type { Bookmark } from "../lib/bookmarks";
 import { cardKind } from "../lib/card-kind";
 import { copyText } from "../lib/copy";
+import { langOf } from "../lib/lang";
 import { listedLinks, postParts } from "../lib/media";
+import type { Post } from "../lib/posts";
 import { TOPIC_LABELS } from "../lib/topics";
 
 type Props = {
-  bookmark: Bookmark;
+  bookmark: Post;
 };
 
 const { bookmark } = Astro.props;
-const { id, url, author, postedAt, savedAt, topic, shelfLife, tldr, summary, keyPoints, action, links } = bookmark;
+const { id, url, author, postedAt, savedAt, topic, shelfLife, tldr, summary, keyPoints, action, links, source } =
+  bookmark;
+const scan = source === "scan";
 
 const dateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });
 const isoDay = (date: Date) => date.toISOString().slice(0, 10);
@@ -32,7 +44,9 @@ const visual = cardKind(bookmark);
   data-bookmark-id={id}
   data-url={url}
   data-topic={topic}
+  data-source={scan ? "scan" : undefined}
   data-depth="full"
+  lang={langOf(tldr, summary)}
   class="group/bookmark relative touch-pan-y touch-pinch-zoom scroll-mt-6 max-sm:scroll-mt-[calc(var(--controls-height,0px)+--spacing(3))]"
 >
   <div
@@ -82,6 +96,16 @@ const visual = cardKind(bookmark);
         <span class="flex items-center justify-between gap-3">
           <span class="flex min-w-0 items-center gap-1.5 text-xs font-semibold tracking-wider uppercase">
             <span class="shrink-0 text-topic">{TOPIC_LABELS[topic]}</span>
+            {scan && (
+              <span
+                data-scan-badge
+                title="Found by the daily scan, not saved by you"
+                class="inline-flex shrink-0 items-center gap-1 rounded-full border border-brand px-1.5 py-px text-[0.6875rem] tracking-normal text-brand-ink normal-case"
+              >
+                <RadarIcon className="size-3" aria-hidden="true" />
+                Scan
+              </span>
+            )}
             {visual.kind === "link" && (
               <>
                 <span aria-hidden="true" class="text-muted-foreground/60 max-sm:hidden">
@@ -103,7 +127,7 @@ const visual = cardKind(bookmark);
           </span>
           <span class="flex shrink-0 items-center gap-2 text-xs text-muted-foreground tabular-nums">
             <span>
-              <span class="max-sm:hidden">Saved </span>
+              <span class="max-sm:hidden">{scan ? "Found " : "Saved "}</span>
               <time datetime={savedAt.toISOString()}>{dateFormat.format(savedAt)}</time>
               {postedOtherDay && (
                 <span class="max-sm:hidden">

@@ -1,0 +1,83 @@
+{
+  "date": "2026-02-13",
+  "title": "Two beaks and a green star",
+  "subtitle": "What the morning scan found beyond the screen, next to the week's saves",
+  "editor_note": "Most of this issue is not about agents at all. That is the point of the scan: a few things worth knowing, picked for you.",
+  "theme": {
+    "palette": "forest",
+    "fonts": "serif-sans"
+  },
+  "sections": [
+    {
+      "type": "cover-story",
+      "scan": "3000000000000000001",
+      "kicker": "Open Window",
+      "headline": "Beaks were invented twice",
+      "deck": "Two fossil birds, one rock bed, two separate answers to the same problem.",
+      "source_label": "Nature",
+      "tags": ["new-to-you"]
+    },
+    {
+      "type": "corner",
+      "corner": "lead"
+    },
+    {
+      "type": "feature",
+      "bookmark": "1000000000000000001",
+      "why": "Your agents copy what they see. A plan first is the cheapest guardrail.",
+      "tags": ["from-your-saves"]
+    },
+    {
+      "type": "corner",
+      "corner": "japan-desk",
+      "label": "日本から"
+    },
+    {
+      "type": "brief-grid",
+      "headline": "東京と宇宙から",
+      "columns": 2,
+      "variant": "plain",
+      "items": [
+        {
+          "bookmark": "1000000000000000002",
+          "note": "ローカルファーストの勉強会、次回は三月です。"
+        },
+        {
+          "scan": "3000000000000000002",
+          "note": "炭素の多い大気が緑色の光を生みます。",
+          "source_label": "NHK",
+          "why": "観測データの読み方が変わる発見です。"
+        }
+      ]
+    },
+    {
+      "type": "corner",
+      "corner": "open-window",
+      "deck": "Worth knowing, whatever you work on."
+    },
+    {
+      "type": "numbered-list",
+      "headline": "Beyond the screen",
+      "variant": "compact",
+      "items": [
+        {
+          "scan": "3000000000000000003",
+          "note": "长期资助让基础研究不必追逐短期成果。",
+          "tags": ["unverified", "new-voice"]
+        },
+        {
+          "bookmark": "1000000000000000003"
+        }
+      ]
+    },
+    {
+      "type": "corner",
+      "corner": "kicker"
+    },
+    {
+      "type": "closer",
+      "scan": "3000000000000000004",
+      "note": "Every light on the coast, drawn by one hand."
+    }
+  ]
+}

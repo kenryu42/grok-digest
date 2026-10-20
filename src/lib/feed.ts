@@ -1,6 +1,7 @@
 import type { Bookmark, PostLink } from "./bookmarks.ts";
 import { isTopic } from "./filter.ts";
 import { listedLinks, postParts, textPieces } from "./media.ts";
+import type { PostSource } from "./posts.ts";
 import { TOPIC_LABELS, type Topic } from "./topics.ts";
 
 type FeedItem = {
@@ -9,8 +10,12 @@ type FeedItem = {
   description: string;
   content: string;
   pubDate: Date;
-  categories: [string];
+  categories: string[];
 };
+
+type FeedPost = Bookmark & { source?: PostSource };
+
+const SCAN_CATEGORY = "Scan";
 
 export type FeedConfig = {
   title: string;
@@ -47,7 +52,7 @@ export function feedConfig({
   origin,
   base,
 }: {
-  bookmarks: readonly Bookmark[];
+  bookmarks: readonly FeedPost[];
   topic: Topic | null;
   origin: string;
   base: string;
@@ -86,7 +91,7 @@ function linkedText(text: string): string {
     .join("");
 }
 
-function feedItem(bookmark: Bookmark, page: URL): FeedItem {
+function feedItem(bookmark: FeedPost, page: URL): FeedItem {
   const { author, tldr, summary, text, keyPoints, action, links, topic, url, savedAt, id } = bookmark;
   const link = cardUrl(page, id);
   const points = keyPoints.map((point) => `<li>${escapeHtml(point)}</li>`).join("");
@@ -116,7 +121,7 @@ function feedItem(bookmark: Bookmark, page: URL): FeedItem {
       .filter((part) => part !== "")
       .join(""),
     pubDate: savedAt,
-    categories: [TOPIC_LABELS[topic]],
+    categories: bookmark.source === "scan" ? [TOPIC_LABELS[topic], SCAN_CATEGORY] : [TOPIC_LABELS[topic]],
   };
 }
 

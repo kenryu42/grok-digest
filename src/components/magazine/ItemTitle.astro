@@ -1,16 +1,21 @@
 ---
-import { cardHref } from "../../lib/paths";
+import { langOf } from "../../lib/lang";
+import type { Post } from "../../lib/posts";
+import { postLink } from "../../lib/paths";
 
 type Props = {
-  id: string;
+  post: Post;
   text: string;
 };
 
-const { id, text } = Astro.props;
+const { post, text } = Astro.props;
 ---
 
-<h4 class="font-(family-name:--issue-heading) text-[1.1875rem] leading-snug font-semibold text-balance">
-  <a class="decoration-brand underline-offset-4 hover:underline" href={cardHref(id)}>
+<h4
+  lang={langOf(text)}
+  class="font-(family-name:--issue-heading) text-[1.1875rem] leading-snug font-semibold text-balance"
+>
+  <a class="decoration-brand underline-offset-4 hover:underline" {...postLink(post)}>
     {text}
   </a>
 </h4>

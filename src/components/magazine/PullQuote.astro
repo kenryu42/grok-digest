@@ -1,15 +1,16 @@
 ---
 import Block from "./Block.astro";
-import type { BlockOf, FindBookmark } from "../../lib/magazine";
+import { langOf } from "../../lib/lang";
+import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 
 type Props = {
   block: BlockOf<"pull-quote">;
   anchor: string;
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const { block, anchor, find } = Astro.props;
-const { url, author } = find(block.bookmark);
+const { url, author } = find(refOf(block));
 const centered = block.variant === "centered";
 ---
 
@@ -20,7 +21,7 @@ const centered = block.variant === "centered";
       centered ? "mx-auto items-center text-center" : "border-l-4 border-brand pl-5",
     ]}
   >
-    <blockquote cite={url}>
+    <blockquote cite={url} lang={langOf(block.quote)}>
       <p class="font-(family-name:--issue-heading) text-[1.75rem] leading-snug text-balance text-brand-ink italic sm:text-[2rem]">
         “{block.quote}”
       </p>

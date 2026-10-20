@@ -1,0 +1,43 @@
+---
+import Block from "./Block.astro";
+import ItemMeta from "./ItemMeta.astro";
+import ItemTitle from "./ItemTitle.astro";
+import { langOf } from "../../lib/lang";
+import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
+import { postImages } from "../../lib/media";
+
+type Props = {
+  block: BlockOf<"closer">;
+  anchor: string;
+  find: FindEntry;
+};
+
+const { block, anchor, find } = Astro.props;
+const post = find(refOf(block));
+const [image] = block.variant === "photo" ? postImages(post) : [];
+---
+
+<Block block={block} anchor={anchor}>
+  <article class="mx-auto flex max-w-xl flex-col items-center gap-3 text-center text-[0.94em]">
+    {image !== undefined && (
+      <img
+        src={image.url}
+        alt={image.alt}
+        loading="lazy"
+        decoding="async"
+        class="aspect-square w-40 rounded-xl bg-muted object-cover"
+      />
+    )}
+    <ItemTitle post={post} text={block.headline ?? post.tldr} />
+    {block.note !== undefined && (
+      <p lang={langOf(block.note)} class="text-pretty text-foreground/85">
+        {block.note}
+      </p>
+    )}
+    <ItemMeta meta={block} />
+    <p class="font-sans text-sm text-muted-foreground">@{post.author.handle}</p>
+    <span aria-hidden="true" class="text-brand">
+      ∎
+    </span>
+  </article>
+</Block>

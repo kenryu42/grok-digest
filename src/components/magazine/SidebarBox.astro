@@ -1,17 +1,17 @@
 ---
 import { ZapIcon } from "lucide-react";
 import Block from "./Block.astro";
-import type { BlockOf, FindBookmark } from "../../lib/magazine";
-import { cardHref } from "../../lib/paths";
+import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
+import { postLink } from "../../lib/paths";
 
 type Props = {
   block: BlockOf<"sidebar-box">;
   anchor: string;
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const { block, anchor, find } = Astro.props;
-const bookmark = find(block.bookmark);
+const post = find(refOf(block));
 ---
 
 <Block block={block} anchor={anchor}>
@@ -27,13 +27,13 @@ const bookmark = find(block.bookmark);
       <ZapIcon className="size-4 fill-brand text-brand-ink" aria-hidden="true" />
       {block.headline ?? "Try this"}
     </p>
-    <p class="text-[1.05em] font-medium text-pretty">{bookmark.action}</p>
+    <p class="text-[1.05em] font-medium text-pretty">{post.action}</p>
     <p class="font-sans text-sm text-muted-foreground">
       From{" "}
-      <a class="underline decoration-border underline-offset-4 hover:decoration-brand" href={cardHref(bookmark.id)}>
-        “{bookmark.tldr}”
+      <a class="underline decoration-border underline-offset-4 hover:decoration-brand" {...postLink(post)}>
+        “{post.tldr}”
       </a>{" "}
-      by @{bookmark.author.handle}
+      by @{post.author.handle}
     </p>
   </aside>
 </Block>

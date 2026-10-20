@@ -1,0 +1,97 @@
+[
+  {
+    "id": "3000000000000000001",
+    "url": "https://x.com/sample_science/status/3000000000000000001",
+    "author": {
+      "name": "Science Desk (sample)",
+      "handle": "sample_science"
+    },
+    "posted_at": "2026-02-12",
+    "saved_at": "2026-02-12T08:03:00+09:00",
+    "topic": "science",
+    "shelf_life": "evergreen",
+    "tldr": "Two fossil birds grew beaks on separate branches",
+    "summary": "Sample scan. A made-up report that beaks evolved twice in early birds, so the beak is not one invention.",
+    "text": "Two birds, two beaks, one rock bed. https://t.co/Smpl0000001",
+    "key_points": ["Beaks arose at least twice."],
+    "action": "",
+    "links": [
+      {
+        "title": "Sample paper: convergent beaks",
+        "url": "https://example.com/beaks",
+        "short": "https://t.co/Smpl0000001"
+      }
+    ],
+    "media": [],
+    "pick": true
+  },
+  {
+    "id": "3000000000000000002",
+    "url": "https://x.com/sample_nhk_jp/status/3000000000000000002",
+    "author": {
+      "name": "サンプル報道 (sample)",
+      "handle": "sample_nhk_jp"
+    },
+    "posted_at": "2026-02-12",
+    "saved_at": "2026-02-12T08:05:00+09:00",
+    "topic": "science",
+    "shelf_life": "evergreen",
+    "tldr": "緑色に光る白色矮星、大気の炭素が原因と判明",
+    "summary": "サンプルのスキャン。架空の研究チームが、緑色に見える白色矮星の大気に炭素が多いことを示したという内容です。",
+    "text": "白色矮星が緑色に見える理由がわかりました。 https://t.co/Smpl0000002",
+    "key_points": [],
+    "action": "",
+    "links": [
+      {
+        "title": "サンプル: 研究発表",
+        "url": "https://example.com/white-dwarf",
+        "short": "https://t.co/Smpl0000002"
+      }
+    ],
+    "media": [],
+    "pick": true
+  },
+  {
+    "id": "3000000000000000003",
+    "url": "https://x.com/sample_zh_news/status/3000000000000000003",
+    "author": {
+      "name": "科学简讯 (sample)",
+      "handle": "sample_zh_news"
+    },
+    "posted_at": "2026-02-12",
+    "saved_at": "2026-02-12T08:07:00+09:00",
+    "topic": "economics",
+    "shelf_life": "evergreen",
+    "tldr": "年轻研究人员将获得十五年的长期资助",
+    "summary": "示例扫描。一则虚构的消息：为年轻研究人员提供长达十五年的稳定资助，让他们可以做长期的基础研究。",
+    "text": "",
+    "key_points": [],
+    "action": "",
+    "links": [],
+    "media": []
+  },
+  {
+    "id": "3000000000000000004",
+    "url": "https://x.com/sample_history/status/3000000000000000004",
+    "author": {
+      "name": "Old Maps (sample)",
+      "handle": "sample_history"
+    },
+    "posted_at": "2026-02-12",
+    "saved_at": "2026-02-12T08:09:00+09:00",
+    "topic": "history",
+    "shelf_life": "evergreen",
+    "tldr": "A harbor chart from 1890 marks every lighthouse by hand",
+    "summary": "Sample scan. A made-up archive post showing a hand-drawn harbor chart with each light and its color.",
+    "text": "",
+    "key_points": [],
+    "action": "",
+    "links": [
+      {
+        "title": "Sample archive: harbor charts",
+        "url": "https://example.com/harbor"
+      }
+    ],
+    "media": []
+  }
+]

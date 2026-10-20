@@ -5,14 +5,14 @@ import {
   issueShortDateLabel,
   sectionHeading,
   themeAttributes,
-  type FindBookmark,
+  type FindEntry,
   type PublishedIssue,
 } from "../../lib/magazine";
 import { issueHref } from "../../lib/paths";
 
 type Props = {
   issues: readonly PublishedIssue[];
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const LEAD_COVER_SIZES = "(min-width: 40rem) 32rem, 100vw";

@@ -1,9 +1,9 @@
 ---
 import IssueArchive from "../../components/magazine/IssueArchive.astro";
 import MagazinePage from "../../components/magazine/MagazinePage.astro";
-import { findBookmark, issues } from "../../lib/load-magazine";
+import { findEntry, issues } from "../../lib/load-magazine";
 ---
 
 <MagazinePage pageTitle="Magazine" description="A daily magazine made from the posts saved from X.">
-  <IssueArchive issues={issues} find={findBookmark} />
+  <IssueArchive issues={issues} find={findEntry} />
 </MagazinePage>

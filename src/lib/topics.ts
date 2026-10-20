@@ -5,6 +5,12 @@ export const TOPICS = [
   "startups-business",
   "japan-tech",
   "design",
+  "science",
+  "world",
+  "culture",
+  "history",
+  "economics",
+  "health",
   "other",
 ] as const;
 
@@ -17,5 +23,11 @@ export const TOPIC_LABELS: Record<Topic, string> = {
   "startups-business": "Startups & business",
   "japan-tech": "Japan tech",
   design: "Design",
+  science: "Science",
+  world: "World",
+  culture: "Culture",
+  history: "History",
+  economics: "Economics",
+  health: "Health",
   other: "Other",
 };

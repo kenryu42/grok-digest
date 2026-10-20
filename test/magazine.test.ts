@@ -7,12 +7,13 @@ import {
   parseMagazine,
   parseMagazineIssue,
 } from "../src/lib/magazine.ts";
-import { bookmarkFinder, indexBookmarks, issueWarnings, readableIssue } from "../src/lib/magazine-check.ts";
+import { entryFinder, issueWarnings, readableIssue } from "../src/lib/magazine-check.ts";
 import { magazineFeedConfig } from "../src/lib/magazine-feed.ts";
+import { postFinder } from "../src/lib/posts.ts";
 import samples from "../template/data/bookmarks.json";
 
 const bookmarks = parseBookmarks({ raw: samples, source: "data/bookmarks.json" });
-const byId = indexBookmarks(bookmarks);
+const byId = postFinder(bookmarks, []);
 const [agents, tokyo, design] = samples.map(({ id }) => id);
 const SOURCE = "data/magazine/2026-10-19.json";
 const QUOTE = "We let the agent write a plan,\n and then we wait.";
@@ -62,6 +63,8 @@ const allBlocks = withSections(
   { type: "timeline", items: [{ bookmark: design }, { bookmark: tokyo, label: "Meetup", note: "Then" }] },
   { type: "topic-divider", topic: "design", variant: "band" },
   { type: "sidebar-box", bookmark: agents, headline: "Try this" },
+  { type: "corner", corner: "kicker" },
+  { type: "closer", bookmark: design, note: "To end on." },
 );
 
 describe("magazine issue schema", () => {
@@ -71,6 +74,7 @@ describe("magazine issue schema", () => {
         type: "cover-story",
         bookmark: agents,
         headline: "Plan, then wait",
+        tags: [],
         variant: "stacked",
         emphasis: "normal",
         span: "full",
@@ -285,7 +289,7 @@ describe("magazineFeedConfig", () => {
     const parsed = parse({ ...issue, title: "Plans & <waits>", subtitle: "A <b>bold</b> week" });
     const feed = magazineFeedConfig({
       issues: [parsed],
-      find: bookmarkFinder(bookmarks),
+      find: entryFinder(byId),
       origin: "https://example.github.io",
       base: "/grok-digest",
     });

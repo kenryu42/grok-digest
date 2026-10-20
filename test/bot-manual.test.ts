@@ -1,12 +1,15 @@
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
-import { parseBookmarks } from "../src/lib/bookmarks.ts";
+import { parseBookmarks, parseScans } from "../src/lib/bookmarks.ts";
 import { OVERRIDABLE_COMPONENTS, siteConfigSchema } from "../src/lib/custom.ts";
 import {
+  CORNER_LABELS,
+  MAGAZINE_CORNERS,
   MAGAZINE_EMPHASES,
   MAGAZINE_FONTS,
   MAGAZINE_PALETTES,
   MAGAZINE_SPANS,
+  MAGAZINE_TAGS,
   magazineBlockSchema,
   magazineIssueSchema,
 } from "../src/lib/magazine.ts";
@@ -73,5 +76,26 @@ describe("BOT.md", () => {
     }
     for (const name of [...MAGAZINE_PALETTES, ...MAGAZINE_FONTS]) expect(manual).toContain(`| \`${name}\``);
     for (const emphasis of MAGAZINE_EMPHASES) expect(manual).toContain(`\`${emphasis}\``);
+  });
+
+  it("shows a scan entry the build accepts, as a strong pick with a source link", () => {
+    const example = /### The scan entry[\s\S]*?```json\n([\s\S]*?)\n```/.exec(manual)?.[1];
+    const [scan] = parseScans({ raw: [JSON.parse(example ?? "")], source: "BOT.md" });
+    expect(scan?.pick).toBe(true);
+    expect(scan?.links).not.toHaveLength(0);
+  });
+
+  it("shows an issue laid out in corners that passes its own balance checks", () => {
+    const example = /An issue laid out this way:\s+```json\n([\s\S]*?)\n```/.exec(manual)?.[1];
+    const issue = magazineIssueSchema.parse(JSON.parse(example ?? ""));
+    expect(issue.sections.some(({ type }) => type === "corner")).toBe(true);
+    const warnings = issueWarnings({ issue, bookmarks: [], latestToday: issue.date });
+    expect(warnings.filter(({ message }) => !/is not a (bookmark|scan) id/.test(message))).toEqual([]);
+  });
+
+  it("lists every corner with its label, and every tag", () => {
+    for (const corner of MAGAZINE_CORNERS) expect(manual).toContain(`| \`${corner}\``);
+    for (const corner of MAGAZINE_CORNERS) expect(manual).toContain(CORNER_LABELS[corner]);
+    for (const tag of MAGAZINE_TAGS) expect(manual).toContain(`\`${tag}\``);
   });
 });

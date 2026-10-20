@@ -2,27 +2,28 @@
 import IssueBlock from "./IssueBlock.astro";
 import IssueCover from "./IssueCover.astro";
 import {
+  issueContents,
   issueDateLabel,
-  sectionHeading,
   themeAttributes,
-  type FindBookmark,
+  type FindEntry,
   type PublishedIssue,
 } from "../../lib/magazine";
+import { langOf } from "../../lib/lang";
 import { siteConfig } from "../../lib/site-config";
 
 type Props = {
   issue: PublishedIssue;
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const { issue, find } = Astro.props;
 const { date, number, title, subtitle, editor_note: editorNote, theme, sections } = issue;
 const COVER_SIZES = "(min-width: 72rem) 26rem, (min-width: 40rem) 36vw, 15rem";
 const anchorOf = (index: number): string => `s-${index + 1}`;
-const contents = sections.flatMap((block, index) => {
-  const heading = sectionHeading(block, find);
-  return heading === undefined ? [] : [{ heading, anchor: anchorOf(index) }];
-});
+const groups = issueContents(sections, find, anchorOf);
+const contents = groups.flatMap(({ entries }) => entries);
+const numbered = new Map(contents.map(({ anchor }, index) => [anchor, index + 1]));
+const linkClass = "decoration-brand underline-offset-4 hover:underline";
 ---
 
 <article
@@ -46,11 +47,16 @@ const contents = sections.flatMap((block, index) => {
           No. {number} · <time datetime={date}>{issueDateLabel(date)}</time>
         </span>
       </p>
-      <h2 class="font-(family-name:--issue-heading) text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
+      <h2
+        lang={langOf(title)}
+        class="font-(family-name:--issue-heading) text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl"
+      >
         {title}
       </h2>
       {subtitle !== undefined && (
-        <p class="max-w-3xl text-lg text-pretty text-muted-foreground sm:text-xl">{subtitle}</p>
+        <p lang={langOf(subtitle)} class="max-w-3xl text-lg text-pretty text-muted-foreground sm:text-xl">
+          {subtitle}
+        </p>
       )}
     </div>
   </header>
@@ -58,7 +64,10 @@ const contents = sections.flatMap((block, index) => {
     {(editorNote !== undefined || contents.length > 1) && (
       <div class="grid gap-8 border-b border-border pb-10 min-[56.25rem]:grid-cols-[1.6fr_1fr]">
         {editorNote !== undefined && (
-          <p class="border-l-4 border-brand pl-4 text-pretty whitespace-pre-line text-foreground/90 italic">
+          <p
+            lang={langOf(editorNote)}
+            class="border-l-4 border-brand pl-4 text-pretty whitespace-pre-line text-foreground/90 italic"
+          >
             {editorNote}
           </p>
         )}
@@ -70,16 +79,31 @@ const contents = sections.flatMap((block, index) => {
             >
               In this issue
             </h3>
-            <ol class="flex flex-col gap-1.5 font-sans text-sm">
-              {contents.map(({ heading, anchor }, index) => (
-                <li class="flex gap-3">
-                  <span class="w-5 shrink-0 text-right text-muted-foreground tabular-nums">{index + 1}</span>
-                  <a class="decoration-brand underline-offset-4 hover:underline" href={`#${anchor}`}>
-                    {heading}
-                  </a>
-                </li>
-              ))}
-            </ol>
+            {groups.map(({ corner, entries }) => (
+              <div data-contents-group class="flex flex-col gap-1.5">
+                {corner !== undefined && (
+                  <h4 class="mt-2 font-sans text-[0.6875rem] font-bold tracking-[0.22em] text-muted-foreground uppercase">
+                    <a class={linkClass} href={`#${corner.anchor}`}>
+                      {corner.heading}
+                    </a>
+                  </h4>
+                )}
+                {entries.length > 0 && (
+                  <ol class="flex flex-col gap-1.5 font-sans text-sm">
+                    {entries.map(({ heading, anchor }) => (
+                      <li class="flex gap-3">
+                        <span class="w-5 shrink-0 text-right text-muted-foreground tabular-nums">
+                          {numbered.get(anchor)}
+                        </span>
+                        <a class={linkClass} href={`#${anchor}`} lang={langOf(heading)}>
+                          {heading}
+                        </a>
+                      </li>
+                    ))}
+                  </ol>
+                )}
+              </div>
+            ))}
           </nav>
         )}
       </div>

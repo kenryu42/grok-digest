@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from "react";
 import { flushSync } from "react-dom";
 import type { PageSettings } from "./custom.ts";
-import { DEFAULT_FILTER, filterSearch, parseFilter, type Filter, type Sort } from "./filter.ts";
+import { DEFAULT_FILTER, filterSearch, parseFilter, type Filter, type Sort, type SourceFilter } from "./filter.ts";
 import { morph, prefersReducedMotion, stopMotion, type Anchor } from "./morph.ts";
 import { matchingIds, sortedIds, type SearchEntry } from "./search.ts";
 import { removeRequest } from "./remove-request.ts";
@@ -42,6 +42,9 @@ export type Controls = {
   chooseSort: (sort: Sort) => void;
   showDone: boolean;
   setShowDone: (showDone: boolean) => void;
+  hasScans: boolean;
+  source: SourceFilter;
+  chooseSource: (source: SourceFilter) => void;
   filtersShown: boolean;
   toggleFilters: () => void;
   filtersChanged: boolean;
@@ -189,12 +192,13 @@ export function useBookmarkControls({ entries, settings }: Props) {
   const undoRef = useRef(undo);
   const openedRef = useRef(new Set<string>());
 
-  const { query, topic, sort, showDone } = filter;
+  const { query, topic, sort, showDone, source } = filter;
   const searching = query.trim() !== "";
   const showSearch = searchOpen || query !== "";
   const visible = useMemo(() => matchingIds({ entries, filter, done }), [entries, filter, done]);
   const order = useMemo(() => sortedIds(entries, sort), [entries, sort]);
   const topicsInUse = useMemo(() => TOPICS.filter((t) => entries.some((entry) => entry.topic === t)), [entries]);
+  const hasScans = useMemo(() => entries.some((entry) => entry.source === "scan"), [entries]);
 
   const doneCount = entries.filter(({ id }) => done.has(id)).length;
   const shownDone = [...visible].filter((id) => done.has(id)).length;
@@ -614,9 +618,16 @@ export function useBookmarkControls({ entries, settings }: Props) {
     },
     showDone,
     setShowDone: (next) => update({ showDone: next }),
+    hasScans,
+    source,
+    chooseSource: (next) => {
+      update({ source: next });
+      window.scrollTo({ top: 0 });
+    },
     filtersShown: filtersOpen,
     toggleFilters: () => setFiltersOpen(!filtersOpen),
-    filtersChanged: sort !== DEFAULT_FILTER.sort || showDone !== DEFAULT_FILTER.showDone,
+    filtersChanged:
+      sort !== DEFAULT_FILTER.sort || showDone !== DEFAULT_FILTER.showDone || source !== DEFAULT_FILTER.source,
     barRef,
     shown: visible.size,
     shownDone,

@@ -4,17 +4,19 @@ Reference for editing a component ejected with `bunx grok-digest eject <Componen
 
 The page's parts are [Astro components](https://docs.astro.build/en/basics/astro-components/), ejected as `.astro` files:
 
-| Component      | What it is                                                             | It gets                                               |
-| -------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
-| `Header`       | The mascot, the title, and the text size, dark mode and Swipe buttons. | `title` and `swipeMode`, from the settings, and `nav` |
-| `Footer`       | The feed links and the notes at the bottom.                            | `feed`                                                |
-| `BookmarkCard` | One bookmark's card. The page renders one per bookmark.                | `bookmark`, the parsed entry                          |
+| Component      | What it is                                                              | It gets                                               |
+| -------------- | ----------------------------------------------------------------------- | ----------------------------------------------------- |
+| `Header`       | The mascot, the title, and the text size, dark mode and Swipe buttons.  | `title` and `swipeMode`, from the settings, and `nav` |
+| `Footer`       | The feed links and the notes at the bottom.                             | `feed`                                                |
+| `BookmarkCard` | One bookmark's card. The page renders one per bookmark and strong pick. | `bookmark`, the parsed entry                          |
+
+`bookmark` also has `source`, `"bookmark"` or `"scan"` for a strong pick from `data/scans.json`, and `onPage`, always `true` here. The package's card shows a Scan badge and "Found" in place of "Saved" for a scan, and marks its `li` with `data-source="scan"`, which swipe mode reads; keep that attribute in an ejected card so a pick keeps its badge there. An ejected card from before scans shows a pick like a bookmark.
 
 `nav` is a link to the site's other page, `{ href, label }`, or `undefined`. On the bookmarks page it is the Magazine link, and it is `undefined` until the first magazine issue exists. On the magazine's pages it links back to the bookmarks, and `swipeMode` is `false`. An ejected `Header` without `nav` shows no such link.
 
 `feed` is `"bookmarks"` (the default) or `"magazine"`. The bookmarks page leaves it out, so the footer links the bookmark feeds; the magazine's pages pass `"magazine"`, so it links `magazine/rss.xml`. An ejected `Footer` without `feed` links the bookmark feeds on every page.
 
-The magazine's pages and blocks cannot be ejected. The package owns how an issue looks, and the bot changes it only through the issue's data: its theme, blocks, variants, and emphasis, described in `BOT.md` under "Write a magazine issue". `custom/theme.css` reaches them, though: an issue is an `article[data-issue]` with `data-palette` and `data-fonts`, and each block is a `section[data-block]` with `data-variant`, `data-emphasis`, and `data-span`. A palette is a set of CSS variables on `[data-palette="<name>"]`: `--palette-hue` and `--palette-chroma`, from which the page works out `--brand` and the rest, and `--issue-heading` and `--issue-body` for the fonts. Setting one in `custom/theme.css`, such as `[data-palette="forest"] { --palette-hue: 160; }`, changes every issue that uses that palette.
+The magazine's pages and blocks cannot be ejected. The package owns how an issue looks, and the bot changes it only through the issue's data: its theme, blocks, variants, and emphasis, described in `BOT.md` under "Write a magazine issue". `custom/theme.css` reaches them, though: an issue is an `article[data-issue]` with `data-palette` and `data-fonts`, and each block is a `section[data-block]` with `data-variant`, `data-emphasis`, and `data-span`. A corner's header is `[data-corner="<corner id>"]`, an item's tags are `[data-tag="<tag>"]`, its "Why it matters" line is `[data-why]`, and its source label is `[data-source-label]`. A palette is a set of CSS variables on `[data-palette="<name>"]`: `--palette-hue` and `--palette-chroma`, from which the page works out `--brand` and the rest, and `--issue-heading` and `--issue-body` for the fonts. Setting one in `custom/theme.css`, such as `[data-palette="forest"] { --palette-hue: 160; }`, changes every issue that uses that palette.
 
 The controls above the cards are React components, ejected as `.tsx` files. Each gets one prop, `controls`, and must keep its named export, such as `export function FilterMenu`:
 
@@ -23,7 +25,7 @@ The controls above the cards are React components, ejected as `.tsx` files. Each
 | `ControlsLayout` | Arranges the parts below, plus the Sort and filter button and the phone-only search button. Leave a part out to hide it. |
 | `SearchField`    | The search box and its Cancel button.                                                                                    |
 | `TopicChips`     | The topic filter chips.                                                                                                  |
-| `FilterMenu`     | One row: Newest, Oldest and the Done filter.                                                                             |
+| `FilterMenu`     | One row: Newest, Oldest and the Done filter. With strong picks on the page, a second row: All, Bookmarks and Scans.      |
 | `StatusLine`     | The line that counts the bookmarks shown.                                                                                |
 | `KeyboardHints`  | The keyboard shortcuts on desktop and the swipe tip on phones.                                                           |
 | `UndoToast`      | The "Marked done" message with Undo.                                                                                     |
@@ -39,7 +41,8 @@ The controls above the cards are React components, ejected as `.tsx` files. Each
 | `topic`, `topics`, `chooseTopic(topic)`                         | The chosen topic or `null`, the topics in use, and choosing one (the chosen one again, or `null`, shows all).                                                       |
 | `sort`, `chooseSort(sort)`                                      | The order: `"newest"` or `"oldest"` saved first, and choosing one.                                                                                                  |
 | `showDone`, `setShowDone(on)`                                   | Whether done bookmarks show, and changing it. A search ignores it.                                                                                                  |
-| `filtersShown`, `toggleFilters()`, `filtersChanged`             | Whether `FilterMenu` is open, opening or closing it, and whether the sort or a filter differs from the default.                                                     |
+| `hasScans`, `source`, `chooseSource(source)`                    | Whether any strong pick from `data/scans.json` is on the page, which posts show: `"all"`, `"bookmarks"`, or `"scans"`, and choosing one.                            |
+| `filtersShown`, `toggleFilters()`, `filtersChanged`             | Whether `FilterMenu` is open, opening or closing it, and whether the sort, the Done filter, or `source` differs from the default.                                   |
 | `shown`, `shownDone`                                            | How many cards show, and how many of those are done.                                                                                                                |
 | `undoPending`, `undo()`                                         | Whether a card was just marked done, and undoing it.                                                                                                                |
 | `copyDoneRequest()`, `doneRequestCopied`                        | Copying a request for the Grok bot to remove every done bookmark, and whether it was just copied.                                                                   |
@@ -57,7 +60,7 @@ Swipe mode shows one card per screen. The package keeps its frame: the full-scre
 | `SwipeFooter` | The bottom bar: the speed reading controls, Copy, Done, Open on X, and the "Marked done" message.            |                                                |
 | `SwipeEnd`    | The screen after the last card, with Start over and Close.                                                   |                                                |
 
-`page` is one card: `id`, `author`, `topic`, `url`, `headline`, and `blocks`, its text in order. Each block has a `kind` (`"summary"`, `"point"`, `"action"`, or `"post"`) and its `text`; speed reading reads these, so `"post"` text leaves out web addresses. `links` are the post's links that are not shown inside it, each with its `url`, `title` and, when it has one that loaded, `image`. The ejected copy shows them with `LinkCard`, as the package does. `post` is the original post in order: `{ kind: "text", text }`, `{ kind: "images", images }` with each image's `url` and `alt`, and `{ kind: "link", link }` for a link shown where its short link was. The ejected copy shows it with `PostBody`. `cover` is the post's first image as `{ url, alt }`, or `undefined` when the post has none; without one, the package shows a `TopicTile` instead. `page.card` is the bookmark's card element on the page, so `SwipeCard` can show anything else that card shows.
+`page` is one card: `id`, `author`, `topic`, `scan` (whether it is a strong pick from the daily scan), `url`, `headline`, and `blocks`, its text in order. Each block has a `kind` (`"summary"`, `"point"`, `"action"`, or `"post"`) and its `text`; speed reading reads these, so `"post"` text leaves out web addresses. `links` are the post's links that are not shown inside it, each with its `url`, `title` and, when it has one that loaded, `image`. The ejected copy shows them with `LinkCard`, as the package does. `post` is the original post in order: `{ kind: "text", text }`, `{ kind: "images", images }` with each image's `url` and `alt`, and `{ kind: "link", link }` for a link shown where its short link was. The ejected copy shows it with `PostBody`. `cover` is the post's first image as `{ url, alt }`, or `undefined` when the post has none; without one, the package shows a `TopicTile` instead. `page.card` is the bookmark's card element on the page, so `SwipeCard` can show anything else that card shows.
 
 `swipe` holds swipe mode's state and what changes it:
 

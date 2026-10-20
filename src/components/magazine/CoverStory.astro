@@ -1,20 +1,23 @@
 ---
 import Block from "./Block.astro";
 import Byline from "./Byline.astro";
+import ItemMeta from "./ItemMeta.astro";
 import Kicker from "./Kicker.astro";
 import { cardKind } from "../../lib/card-kind";
-import type { BlockOf, FindBookmark } from "../../lib/magazine";
-import { cardHref } from "../../lib/paths";
+import { langOf } from "../../lib/lang";
+import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
+import { postLink } from "../../lib/paths";
 
 type Props = {
   block: BlockOf<"cover-story">;
   anchor: string;
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const { block, anchor, find } = Astro.props;
-const bookmark = find(block.bookmark);
-const visual = cardKind(bookmark);
+const post = find(refOf(block));
+const visual = cardKind(post);
+const lang = langOf(block.headline, block.deck);
 const image = visual.kind === "photo" ? visual.image : undefined;
 const overlay = image !== undefined && block.variant === "overlay";
 const split = image !== undefined && block.variant === "split";
@@ -28,20 +31,21 @@ const LAYOUT = {
 
 <Block block={block} anchor={anchor}>
   {image === undefined ? (
-    <article class="flex flex-col gap-5">
+    <article lang={lang} class="flex flex-col gap-5">
       <span aria-hidden="true" class="h-2.5 w-24 rounded-full bg-brand" />
-      <Kicker topic={bookmark.topic} text={block.kicker} />
+      <Kicker topic={post.topic} text={block.kicker} />
       <h3 class="max-w-4xl font-(family-name:--issue-heading) text-4xl leading-[1.05] font-semibold tracking-tight text-balance sm:text-6xl">
-        <a class="decoration-brand underline-offset-8 hover:underline" href={cardHref(bookmark.id)}>
+        <a class="decoration-brand underline-offset-8 hover:underline" {...postLink(post)}>
           {block.headline}
         </a>
       </h3>
       {block.deck !== undefined && <p class="max-w-3xl text-xl text-pretty text-muted-foreground">{block.deck}</p>}
-      <p class="max-w-3xl text-pretty">{bookmark.summary}</p>
-      <Byline bookmark={bookmark} />
+      <p class="max-w-3xl text-pretty">{post.summary}</p>
+      <ItemMeta meta={block} />
+      <Byline post={post} />
     </article>
   ) : (
-    <article class={LAYOUT[block.variant]}>
+    <article lang={lang} class={LAYOUT[block.variant]}>
       <div
         data-cover
         class:list={[
@@ -64,15 +68,16 @@ const LAYOUT = {
             "sm:relative sm:min-h-[30rem] sm:justify-end sm:bg-linear-to-t sm:from-black sm:via-black/85 sm:via-45% sm:to-black/30 sm:p-10 sm:text-white sm:[&_p]:text-white/85 sm:[&_span]:text-white/90",
         ]}
       >
-        <Kicker topic={bookmark.topic} text={block.kicker} />
+        <Kicker topic={post.topic} text={block.kicker} />
         <h3 class="font-(family-name:--issue-heading) text-[2rem] leading-[1.08] font-semibold tracking-tight text-balance sm:text-5xl">
-          <a class="decoration-brand underline-offset-8 hover:underline" href={cardHref(bookmark.id)}>
+          <a class="decoration-brand underline-offset-8 hover:underline" {...postLink(post)}>
             {block.headline}
           </a>
         </h3>
         {block.deck !== undefined && <p class="text-xl text-pretty text-muted-foreground">{block.deck}</p>}
-        {!overlay && <p class="text-pretty">{bookmark.summary}</p>}
-        <Byline bookmark={bookmark} />
+        {!overlay && <p class="text-pretty">{post.summary}</p>}
+        <ItemMeta meta={block} />
+        <Byline post={post} />
       </div>
     </article>
   )}

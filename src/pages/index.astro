@@ -5,12 +5,12 @@ import Header from "virtual:grok-digest/components/Header.astro";
 import issueFiles from "virtual:grok-digest/magazine";
 import { BookmarkControls } from "../components/BookmarkControls";
 import Layout from "../layouts/Layout.astro";
-import { bookmarks } from "../lib/load-bookmarks";
+import { posts } from "../lib/load-bookmarks";
 import { issueHref, siteHref } from "../lib/paths";
 import { toSearchEntry } from "../lib/search";
 import { siteConfig } from "../lib/site-config";
 
-const entries = bookmarks.map(toSearchEntry);
+const entries = posts.map(toSearchEntry);
 const { title, swipeMode } = siteConfig;
 const nav = issueFiles.length > 0 ? { href: issueHref(), label: "Magazine" } : undefined;
 ---
@@ -28,12 +28,12 @@ const nav = issueFiles.length > 0 ? { href: issueHref(), label: "Magazine" } : u
     </noscript>
 
     <main class="flex flex-1 flex-col gap-6 pb-16">
-      {bookmarks.length > 0 ? (
+      {posts.length > 0 ? (
         <>
           <BookmarkControls client:only="react" entries={entries} settings={{ swipeMode }} />
           <ul data-bookmark-list class="flex flex-col gap-4 not-data-ready:invisible sm:gap-5">
-            {bookmarks.map((bookmark) => (
-              <BookmarkCard bookmark={bookmark} />
+            {posts.map((post) => (
+              <BookmarkCard bookmark={post} />
             ))}
           </ul>
         </>

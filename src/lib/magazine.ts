@@ -1,6 +1,7 @@
 import type { ImageMetadata } from "astro";
 import { z } from "zod";
-import { parseDataFile, type Bookmark } from "./bookmarks.ts";
+import { parseDataFile } from "./bookmarks.ts";
+import type { Post, PostRef } from "./posts.ts";
 import { TOPIC_LABELS, TOPICS } from "./topics.ts";
 
 export const MAGAZINE_DIR = "magazine";
@@ -8,6 +9,40 @@ export const MAGAZINE_PALETTES = ["classic", "newsprint", "ocean", "forest", "su
 export const MAGAZINE_FONTS = ["serif", "sans", "serif-sans", "sans-serif", "mono-serif"] as const;
 export const MAGAZINE_EMPHASES = ["quiet", "normal", "loud"] as const;
 export const MAGAZINE_SPANS = ["full", "half"] as const;
+export const MAGAZINE_CORNERS = [
+  "brief",
+  "lead",
+  "your-saves",
+  "field-notes",
+  "japan-desk",
+  "adjacent",
+  "open-window",
+  "kicker",
+] as const;
+export const MAGAZINE_TAGS = ["new-to-you", "unverified", "from-your-saves", "new-voice"] as const;
+
+export type MagazineCorner = (typeof MAGAZINE_CORNERS)[number];
+export type MagazineTag = (typeof MAGAZINE_TAGS)[number];
+
+export const CORNER_LABELS: Record<MagazineCorner, string> = {
+  brief: "The Brief",
+  lead: "Lead",
+  "your-saves": "Your saves",
+  "field-notes": "Field notes",
+  "japan-desk": "Japan desk",
+  adjacent: "Adjacent",
+  "open-window": "Open Window",
+  kicker: "Kicker",
+};
+
+export const INTEREST_CORNERS: readonly MagazineCorner[] = ["brief", "lead", "field-notes", "japan-desk"];
+
+export const TAG_LABELS: Record<MagazineTag, string> = {
+  "new-to-you": "New to you",
+  unverified: "Unverified",
+  "from-your-saves": "From your saves",
+  "new-voice": "New voice",
+};
 
 const ISSUE_FILE_NAME = /^(\d{4}-\d{2}-\d{2})\.json$/;
 export const COVER_EXTENSIONS = [".jpg", ".png", ".webp"] as const;
@@ -23,7 +58,26 @@ const headline = shortText(120);
 const deck = shortText(280);
 const label = shortText(40);
 const note = shortText(200);
-const bookmarkId = z.string().trim().min(1);
+const postId = z.string().trim().min(1);
+const reference = { bookmark: postId.optional(), scan: postId.optional() };
+const itemMeta = {
+  why: note.optional(),
+  tags: z.array(z.enum(MAGAZINE_TAGS)).max(MAGAZINE_TAGS.length).default([]),
+  source_label: label.optional(),
+};
+
+type Reference = { bookmark?: string | undefined; scan?: string | undefined };
+
+type IssueSink = { addIssue: (issue: { code: "custom"; message: string }) => void };
+
+function oneReference({ bookmark, scan }: Reference, ctx: IssueSink): void {
+  if ((bookmark === undefined) === (scan === undefined)) {
+    ctx.addIssue({ code: "custom", message: 'give either "bookmark" or "scan", not both' });
+  }
+}
+
+export const refOf = ({ bookmark, scan }: Reference): PostRef =>
+  scan === undefined ? { source: "bookmark", id: bookmark ?? "" } : { source: "scan", id: scan };
 
 const blockStyle = <const Variants extends readonly [string, ...string[]]>(variants: Variants) => ({
   variant: z.enum(variants).default(variants[0]),
@@ -39,64 +93,77 @@ export const ITEM_LIMITS = {
   timeline: { min: 2, max: 12 },
 } as const;
 
-const items = <Shape extends z.ZodRawShape>(shape: Shape, { min, max }: { min: number; max: number }) =>
-  z
-    .array(z.strictObject({ bookmark: bookmarkId, ...shape }))
-    .min(min)
-    .max(max);
+const items = <Item extends z.ZodType<Reference>>(item: Item, { min, max }: { min: number; max: number }) =>
+  z.array(item.superRefine(oneReference)).min(min).max(max);
+
+const item = <Shape extends z.ZodRawShape>(shape: Shape) => z.strictObject({ ...reference, ...shape, ...itemMeta });
+
+const fixedStyle = {
+  variant: z.enum(["standard"]).default("standard"),
+  emphasis: z.enum(["normal"]).default("normal"),
+  span: z.enum(["full"]).default("full"),
+};
 
 const blockSchemas = [
-  z.strictObject({
-    type: z.literal("cover-story"),
-    bookmark: bookmarkId,
-    kicker: label.optional(),
-    headline,
-    deck: deck.optional(),
-    ...blockStyle(["stacked", "overlay", "split"]),
-  }),
-  z.strictObject({
-    type: z.literal("feature"),
-    bookmark: bookmarkId,
-    headline: headline.optional(),
-    deck: deck.optional(),
-    ...blockStyle(["standard", "aside", "drop-cap"]),
-  }),
-  z.strictObject({
-    type: z.literal("pull-quote"),
-    bookmark: bookmarkId,
-    quote: shortText(300),
-    ...blockStyle(["centered", "bar"]),
-  }),
+  z
+    .strictObject({
+      type: z.literal("cover-story"),
+      ...reference,
+      kicker: label.optional(),
+      headline,
+      deck: deck.optional(),
+      ...itemMeta,
+      ...blockStyle(["stacked", "overlay", "split"]),
+    })
+    .superRefine(oneReference),
+  z
+    .strictObject({
+      type: z.literal("feature"),
+      ...reference,
+      headline: headline.optional(),
+      deck: deck.optional(),
+      ...itemMeta,
+      ...blockStyle(["standard", "aside", "drop-cap"]),
+    })
+    .superRefine(oneReference),
+  z
+    .strictObject({
+      type: z.literal("pull-quote"),
+      ...reference,
+      quote: shortText(300),
+      ...blockStyle(["centered", "bar"]),
+    })
+    .superRefine(oneReference),
   z.strictObject({
     type: z.literal("photo-spread"),
     headline: headline.optional(),
-    items: items({ caption: note.optional() }, ITEM_LIMITS["photo-spread"]),
+    items: items(item({ caption: note.optional() }), ITEM_LIMITS["photo-spread"]),
     ...blockStyle(["grid", "mosaic", "filmstrip"]),
   }),
   z.strictObject({
     type: z.literal("brief-grid"),
     headline: headline.optional(),
     columns: z.literal([2, 3, 4]).default(2),
-    items: items({ headline: headline.optional(), note: note.optional() }, ITEM_LIMITS["brief-grid"]),
+    items: items(item({ headline: headline.optional(), note: note.optional() }), ITEM_LIMITS["brief-grid"]),
     ...blockStyle(["cards", "plain"]),
   }),
   z.strictObject({
     type: z.literal("numbered-list"),
     headline: headline.optional(),
-    items: items({ headline: headline.optional(), note: note.optional() }, ITEM_LIMITS["numbered-list"]),
+    items: items(item({ headline: headline.optional(), note: note.optional() }), ITEM_LIMITS["numbered-list"]),
     ...blockStyle(["large", "compact"]),
   }),
   z.strictObject({
     type: z.literal("compare"),
     headline: headline.optional(),
-    items: items({ label: label.optional(), note: note.optional() }, ITEM_LIMITS.compare),
+    items: items(item({ label: label.optional(), note: note.optional() }), ITEM_LIMITS.compare),
     verdict: deck.optional(),
     ...blockStyle(["cards", "versus"]),
   }),
   z.strictObject({
     type: z.literal("timeline"),
     headline: headline.optional(),
-    items: items({ label: label.optional(), note: note.optional() }, ITEM_LIMITS.timeline),
+    items: items(item({ label: label.optional(), note: note.optional() }), ITEM_LIMITS.timeline),
     ...blockStyle(["vertical", "compact"]),
   }),
   z.strictObject({
@@ -105,12 +172,31 @@ const blockSchemas = [
     label: label.optional(),
     ...blockStyle(["rule", "band"]),
   }),
+  z
+    .strictObject({
+      type: z.literal("sidebar-box"),
+      ...reference,
+      headline: label.optional(),
+      ...blockStyle(["note", "callout"]),
+    })
+    .superRefine(oneReference),
   z.strictObject({
-    type: z.literal("sidebar-box"),
-    bookmark: bookmarkId,
-    headline: label.optional(),
-    ...blockStyle(["note", "callout"]),
+    type: z.literal("corner"),
+    corner: z.enum(MAGAZINE_CORNERS),
+    label: label.optional(),
+    deck: deck.optional(),
+    ...fixedStyle,
   }),
+  z
+    .strictObject({
+      type: z.literal("closer"),
+      ...reference,
+      headline: headline.optional(),
+      note: note.optional(),
+      ...itemMeta,
+      ...blockStyle(["text", "photo"]),
+    })
+    .superRefine(oneReference),
 ] as const;
 
 export const MAGAZINE_BLOCK_TYPES = blockSchemas.map((schema) => schema.shape.type.value);
@@ -137,7 +223,8 @@ export type BlockOf<Type extends MagazineBlockType> = Extract<MagazineBlock, { t
 export type ItemsBlock = BlockOf<keyof typeof ITEM_LIMITS>;
 export type CoveredIssue = MagazineIssue & { cover: ImageMetadata | undefined };
 export type PublishedIssue = CoveredIssue & { number: number };
-export type FindBookmark = (id: string) => Bookmark;
+export type FindEntry = (ref: PostRef) => Post;
+export type ItemMeta = { why?: string | undefined; tags: MagazineTag[]; source_label?: string | undefined };
 
 const issueFileName = (source: string): string => source.split(/[/\\]/).at(-1) ?? source;
 
@@ -215,11 +302,33 @@ export const themeAttributes = ({ palette, fonts, accent }: MagazineIssue["theme
   style: accent === undefined ? undefined : { "--issue-accent": accent },
 });
 
-export function sectionHeading(block: MagazineBlock, find: FindBookmark): string | undefined {
-  if (block.type === "pull-quote" || block.type === "sidebar-box") return undefined;
-  if (block.type === "feature") return block.headline ?? find(block.bookmark).tldr;
+export function sectionHeading(block: MagazineBlock, find: FindEntry): string | undefined {
+  if (block.type === "pull-quote" || block.type === "sidebar-box" || block.type === "corner") return undefined;
+  if (block.type === "feature" || block.type === "closer") return block.headline ?? find(refOf(block)).tldr;
   if (block.type === "topic-divider") return block.label ?? TOPIC_LABELS[block.topic];
   return block.headline;
+}
+
+export const cornerLabel = (block: BlockOf<"corner">): string => block.label ?? CORNER_LABELS[block.corner];
+
+type ContentsEntry = { heading: string; anchor: string };
+type ContentsGroup = { corner: ContentsEntry | undefined; entries: ContentsEntry[] };
+
+export function issueContents(
+  sections: readonly MagazineBlock[],
+  find: FindEntry,
+  anchorOf: (index: number) => string,
+): ContentsGroup[] {
+  const groups: ContentsGroup[] = [{ corner: undefined, entries: [] }];
+  sections.forEach((block, index) => {
+    if (block.type === "corner") {
+      groups.push({ corner: { heading: cornerLabel(block), anchor: anchorOf(index) }, entries: [] });
+      return;
+    }
+    const heading = sectionHeading(block, find);
+    if (heading !== undefined) groups.at(-1)?.entries.push({ heading, anchor: anchorOf(index) });
+  });
+  return groups.filter(({ corner, entries }) => corner !== undefined || entries.length > 0);
 }
 
 const postedDateFormat = new Intl.DateTimeFormat("en", { dateStyle: "medium", timeZone: "UTC" });

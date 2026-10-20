@@ -1,0 +1,24 @@
+---
+import ItemMeta from "./ItemMeta.astro";
+import { langOf } from "../../lib/lang";
+import type { ItemMeta as Meta } from "../../lib/magazine";
+
+type Props = {
+  item: Meta & { note?: string | undefined };
+};
+
+const { item } = Astro.props;
+const shown =
+  item.note !== undefined || item.why !== undefined || item.source_label !== undefined || item.tags.length > 0;
+---
+
+{shown && (
+  <div data-item-note class="flex min-w-0 flex-col gap-1.5">
+    {item.note !== undefined && (
+      <p lang={langOf(item.note)} class="text-[0.94em] text-pretty text-foreground/85">
+        {item.note}
+      </p>
+    )}
+    <ItemMeta meta={item} />
+  </div>
+)}

@@ -182,15 +182,72 @@ describe("validateFiles", () => {
   });
 });
 
+const scan = (id: string, extra: object = {}) => ({ ...templateSamples[0], id, ...extra });
+
+const validateIssueOf = (date: string) =>
+  validateFiles({ cwd, files: [`data/magazine/${date}.json`], now: new Date("2026-10-20") });
+
+describe("validating data/scans.json", () => {
+  it("lists scans.json among the data files when it exists", async () => {
+    await writeData({ "bookmarks.json": "[]", "scans.json": "[]" });
+    expect(await defaultDataFiles({ cwd, dataDir: "data" })).toEqual([
+      path.join("data", "bookmarks.json"),
+      path.join("data", "scans.json"),
+    ]);
+  });
+
+  it("counts the scans and the strong picks the bookmarks page shows", async () => {
+    await writeData({ "scans.json": JSON.stringify([scan("7", { pick: true }), scan("8")]) });
+    const [report] = await validateFiles({ cwd, files: ["data/scans.json"] });
+    expect(report).toEqual({ source: "data/scans.json", ok: true, summary: "2 scans, 1 on the bookmarks page" });
+  });
+
+  it("fails a scan that breaks the schema, naming the entry and the field", async () => {
+    await writeData({ "scans.json": JSON.stringify([scan("7"), scan("8", { pick: "yes" })]) });
+    const [report] = await validateFiles({ cwd, files: ["data/scans.json"] });
+    expect(errorOf(report)).toMatch(/data\/scans\.json is invalid:[\s\S]*→ at \[1\]\.pick/);
+  });
+
+  it("warns about an issue's missing scan, with or without scans.json", async () => {
+    const withScan = { ...issue, sections: [{ type: "feature", scan: "7" }] };
+    await writeData({
+      "bookmarks.json": JSON.stringify(templateSamples),
+      "magazine/2026-10-19.json": JSON.stringify(withScan),
+      "magazine/2026-10-19.jpg": "",
+    });
+    const missing = '"7" is not a scan id in scans.json; the page leaves the block out\n  → at sections[0].scan';
+    expect(await validateIssueOf("2026-10-19")).toEqual([
+      { source: "data/magazine/2026-10-19.json", ok: true, summary: "1 section", warnings: [missing] },
+    ]);
+    await writeData({ "scans.json": JSON.stringify([scan("7")]) });
+    expect(await validateIssueOf("2026-10-19")).toEqual([
+      { source: "data/magazine/2026-10-19.json", ok: true, summary: "1 section" },
+    ]);
+  });
+
+  it("reports an issue as unchecked while scans.json is invalid", async () => {
+    await writeData({
+      "bookmarks.json": JSON.stringify(templateSamples),
+      "scans.json": "[{}]",
+      "magazine/2026-10-19.json": JSON.stringify(issue),
+    });
+    const [report] = await validateFiles({ cwd, files: ["data/magazine/2026-10-19.json"] });
+    expect(errorOf(report)).toBe(
+      "data/magazine/2026-10-19.json cannot be checked until data/scans.json is valid: data/scans.json is invalid",
+    );
+  });
+});
+
 describe("the sample data bun run dev shows", () => {
   it("passes validate, warning only about the issue left without a cover to show the lettered one", async () => {
     const repository = path.resolve(".");
     const files = await defaultDataFiles({ cwd: repository, dataDir: "dev/data" });
-    const reports = await validateFiles({ cwd: repository, files, now: new Date("2026-02-12T12:00:00Z") });
+    const reports = await validateFiles({ cwd: repository, files, now: new Date("2026-02-13T12:00:00Z") });
     expect(reports.every((report) => report.ok)).toBe(true);
     expect(reports.flatMap((report) => (report.ok ? (report.warnings ?? []) : []))).toEqual([
       "no cover image; add dev/data/magazine/2026-01-27.jpg (or .png, .webp), a 3:4 portrait picture made for this issue",
     ]);
-    expect(reports.filter((report) => report.source.includes("/magazine/"))).toHaveLength(6);
+    expect(reports.filter((report) => report.source.includes("/magazine/"))).toHaveLength(7);
+    expect(reports.find((report) => report.source === "dev/data/scans.json")).toMatchObject({ ok: true });
   });
 });

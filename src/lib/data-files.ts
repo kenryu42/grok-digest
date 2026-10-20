@@ -2,6 +2,7 @@ import { access, readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 
 export const BOOKMARKS_FILE = "bookmarks.json";
+export const SCANS_FILE = "scans.json";
 export const STATE_FILES = ["processed.json", "removed.json"] as const;
 
 export async function readJsonFile({ file, source }: { file: string; source: string }): Promise<unknown> {

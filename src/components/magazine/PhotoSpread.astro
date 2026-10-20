@@ -1,19 +1,21 @@
 ---
 import Block from "./Block.astro";
-import type { BlockOf, FindBookmark } from "../../lib/magazine";
+import ItemMeta from "./ItemMeta.astro";
+import { langOf } from "../../lib/lang";
+import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 import { postImages } from "../../lib/media";
-import { cardHref } from "../../lib/paths";
+import { postLink } from "../../lib/paths";
 
 type Props = {
   block: BlockOf<"photo-spread">;
   anchor: string;
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const { block, anchor, find } = Astro.props;
-const photos = block.items.map(({ bookmark, caption }) => {
-  const found = find(bookmark);
-  return { bookmark: found, caption: caption ?? found.tldr, images: postImages(found) };
+const photos = block.items.map((item) => {
+  const post = find(refOf(item));
+  return { post, item, caption: item.caption ?? post.tldr, images: postImages(post) };
 });
 
 const ARRANGEMENT = {
@@ -28,7 +30,7 @@ const spansRow = (index: number, count: number): boolean => index === 0 || (inde
 
 <Block block={block} anchor={anchor} title={block.headline}>
   <div class={ARRANGEMENT[block.variant]}>
-    {photos.map(({ bookmark, caption, images }, index) => (
+    {photos.map(({ post, item, caption, images }, index) => (
       <figure
         class:list={[
           "flex min-w-0 flex-col gap-2",
@@ -59,11 +61,16 @@ const spansRow = (index: number, count: number): boolean => index === 0 || (inde
           ))}
         </ul>
         <figcaption class="flex flex-wrap gap-x-2 font-sans text-sm">
-          <a class="font-medium decoration-brand underline-offset-4 hover:underline" href={cardHref(bookmark.id)}>
+          <a
+            class="font-medium decoration-brand underline-offset-4 hover:underline"
+            lang={langOf(caption)}
+            {...postLink(post)}
+          >
             {caption}
           </a>
-          <span class="text-muted-foreground">@{bookmark.author.handle}</span>
+          <span class="text-muted-foreground">@{post.author.handle}</span>
         </figcaption>
+        <ItemMeta meta={item} />
       </figure>
     ))}
   </div>

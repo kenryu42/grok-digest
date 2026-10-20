@@ -58,6 +58,7 @@ export type SwipePage = {
   card: HTMLElement;
   author: string;
   topic: Topic | undefined;
+  scan: boolean;
   url: string;
   copy: string;
   headline: string;
@@ -103,6 +104,7 @@ function pageFrom(card: HTMLElement): SwipePage {
     card,
     author: card.querySelector("[data-author]")?.textContent.trim() ?? "",
     topic: TOPICS.find((topic) => topic === card.dataset["topic"]),
+    scan: card.dataset["source"] === "scan",
     url: card.dataset["url"] ?? "",
     copy: card.querySelector<HTMLElement>("[data-copy]")?.dataset["copy"] ?? "",
     headline: blocks.find(({ kind }) => kind === "headline")?.text ?? "",

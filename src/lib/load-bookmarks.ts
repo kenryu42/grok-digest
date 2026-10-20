@@ -1,4 +1,10 @@
 import raw, { source } from "virtual:grok-digest/bookmarks";
-import { parseBookmarks } from "./bookmarks.ts";
+import rawScans, { source as scansSource } from "virtual:grok-digest/scans";
+import { parseBookmarks, parseScans } from "./bookmarks.ts";
+import { pagePosts, postFinder } from "./posts.ts";
 
-export const bookmarks = parseBookmarks({ raw, source });
+const bookmarks = parseBookmarks({ raw, source });
+const scans = parseScans({ raw: rawScans, source: scansSource });
+
+export const posts = pagePosts(bookmarks, scans);
+export const findPost = postFinder(bookmarks, scans);

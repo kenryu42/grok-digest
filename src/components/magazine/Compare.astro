@@ -1,24 +1,25 @@
 ---
 import Block from "./Block.astro";
 import Byline from "./Byline.astro";
+import ItemNote from "./ItemNote.astro";
 import ItemTitle from "./ItemTitle.astro";
 import Kicker from "./Kicker.astro";
-import type { BlockOf, FindBookmark } from "../../lib/magazine";
+import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 
 type Props = {
   block: BlockOf<"compare">;
   anchor: string;
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const { block, anchor, find } = Astro.props;
-const sides = block.items.map(({ bookmark, label, note }) => ({ bookmark: find(bookmark), label, note }));
+const sides = block.items.map((item) => ({ post: find(refOf(item)), item }));
 const versus = block.variant === "versus";
 ---
 
 <Block block={block} anchor={anchor} title={block.headline}>
   <div class:list={["grid gap-5 sm:grid-cols-2", versus && "sm:gap-10"]}>
-    {sides.map(({ bookmark, label, note }, index) => (
+    {sides.map(({ post, item }, index) => (
       <article
         class:list={[
           "flex flex-col gap-2",
@@ -27,11 +28,11 @@ const versus = block.variant === "versus";
             : "rounded-xl bg-card p-5 ring-1 ring-border",
         ]}
       >
-        <Kicker topic={bookmark.topic} text={label} />
-        <ItemTitle id={bookmark.id} text={bookmark.tldr} />
-        {note !== undefined && <p class="text-[0.94em] text-pretty text-foreground/85">{note}</p>}
+        <Kicker topic={post.topic} text={item.label} />
+        <ItemTitle post={post} text={post.tldr} />
+        <ItemNote item={item} />
         <div class="mt-auto pt-2">
-          <Byline bookmark={bookmark} />
+          <Byline post={post} />
         </div>
       </article>
     ))}

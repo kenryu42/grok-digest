@@ -6,7 +6,7 @@ import type { AstroIntegration } from "astro";
 import type { Plugin, ViteDevServer } from "vite";
 import { existsSync } from "node:fs";
 import { componentFile, CONFIG_FILE, CUSTOM_DIR, OVERRIDABLE_COMPONENTS, THEME_FILE } from "./lib/custom.ts";
-import { BOOKMARKS_FILE, firstFileIn, jsonFilesIn, readJsonFile } from "./lib/data-files.ts";
+import { BOOKMARKS_FILE, firstFileIn, jsonFilesIn, readJsonFile, SCANS_FILE } from "./lib/data-files.ts";
 import {
   conflictedOverrides,
   defaultComponentFile,
@@ -24,7 +24,7 @@ export type GrokDigestOptions = {
 
 const PACKAGE_NAME = "grok-digest";
 const BOOKMARKS_MODULE_ID = "virtual:grok-digest/bookmarks";
-const RESOLVED_BOOKMARKS_MODULE_ID = `\0${BOOKMARKS_MODULE_ID}`;
+const SCANS_MODULE_ID = "virtual:grok-digest/scans";
 const CONFIG_MODULE_ID = "virtual:grok-digest/config";
 const RESOLVED_CONFIG_MODULE_ID = `\0${CONFIG_MODULE_ID}`;
 const MAGAZINE_MODULE_ID = "virtual:grok-digest/magazine";
@@ -105,13 +105,25 @@ function servePackageFiles(): Plugin {
 const jsonModule = ({ source, raw }: { source: string; raw: unknown }): string =>
   `export const source = ${JSON.stringify(source)};\nexport default ${JSON.stringify(raw)};`;
 
-function bookmarksModule({ file, source }: { file: string; source: string }): Plugin {
+function dataModule({
+  moduleId,
+  file,
+  source,
+  whenMissing,
+}: {
+  moduleId: string;
+  file: string;
+  source: string;
+  whenMissing?: unknown;
+}): Plugin {
+  const resolvedId = `\0${moduleId}`;
   return {
-    name: "grok-digest:bookmarks",
-    resolveId: (id) => (id === BOOKMARKS_MODULE_ID ? RESOLVED_BOOKMARKS_MODULE_ID : undefined),
+    name: `grok-digest:${path.basename(file, ".json")}`,
+    resolveId: (id) => (id === moduleId ? resolvedId : undefined),
     async load(id) {
-      if (id !== RESOLVED_BOOKMARKS_MODULE_ID) return undefined;
+      if (id !== resolvedId) return undefined;
       this.addWatchFile(file);
+      if (whenMissing !== undefined && !existsSync(file)) return jsonModule({ source, raw: whenMissing });
       return jsonModule({ source, raw: await readJsonFile({ file, source }) });
     },
   };
@@ -240,7 +252,7 @@ export default function grokDigest({ dataDir = "data" }: GrokDigestOptions = {})
       "astro:config:setup": async ({ config, updateConfig, injectRoute, addWatchFile, logger }) => {
         const root = fileURLToPath(config.root);
         const file = path.resolve(root, dataDir, BOOKMARKS_FILE);
-        const source = displayPath(root, file);
+        const scansFile = path.resolve(root, dataDir, SCANS_FILE);
         const magazineDir = path.resolve(root, dataDir, MAGAZINE_DIR);
         updateConfig({
           integrations: [react()],
@@ -249,7 +261,13 @@ export default function grokDigest({ dataDir = "data" }: GrokDigestOptions = {})
               rendererFromPackage(),
               servePackageFiles(),
               tailwindcss(),
-              bookmarksModule({ file, source }),
+              dataModule({ moduleId: BOOKMARKS_MODULE_ID, file, source: displayPath(root, file) }),
+              dataModule({
+                moduleId: SCANS_MODULE_ID,
+                file: scansFile,
+                source: displayPath(root, scansFile),
+                whenMissing: [],
+              }),
               customModules(root),
               magazineModule({ root, dir: magazineDir }),
             ],

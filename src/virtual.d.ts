@@ -6,6 +6,12 @@ declare module "virtual:grok-digest/bookmarks" {
   export default raw;
 }
 
+declare module "virtual:grok-digest/scans" {
+  const raw: unknown;
+  export const source: string;
+  export default raw;
+}
+
 declare module "virtual:grok-digest/config" {
   const raw: unknown;
   export const source: string;

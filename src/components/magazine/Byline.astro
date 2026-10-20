@@ -1,12 +1,12 @@
 ---
-import type { Bookmark } from "../../lib/bookmarks";
 import { cardHref } from "../../lib/paths";
+import type { Post } from "../../lib/posts";
 
 type Props = {
-  bookmark: Bookmark;
+  post: Post;
 };
 
-const { id, url, author } = Astro.props.bookmark;
+const { id, url, author, onPage } = Astro.props.post;
 const link = "underline decoration-border underline-offset-4 transition-colors hover:decoration-brand";
 ---
 
@@ -14,9 +14,11 @@ const link = "underline decoration-border underline-offset-4 transition-colors h
   <span class="font-medium">{author.name}</span>
   <span class="text-muted-foreground">@{author.handle}</span>
   <span class="ml-auto flex gap-3 font-medium text-brand-ink">
-    <a class={link} href={cardHref(id)}>
-      Read the card
-    </a>
+    {onPage && (
+      <a class={link} href={cardHref(id)}>
+        Read the card
+      </a>
+    )}
     <a class={link} href={url} target="_blank" rel="noopener noreferrer">
       Open on X
     </a>

@@ -1,0 +1,43 @@
+---
+import { TAG_LABELS, type ItemMeta } from "../../lib/magazine";
+import { langOf } from "../../lib/lang";
+
+type Props = {
+  meta: ItemMeta;
+};
+
+const { why, tags, source_label: sourceLabel } = Astro.props.meta;
+const labelled = sourceLabel !== undefined || tags.length > 0;
+---
+
+{(labelled || why !== undefined) && (
+  <div data-item-meta class="flex min-w-0 flex-col gap-1.5">
+    {labelled && (
+      <p class="flex flex-wrap items-center gap-1.5 font-sans text-[0.6875rem] font-semibold tracking-wider uppercase in-data-[block=closer]:justify-center">
+        {sourceLabel !== undefined && (
+          <span data-source-label lang={langOf(sourceLabel)} class="text-foreground/75">
+            {sourceLabel}
+          </span>
+        )}
+        {tags.map((tag) => (
+          <span
+            data-tag={tag}
+            class:list={[
+              "rounded-full border px-2 py-0.5 tracking-normal whitespace-nowrap",
+              tag === "unverified"
+                ? "border-dashed border-muted-foreground/60 text-muted-foreground"
+                : "border-brand/40 text-brand-ink",
+            ]}
+          >
+            {TAG_LABELS[tag]}
+          </span>
+        ))}
+      </p>
+    )}
+    {why !== undefined && (
+      <p data-why lang={langOf(why)} class="text-[0.94em] text-pretty">
+        <span class="font-sans text-[0.8125rem] font-semibold text-brand-ink">Why it matters:</span> {why}
+      </p>
+    )}
+  </div>
+)}

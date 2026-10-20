@@ -1,15 +1,29 @@
-import type { Bookmark } from "./bookmarks.ts";
-import { ITEM_LIMITS, type FindBookmark, type ItemsBlock, type MagazineBlock, type MagazineIssue } from "./magazine.ts";
+import type { Bookmark, Scan } from "./bookmarks.ts";
+import {
+  CORNER_LABELS,
+  INTEREST_CORNERS,
+  ITEM_LIMITS,
+  refOf,
+  type FindEntry,
+  type ItemsBlock,
+  type MagazineBlock,
+  type MagazineCorner,
+  type MagazineIssue,
+  type MagazineTag,
+} from "./magazine.ts";
+import { postFinder, type FindPost, type Post, type PostRef } from "./posts.ts";
 
 export type IssueWarning = { path: (string | number)[]; message: string };
 
-type BookmarkIndex = ReadonlyMap<string, Bookmark>;
-
-const MAX_BLOCKS_PER_BOOKMARK = 2;
+const MAX_BLOCKS_PER_POST = 2;
 const MAX_LOUD_BLOCKS = 1;
+const MAX_INTEREST_SHARE = 0.6;
+const LINEUP_CORNER: MagazineCorner = "open-window";
 
-export const indexBookmarks = (bookmarks: readonly Bookmark[]): BookmarkIndex =>
-  new Map(bookmarks.map((bookmark) => [bookmark.id, bookmark]));
+const SOURCE_FILES = {
+  bookmark: "bookmarks.json",
+  scan: "scans.json",
+} satisfies Record<PostRef["source"], string>;
 
 const collapseSpaces = (text: string): string => text.replaceAll(/\s+/g, " ").trim();
 
@@ -17,23 +31,28 @@ const hasItems = (block: MagazineBlock): block is ItemsBlock => Object.hasOwn(IT
 
 type Problem = { message: string; field?: "quote" };
 
-function referenceProblem(block: MagazineBlock, id: string, bookmark: Bookmark | undefined): Problem | undefined {
-  if (bookmark === undefined) return { message: `"${id}" is not a bookmark id in bookmarks.json` };
-  if (block.type === "pull-quote" && !collapseSpaces(bookmark.text).includes(collapseSpaces(block.quote))) {
-    return { message: `the quote is not in the text of bookmark "${id}"`, field: "quote" };
+function referenceProblem(block: MagazineBlock, { source, id }: PostRef, post: Post | undefined): Problem | undefined {
+  if (post === undefined) return { message: `"${id}" is not a ${source} id in ${SOURCE_FILES[source]}` };
+  if (block.type === "pull-quote" && !collapseSpaces(post.text).includes(collapseSpaces(block.quote))) {
+    return { message: `the quote is not in the text of ${source} "${id}"`, field: "quote" };
   }
-  if (block.type === "photo-spread" && bookmark.media.length === 0) return { message: `bookmark "${id}" has no media` };
-  if (block.type === "sidebar-box" && bookmark.action === "") return { message: `bookmark "${id}" has no action` };
+  if (block.type === "photo-spread" && post.media.length === 0) return { message: `${source} "${id}" has no media` };
+  if (block.type === "sidebar-box" && post.action === "") return { message: `${source} "${id}" has no action` };
   return undefined;
 }
 
-type Reference = { path: (string | number)[]; id: string };
+type Reference = { path: (string | number)[]; ref: PostRef; tags: readonly MagazineTag[] | undefined };
+
+const referenceField = (ref: PostRef): string => (ref.source === "scan" ? "scan" : "bookmark");
 
 function referencesIn(block: MagazineBlock): Reference[] {
   if (hasItems(block))
-    return block.items.map(({ bookmark }, index) => ({ path: ["items", index, "bookmark"], id: bookmark }));
-  if ("bookmark" in block) return [{ path: ["bookmark"], id: block.bookmark }];
-  return [];
+    return block.items.map((item, index) => {
+      const ref = refOf(item);
+      return { path: ["items", index], ref, tags: item.tags };
+    });
+  if (block.type === "topic-divider" || block.type === "corner") return [];
+  return [{ path: [], ref: refOf(block), tags: "tags" in block ? block.tags : undefined }];
 }
 
 function pairHalves(sections: readonly MagazineBlock[]): MagazineBlock[] {
@@ -54,14 +73,14 @@ function pairHalves(sections: readonly MagazineBlock[]): MagazineBlock[] {
   return paired;
 }
 
-export function readableIssue<Issue extends MagazineIssue>(issue: Issue, byId: BookmarkIndex): Issue {
-  const usable = (block: MagazineBlock, id: string): boolean => referenceProblem(block, id, byId.get(id)) === undefined;
+export function readableIssue<Issue extends MagazineIssue>(issue: Issue, find: FindPost): Issue {
+  const usable = (block: MagazineBlock, ref: PostRef): boolean => referenceProblem(block, ref, find(ref)) === undefined;
   const sections = issue.sections.flatMap((block): MagazineBlock[] => {
     if (hasItems(block)) {
-      const kept = block.items.filter(({ bookmark }) => usable(block, bookmark));
+      const kept = block.items.filter((item) => usable(block, refOf(item)));
       return kept.length < ITEM_LIMITS[block.type].min ? [] : [{ ...block, items: kept }];
     }
-    return "bookmark" in block && !usable(block, block.bookmark) ? [] : [block];
+    return referencesIn(block).every(({ ref }) => usable(block, ref)) ? [block] : [];
   });
   return { ...issue, sections: pairHalves(sections) };
 }
@@ -72,36 +91,81 @@ function leftOut(block: MagazineBlock, missing: number): string {
   return left < ITEM_LIMITS[block.type].min ? "the page leaves the block out" : "the page leaves the item out";
 }
 
+const refKey = ({ source, id }: PostRef): string => `${source}:${id}`;
+
+function lineupWarnings(sections: readonly MagazineBlock[]): IssueWarning[] {
+  if (!sections.some((block) => block.type === "corner")) return [];
+  let corner: MagazineCorner | undefined;
+  const cornerOf = new Map<string, MagazineCorner | undefined>();
+  for (const block of sections) {
+    if (block.type === "corner") corner = block.corner;
+    for (const { ref } of referencesIn(block)) {
+      if (!cornerOf.has(refKey(ref))) cornerOf.set(refKey(ref), corner);
+    }
+  }
+  const counted = [...cornerOf.values()].filter(
+    (item): item is MagazineCorner => item !== undefined && item !== "your-saves",
+  );
+  const interest = counted.filter((item) => INTEREST_CORNERS.includes(item)).length;
+  const warnings: IssueWarning[] = [];
+  if (!counted.includes(LINEUP_CORNER)) {
+    warnings.push({
+      path: ["sections"],
+      message: `the issue has no ${CORNER_LABELS[LINEUP_CORNER]} item; put one under a "corner" block with "corner": "${LINEUP_CORNER}"`,
+    });
+  }
+  if (counted.length > 0 && interest / counted.length > MAX_INTEREST_SHARE) {
+    const interestLabels = INTEREST_CORNERS.map((name) => CORNER_LABELS[name]).join(", ");
+    warnings.push({
+      path: ["sections"],
+      message: `${interest} of ${counted.length} items (${Math.round((100 * interest) / counted.length)}%) are interest items, under ${interestLabels}; keep them to at most ${100 * MAX_INTEREST_SHARE}%`,
+    });
+  }
+  return warnings;
+}
+
 export function issueWarnings({
   issue,
   bookmarks,
+  scans = [],
   latestToday,
 }: {
   issue: MagazineIssue;
   bookmarks: readonly Bookmark[];
+  scans?: readonly Scan[];
   latestToday: string;
 }): IssueWarning[] {
-  const byId = indexBookmarks(bookmarks);
+  const find = postFinder(bookmarks, scans);
   const warnings: IssueWarning[] = [];
   if (issue.date > latestToday) {
     warnings.push({ path: ["date"], message: `"${issue.date}" is in the future` });
   }
-  const blocksPerBookmark = new Map<string, number[]>();
+  const blocksPerPost = new Map<string, { ref: PostRef; blocks: number[] }>();
   let loudBlocks = 0;
   issue.sections.forEach((block, index) => {
     const references = referencesIn(block);
-    const problems = references.flatMap(({ path, id }) => {
-      const problem = referenceProblem(block, id, byId.get(id));
-      return problem === undefined ? [] : [{ path, problem }];
+    const problems = references.flatMap(({ path, ref }) => {
+      const problem = referenceProblem(block, ref, find(ref));
+      return problem === undefined ? [] : [{ path, ref, problem }];
     });
-    for (const { path, problem } of problems) {
+    for (const { path, ref, problem } of problems) {
       warnings.push({
-        path: ["sections", index, ...(problem.field === undefined ? path : [problem.field])],
+        path: ["sections", index, ...path, problem.field ?? referenceField(ref)],
         message: `${problem.message}; ${leftOut(block, problems.length)}`,
       });
     }
-    for (const id of new Set(references.map((reference) => reference.id))) {
-      blocksPerBookmark.set(id, [...(blocksPerBookmark.get(id) ?? []), index]);
+    for (const { path, ref, tags } of references) {
+      const post = find(ref);
+      if (ref.source !== "scan" || post === undefined || post.links.length > 0) continue;
+      if (tags === undefined || tags.includes("unverified")) continue;
+      warnings.push({
+        path: ["sections", index, ...path, "tags"],
+        message: `scan "${ref.id}" has no source link; add the primary source to its links in scans.json, or tag the item "unverified"`,
+      });
+    }
+    for (const shown of new Map(references.map(({ ref }) => [refKey(ref), ref])).values()) {
+      const seen = blocksPerPost.get(refKey(shown)) ?? { ref: shown, blocks: [] };
+      blocksPerPost.set(refKey(shown), { ref: shown, blocks: [...seen.blocks, index] });
     }
     if (block.emphasis === "loud" && ++loudBlocks > MAX_LOUD_BLOCKS) {
       warnings.push({
@@ -110,26 +174,27 @@ export function issueWarnings({
       });
     }
   });
-  for (const [id, blocks] of blocksPerBookmark) {
-    if (blocks.length > MAX_BLOCKS_PER_BOOKMARK) {
+  for (const { ref, blocks } of blocksPerPost.values()) {
+    if (blocks.length > MAX_BLOCKS_PER_POST) {
       warnings.push({
-        path: ["sections", blocks[MAX_BLOCKS_PER_BOOKMARK] ?? 0],
-        message: `bookmark "${id}" is in ${blocks.length} blocks; show it in at most ${MAX_BLOCKS_PER_BOOKMARK}`,
+        path: ["sections", blocks[MAX_BLOCKS_PER_POST] ?? 0],
+        message: `${ref.source} "${ref.id}" is in ${blocks.length} blocks; show it in at most ${MAX_BLOCKS_PER_POST}`,
       });
     }
   }
-  return warnings;
+  return [...warnings, ...lineupWarnings(issue.sections)];
 }
 
-export const referencedIds = (issue: MagazineIssue): string[] => [
-  ...new Set(issue.sections.flatMap((block) => referencesIn(block).map(({ id }) => id))),
+export const referencedPosts = (issue: MagazineIssue): PostRef[] => [
+  ...new Map(
+    issue.sections.flatMap((block) => referencesIn(block).map(({ ref }) => [refKey(ref), ref] as const)),
+  ).values(),
 ];
 
-export function bookmarkFinder(bookmarks: readonly Bookmark[]): FindBookmark {
-  const byId = indexBookmarks(bookmarks);
-  return (id) => {
-    const bookmark = byId.get(id);
-    if (bookmark === undefined) throw new Error(`No bookmark with id "${id}"`);
-    return bookmark;
+export function entryFinder(find: FindPost): FindEntry {
+  return (ref) => {
+    const post = find(ref);
+    if (post === undefined) throw new Error(`No ${ref.source} with id "${ref.id}"`);
+    return post;
   };
 }

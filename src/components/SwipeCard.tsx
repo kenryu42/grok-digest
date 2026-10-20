@@ -1,4 +1,4 @@
-import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+import { CheckIcon, ChevronDownIcon, ChevronUpIcon, RadarIcon } from "lucide-react";
 import { useLayoutEffect, useRef } from "react";
 import { cn } from "cn";
 import { LinkCard } from "./LinkCard.tsx";
@@ -48,8 +48,17 @@ export function SwipeCard({ swipe, page, current }: { swipe: SwipeControls; page
         )}
         <p className="flex min-w-0 flex-1 flex-col gap-0.5">
           {page.topic !== undefined && (
-            <span className="text-xs font-semibold tracking-wider text-topic uppercase">
+            <span className="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-topic uppercase">
               {TOPIC_LABELS[page.topic]}
+              {page.scan && (
+                <span
+                  data-scan-badge
+                  className="inline-flex items-center gap-1 rounded-full border border-brand px-1.5 py-px text-[0.6875rem] tracking-normal text-brand-ink normal-case"
+                >
+                  <RadarIcon className="size-3" aria-hidden="true" />
+                  Scan
+                </span>
+              )}
             </span>
           )}
           <span className="truncate text-sm text-muted-foreground">{page.author}</span>

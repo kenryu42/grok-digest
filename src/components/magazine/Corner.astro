@@ -1,0 +1,30 @@
+---
+import Block from "./Block.astro";
+import { langOf } from "../../lib/lang";
+import { cornerLabel, MAGAZINE_CORNERS, type BlockOf } from "../../lib/magazine";
+
+type Props = {
+  block: BlockOf<"corner">;
+  anchor: string;
+};
+
+const { block, anchor } = Astro.props;
+const label = cornerLabel(block);
+const number = String(MAGAZINE_CORNERS.indexOf(block.corner) + 1).padStart(2, "0");
+---
+
+<Block block={block} anchor={anchor}>
+  <header data-corner={block.corner} class="flex flex-col gap-1.5 border-t-4 border-foreground pt-3 font-sans">
+    <h3 class="flex items-baseline gap-3 text-sm font-bold tracking-[0.22em] text-foreground uppercase">
+      <span aria-hidden="true" class="text-muted-foreground tabular-nums">
+        {number}
+      </span>
+      <span lang={langOf(label)}>{label}</span>
+    </h3>
+    {block.deck !== undefined && (
+      <p lang={langOf(block.deck)} class="text-[0.9375rem] text-pretty text-muted-foreground">
+        {block.deck}
+      </p>
+    )}
+  </header>
+</Block>

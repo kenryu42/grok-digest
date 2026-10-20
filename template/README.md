@@ -63,6 +63,8 @@ The page opens on every bookmark you have not marked done, the most recently sav
 
 The **Sort and filter** button next to the topics orders the list by **Newest** or **Oldest** saved, and **Done** puts done bookmarks back in the list, dimmed, with **Copy for Grok** to ask the bot to remove them. A search looks through every bookmark in the chosen topic, done or not. Done marks are kept in your browser, so another browser or device starts fresh.
 
+If you ask the Grok bot for a daily scan, it keeps posts you did not save in `data/scans.json`, and its strong picks show in the list too, each with a **Scan** badge and the date it was found. They work like your bookmarks: search, Done, swipe, and **Copy for Grok** to remove them. With scans on the page, **Sort and filter** adds a second row: **All**, **Bookmarks** (only yours), or **Scans** (only the picks). Without `data/scans.json`, the page is exactly as before.
+
 The **Swipe** button right of the dark mode button opens swipe mode: one card per screen, in the list's order.
 
 The **Aa** button next to the dark mode button sets the size of the text on the cards and in swipe mode: Small, Default, Large, or Larger. The search box, the filters, and the other controls keep their size. Your choice is kept in your browser.
@@ -79,11 +81,12 @@ The search box, the topic chips, the sort, and the filters are stored in the pag
 - `?q=tokyo` shows bookmarks whose author, tldr, post, summary, key points, action, or link titles contain `tokyo`.
 - `?sort=oldest` lists the oldest saved first.
 - `?done=show` shows done bookmarks too.
+- `?source=bookmarks` shows only your bookmarks, and `?source=scans` only the scan's picks.
 - They combine, as in `?q=tokyo&topic=japan-tech`.
 
-An unknown `topic` or `sort` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the card, and turns on **Done** when the card is done, so the card always shows.
+An unknown `topic`, `sort`, or `source` is dropped. The page keeps the rest of the address, including a `#b-<id>` link to one card. That link opens the card, and turns on **Done** when the card is done, so the card always shows.
 
-If you ask the Grok bot for a magazine, it writes one issue a day from the bookmarks saved since the last one, into `data/magazine/<date>.json`. Each issue has a cover picture the bot makes for it, `data/magazine/<date>.jpg`. The header then shows a **Magazine** link to `magazine/`: the latest issue's cover large with its title and contents, and the earlier covers below it by month. Each issue is laid out for its day's posts, and the magazine has its own feed at `magazine/rss.xml`. Removing a bookmark never breaks an issue: the page leaves it out, and `bun run validate` warns until the bot tidies the issue.
+If you ask the Grok bot for a magazine, it writes one issue a day from the bookmarks saved since the last one, into `data/magazine/<date>.json`. Each issue has a cover picture the bot makes for it, `data/magazine/<date>.jpg`. The header then shows a **Magazine** link to `magazine/`: the latest issue's cover large with its title and contents, and the earlier covers below it by month. Each issue is laid out for its day's posts, and the magazine has its own feed at `magazine/rss.xml`. With a daily scan, an issue also shows posts from `data/scans.json` under recurring corners, such as Lead, Japan desk, and Open Window, and ends with a small closer. Removing a bookmark or a scan never breaks an issue: the page leaves it out, and `bun run validate` warns until the bot tidies the issue.
 
 The feed is at `rss.xml`. Each topic has a feed at `rss/<topic-id>.xml`, for example `rss/design.xml`. A feed item is titled with the tldr, dated when the bookmark was saved, links to the card on this page, and includes the summary, the action, the key points, the links with their preview images, the original post, and its images.
 

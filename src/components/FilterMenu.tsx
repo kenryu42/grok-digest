@@ -1,12 +1,12 @@
 import { cn } from "cn";
 import type { ReactNode } from "react";
 import type { Controls } from "../lib/bookmark-controls.ts";
-import { SORT_LABELS, SORTS } from "../lib/filter.ts";
+import { SORT_LABELS, SORTS, SOURCE_FILTER_LABELS, SOURCE_FILTERS } from "../lib/filter.ts";
 
 export function FilterMenu({ controls }: { controls: Controls }) {
-  const { sort, chooseSort, showDone, setShowDone } = controls;
-  return (
-    <div className="flex h-11 items-center gap-1 rounded-full border bg-popover p-1 text-popover-foreground shadow-lg sm:h-9">
+  const { sort, chooseSort, showDone, setShowDone, hasScans, source, chooseSource } = controls;
+  const sortRow = (
+    <Row>
       {SORTS.map((s) => (
         <Option key={s} pressed={sort === s} onClick={() => chooseSort(s)}>
           {SORT_LABELS[s]}
@@ -16,6 +16,31 @@ export function FilterMenu({ controls }: { controls: Controls }) {
       <Option pressed={showDone} onClick={() => setShowDone(!showDone)}>
         Done
       </Option>
+    </Row>
+  );
+  if (!hasScans) return sortRow;
+  return (
+    <div className="flex flex-col gap-2">
+      {sortRow}
+      <Row label="Show">
+        {SOURCE_FILTERS.map((s) => (
+          <Option key={s} pressed={source === s} onClick={() => chooseSource(s)}>
+            {SOURCE_FILTER_LABELS[s]}
+          </Option>
+        ))}
+      </Row>
+    </div>
+  );
+}
+
+function Row({ label, children }: { label?: string; children: ReactNode }) {
+  return (
+    <div
+      role={label === undefined ? undefined : "group"}
+      aria-label={label}
+      className="flex h-11 items-center gap-1 rounded-full border bg-popover p-1 text-popover-foreground shadow-lg sm:h-9"
+    >
+      {children}
     </div>
   );
 }

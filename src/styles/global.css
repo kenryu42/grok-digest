@@ -42,8 +42,8 @@
 }
 
 @theme inline {
-  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Source Serif 4 Variable", ui-serif, Georgia, serif;
+  --font-sans: "Geist Variable", var(--cjk-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Source Serif 4 Variable", var(--cjk-serif), ui-serif, Georgia, serif;
   --font-heading: var(--font-serif);
   --color-ring: var(--ring);
   --color-input: var(--input);
@@ -81,6 +81,12 @@
 }
 
 :root {
+  --cjk-sans:
+    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Yu Gothic", Meiryo, "Noto Sans JP", "PingFang SC",
+    "PingFang TC", "Microsoft YaHei", "Noto Sans CJK SC", "Noto Sans CJK JP";
+  --cjk-serif:
+    "Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", "Songti SC", "Noto Serif CJK SC", "Noto Serif CJK JP",
+    var(--cjk-sans);
   --background: oklch(0.982 0.006 85);
   --foreground: oklch(0.22 0.012 60);
   --card: oklch(0.997 0.002 85);
@@ -178,6 +184,24 @@
 [data-topic="design"] {
   --topic-hue: 340;
 }
+[data-topic="science"] {
+  --topic-hue: 150;
+}
+[data-topic="world"] {
+  --topic-hue: 225;
+}
+[data-topic="culture"] {
+  --topic-hue: 318;
+}
+[data-topic="history"] {
+  --topic-hue: 45;
+}
+[data-topic="economics"] {
+  --topic-hue: 95;
+}
+[data-topic="health"] {
+  --topic-hue: 172;
+}
 [data-topic="other"] {
   --topic-hue: 70;
   --topic-chroma: 0.15;
@@ -191,8 +215,8 @@
   --brand-soft: color-mix(in oklab, var(--brand) 20%, var(--card));
   --issue-paper: color-mix(in oklab, var(--brand) 9%, var(--card));
   --issue-band: color-mix(in oklab, var(--brand) 85%, var(--foreground));
-  --issue-heading: "Source Serif 4 Variable", ui-serif, Georgia, serif;
-  --issue-body: "Source Serif 4 Variable", ui-serif, Georgia, serif;
+  --issue-heading: "Source Serif 4 Variable", var(--cjk-serif), ui-serif, Georgia, serif;
+  --issue-body: "Source Serif 4 Variable", var(--cjk-serif), ui-serif, Georgia, serif;
 }
 
 .dark [data-palette] {
@@ -223,14 +247,14 @@
 
 [data-fonts="sans"],
 [data-fonts="sans-serif"] {
-  --issue-heading: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --issue-heading: "Geist Variable", var(--cjk-sans), ui-sans-serif, system-ui, sans-serif;
 }
 [data-fonts="sans"],
 [data-fonts="serif-sans"] {
-  --issue-body: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --issue-body: "Geist Variable", var(--cjk-sans), ui-sans-serif, system-ui, sans-serif;
 }
 [data-fonts="mono-serif"] {
-  --issue-heading: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --issue-heading: ui-monospace, SFMono-Regular, Menlo, Consolas, var(--cjk-sans), monospace;
 }
 
 [data-palette] [data-topic] {
@@ -291,6 +315,15 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  :lang(ja),
+  :lang(zh) {
+    line-break: strict;
+    word-break: normal;
+    overflow-wrap: anywhere;
+  }
+  [data-issue] {
+    overflow-wrap: anywhere;
   }
 }
 

@@ -8,6 +8,7 @@ describe("parseFilter", () => {
       topic: "japan-tech",
       sort: "oldest",
       showDone: true,
+      source: "all",
     });
   });
 
@@ -30,6 +31,7 @@ describe("filterSearch", () => {
       topic: "japan-tech",
       sort: "oldest",
       showDone: true,
+      source: "scans",
     } as const;
     expect(parseFilter(filterSearch(filter))).toEqual(filter);
   });

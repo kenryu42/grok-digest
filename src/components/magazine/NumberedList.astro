@@ -1,25 +1,26 @@
 ---
 import Block from "./Block.astro";
+import ItemNote from "./ItemNote.astro";
 import ItemTitle from "./ItemTitle.astro";
-import type { BlockOf, FindBookmark } from "../../lib/magazine";
+import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 
 type Props = {
   block: BlockOf<"numbered-list">;
   anchor: string;
-  find: FindBookmark;
+  find: FindEntry;
 };
 
 const { block, anchor, find } = Astro.props;
-const entries = block.items.map(({ bookmark, headline, note }) => {
-  const found = find(bookmark);
-  return { bookmark: found, headline: headline ?? found.tldr, note };
+const entries = block.items.map((item) => {
+  const post = find(refOf(item));
+  return { post, item, headline: item.headline ?? post.tldr };
 });
 const large = block.variant === "large";
 ---
 
 <Block block={block} anchor={anchor} title={block.headline}>
   <ol class="flex flex-col gap-5">
-    {entries.map(({ bookmark, headline, note }, index) => (
+    {entries.map(({ post, item, headline }, index) => (
       <li class:list={["grid gap-x-4 gap-y-1", large ? "grid-cols-[2.75rem_1fr]" : "grid-cols-[1.75rem_1fr]"]}>
         <span
           aria-hidden="true"
@@ -30,8 +31,8 @@ const large = block.variant === "large";
         >
           {index + 1}
         </span>
-        <ItemTitle id={bookmark.id} text={headline} />
-        {note !== undefined && <p class="text-[0.94em] text-pretty text-foreground/85">{note}</p>}
+        <ItemTitle post={post} text={headline} />
+        <ItemNote item={item} />
       </li>
     ))}
   </ol>
