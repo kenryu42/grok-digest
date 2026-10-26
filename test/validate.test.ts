@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, writeFile } from "node:fs/promises";
+import { copyFile, mkdir, mkdtemp, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
@@ -179,6 +179,70 @@ describe("validateFiles", () => {
     await writeData({ "removed.json": "[1," });
     const [report] = await validateFiles({ cwd, files: ["data/removed.json"] });
     expect(errorOf(report)).toContain("data/removed.json is not valid JSON");
+  });
+});
+
+const LARGE_ART = path.resolve("dev/data/magazine/2026-02-13/beaks.jpg");
+const SMALL_ART = path.resolve("src/assets/icon-512.png");
+
+async function warningsOfIssue(): Promise<string[]> {
+  const [report] = await validateIssueOf("2026-10-19");
+  return report?.ok === true ? (report.warnings ?? []) : [errorOf(report)];
+}
+
+describe("validating an issue's art", () => {
+  const withArt = {
+    ...issue,
+    sections: [
+      { type: "feature", bookmark: templateSamples[0]?.id, art: "lead.jpg" },
+      { type: "image-of-the-day", art: "day/end.png", caption: "The day." },
+    ],
+  };
+
+  async function writeArt(art: Record<string, string>): Promise<void> {
+    await writeData({ "bookmarks.json": JSON.stringify(templateSamples), "magazine/2026-10-19.jpg": "" });
+    await writeFile(path.join(cwd, "data/magazine/2026-10-19.json"), JSON.stringify(withArt));
+    await mkdir(path.join(cwd, "data/magazine/2026-10-19/day"), { recursive: true });
+    await Promise.all(
+      Object.entries(art).map(([name, from]) => copyFile(from, path.join(cwd, "data/magazine/2026-10-19", name))),
+    );
+  }
+
+  it("passes art stored in the issue's folder that is large enough", async () => {
+    await writeArt({ "lead.jpg": LARGE_ART, "day/end.png": LARGE_ART });
+    expect(await warningsOfIssue()).toEqual([]);
+  });
+
+  it("warns about missing art, as for a missing cover, and says what the page does", async () => {
+    await writeArt({});
+    expect(await warningsOfIssue()).toEqual([
+      "data/magazine/2026-10-19/lead.jpg is missing; the page shows the block without it\n  → at sections[0].art",
+      "data/magazine/2026-10-19/day/end.png is missing; the page leaves the block out\n  → at sections[1].art",
+    ]);
+  });
+
+  it("warns about art that is too small or not a picture", async () => {
+    await writeArt({ "lead.jpg": SMALL_ART, "day/end.png": path.resolve("package.json") });
+    expect(await warningsOfIssue()).toEqual([
+      "data/magazine/2026-10-19/lead.jpg is 512 × 512 pixels; make it at least 1200 × 800; the page shows the block without it\n  → at sections[0].art",
+      "data/magazine/2026-10-19/day/end.png is not a picture; the page leaves the block out\n  → at sections[1].art",
+    ]);
+  });
+
+  it.each([
+    ["a path out of the folder", "../2026-10-18.jpg", "must be a file in the issue's own folder"],
+    ["an absolute path", "/etc/passwd.jpg", "must be a file in the issue's own folder"],
+    ["a web address", "https://example.com/a.jpg", "must be a file in the issue's own folder"],
+    ["another format", "lead.gif", "must end in .jpg, .png, .webp"],
+  ])("fails art at %s", async (_case, art, message) => {
+    await writeArt({});
+    await writeFile(
+      path.join(cwd, "data/magazine/2026-10-19.json"),
+      JSON.stringify({ ...withArt, sections: [{ ...withArt.sections[0], art }] }),
+    );
+    const [error = ""] = await warningsOfIssue();
+    expect(error).toContain(message);
+    expect(error).toContain("→ at sections[0].art");
   });
 });
 

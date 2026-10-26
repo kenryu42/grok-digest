@@ -5,25 +5,28 @@ import Compare from "./Compare.astro";
 import Corner from "./Corner.astro";
 import CoverStory from "./CoverStory.astro";
 import Feature from "./Feature.astro";
+import ImageOfTheDay from "./ImageOfTheDay.astro";
 import NumberedList from "./NumberedList.astro";
 import PhotoSpread from "./PhotoSpread.astro";
 import PullQuote from "./PullQuote.astro";
 import SidebarBox from "./SidebarBox.astro";
 import Timeline from "./Timeline.astro";
 import TopicDivider from "./TopicDivider.astro";
-import type { FindEntry, MagazineBlock } from "../../lib/magazine";
+import type { CoveredIssue, FindEntry, MagazineBlock } from "../../lib/magazine";
 
 type Props = {
   block: MagazineBlock;
   anchor: string;
   find: FindEntry;
+  art: CoveredIssue["art"];
 };
 
-const { block, anchor, find } = Astro.props;
+const { block, anchor, find, art } = Astro.props;
+const picture = "art" in block && block.art !== undefined ? art.get(block.art) : undefined;
 ---
 
-{block.type === "cover-story" && <CoverStory block={block} anchor={anchor} find={find} />}
-{block.type === "feature" && <Feature block={block} anchor={anchor} find={find} />}
+{block.type === "cover-story" && <CoverStory block={block} anchor={anchor} find={find} art={picture} />}
+{block.type === "feature" && <Feature block={block} anchor={anchor} find={find} art={picture} />}
 {block.type === "pull-quote" && <PullQuote block={block} anchor={anchor} find={find} />}
 {block.type === "photo-spread" && <PhotoSpread block={block} anchor={anchor} find={find} />}
 {block.type === "brief-grid" && <BriefGrid block={block} anchor={anchor} find={find} />}
@@ -33,4 +36,7 @@ const { block, anchor, find } = Astro.props;
 {block.type === "topic-divider" && <TopicDivider block={block} anchor={anchor} />}
 {block.type === "sidebar-box" && <SidebarBox block={block} anchor={anchor} find={find} />}
 {block.type === "corner" && <Corner block={block} anchor={anchor} />}
+{block.type === "image-of-the-day" && picture !== undefined && (
+  <ImageOfTheDay block={block} anchor={anchor} art={picture} />
+)}
 {block.type === "closer" && <Closer block={block} anchor={anchor} find={find} />}

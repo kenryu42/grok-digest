@@ -110,7 +110,7 @@ const linkClass = "decoration-brand underline-offset-4 hover:underline";
     )}
     <div class="grid items-start gap-12 min-[56.25rem]:grid-cols-2 min-[56.25rem]:gap-x-10">
       {sections.map((block, index) => (
-        <IssueBlock block={block} anchor={anchorOf(index)} find={find} />
+        <IssueBlock block={block} anchor={anchorOf(index)} find={find} art={issue.art} />
       ))}
     </div>
   </div>

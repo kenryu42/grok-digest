@@ -64,8 +64,13 @@ const allBlocks = withSections(
   { type: "topic-divider", topic: "design", variant: "band" },
   { type: "sidebar-box", bookmark: agents, headline: "Try this" },
   { type: "corner", corner: "kicker" },
+  { type: "image-of-the-day", art: "day.jpg", caption: "The day in one picture." },
   { type: "closer", bookmark: design, note: "To end on." },
 );
+
+const withArt = (art: string) => withSections({ ...issue.sections[0], art });
+const artFeature = (bookmark: string | undefined, art: string) => ({ type: "feature", bookmark, art });
+const imageOfTheDay = { type: "image-of-the-day", art: "day.jpg", caption: "The day." };
 
 describe("magazine issue schema", () => {
   it("accepts an issue and fills in each block's default variant, emphasis and span", () => {
@@ -112,6 +117,22 @@ describe("magazine issue schema", () => {
     ],
     ["one side in a compare", withSections({ type: "compare", items: [{ bookmark: agents }] }), "sections[0].items"],
     ["five columns", withSections({ type: "brief-grid", columns: 5, items: [] }), "sections[0].columns"],
+    ["art that climbs out of the issue's folder", withArt("../2026-10-18.jpg"), "sections[0].art"],
+    ["art at an absolute path", withArt("/etc/art.jpg"), "sections[0].art"],
+    ["art at a web address", withArt("https://example.com/art.jpg"), "sections[0].art"],
+    ["art in another format", withArt("art.gif"), "must end in .jpg, .png, .webp"],
+    ["art on a block that takes none", withSections({ type: "closer", bookmark: agents, art: "a.jpg" }), '"art"'],
+    ["an image of the day without a caption", withSections({ type: "image-of-the-day", art: "a.jpg" }), "caption"],
+    [
+      "a fourth block with art",
+      withSections(...["a.jpg", "b.jpg", "c.jpg", "d.jpg"].map((art) => artFeature(agents, art))),
+      'at most 3 blocks with "art"\n  → at sections[3]',
+    ],
+    [
+      "a second image of the day",
+      withSections(imageOfTheDay, imageOfTheDay),
+      'at most 1 "image-of-the-day" block\n  → at sections[1]',
+    ],
   ])("rejects %s, naming the file and the field", (_case, raw, field) => {
     const error = errorOf(raw);
     expect(error).toContain(`${SOURCE} is invalid:`);
@@ -253,6 +274,21 @@ describe("issueWarnings", () => {
     ]);
   });
 
+  it("warns that art on a post with its own image does not show", () => {
+    const photo = { url: "https://pbs.twimg.com/media/G3xAmPLeAAAbCdE.jpg" };
+    const raw = structuredClone(samples);
+    const designSample = raw.find((sample) => sample.id === design);
+    if (designSample !== undefined) Object.assign(designSample, { media: [photo] });
+    const withPhoto = parseBookmarks({ raw, source: "data/bookmarks.json" });
+    const framed = withSections(artFeature(design, "a.jpg"), artFeature(tokyo, "b.jpg"));
+    expect(issueWarnings({ issue: parse(framed), bookmarks: withPhoto, latestToday: "2026-10-20" })).toEqual([
+      {
+        path: ["sections", 0, "art"],
+        message: `bookmark "${design}" has its own image, which the page shows instead of the art`,
+      },
+    ]);
+  });
+
   it("warns about a second loud block, a bookmark in three blocks, and a date in the future", () => {
     const loud = { type: "feature", bookmark: agents, emphasis: "loud" };
     expect(warningsOf(withSections(loud, loud, { type: "sidebar-box", bookmark: agents }), "2026-10-18")).toEqual([
@@ -272,6 +308,43 @@ describe("parseMagazine", () => {
       })),
     );
     expect(parsed.map(({ date }) => date)).toEqual(["2026-10-19", "2026-10-18", "2026-10-17"]);
+  });
+});
+
+const picture = (width: number, height: number) => ({ src: "/art.jpg", width, height, format: "jpg" as const });
+
+describe("parseMagazine with art", () => {
+  it("keeps art that is there and large enough, and shows the block without the rest", () => {
+    const [parsed] = parseMagazine([
+      {
+        source: SOURCE,
+        raw: withSections(
+          artFeature(tokyo, "big.jpg"),
+          artFeature(tokyo, "small.jpg"),
+          artFeature(tokyo, "missing.jpg"),
+          { ...imageOfTheDay, art: "big.jpg" },
+        ),
+        art: { "big.jpg": picture(1600, 1067), "small.jpg": picture(800, 600) },
+      },
+    ]);
+    expect(parsed?.sections.map((block) => `${block.type}:${"art" in block ? block.art : ""}`)).toEqual([
+      "feature:big.jpg",
+      "feature:undefined",
+      "feature:undefined",
+      "image-of-the-day:big.jpg",
+    ]);
+    expect([...(parsed?.art.keys() ?? [])]).toEqual(["big.jpg"]);
+  });
+
+  it("leaves out an image of the day whose picture is too small", () => {
+    const [parsed] = parseMagazine([
+      {
+        source: SOURCE,
+        raw: withSections(issue.sections[0], imageOfTheDay),
+        art: { "day.jpg": picture(1199, 800) },
+      },
+    ]);
+    expect(parsed?.sections.map(({ type }) => type)).toEqual(["cover-story"]);
   });
 });
 

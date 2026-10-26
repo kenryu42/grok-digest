@@ -15,7 +15,9 @@
       "headline": "Beaks were invented twice",
       "deck": "Two fossil birds, one rock bed, two separate answers to the same problem.",
       "source_label": "Nature",
-      "tags": ["new-to-you"]
+      "tags": ["new-to-you"],
+      "art": "beaks.jpg",
+      "art_alt": "Layered green hills under a pale sky, in soft overlapping shapes"
     },
     {
       "type": "corner",
@@ -69,6 +71,12 @@
           "bookmark": "1000000000000000003"
         }
       ]
+    },
+    {
+      "type": "image-of-the-day",
+      "art": "green-star.jpg",
+      "headline": "A green light over still water",
+      "caption": "Two beaks, one star, and a quiet field: the day drawn in the colors of its finds."
     },
     {
       "type": "corner",

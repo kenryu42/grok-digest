@@ -45,13 +45,32 @@ export const TAG_LABELS: Record<MagazineTag, string> = {
 };
 
 const ISSUE_FILE_NAME = /^(\d{4}-\d{2}-\d{2})\.json$/;
-export const COVER_EXTENSIONS = [".jpg", ".png", ".webp"] as const;
+export const PICTURE_EXTENSIONS = [".jpg", ".png", ".webp"] as const;
 const COVER_FILE_NAME = /^\d{4}-\d{2}-\d{2}\.(?:jpg|png|webp)$/;
+const PATH_INSIDE_FOLDER = /^[\w-][\w.-]*(?:\/[\w-][\w.-]*)*$/;
+const PICTURE_FILE = /\.(?:jpg|png|webp)$/;
+const ISSUE_FOLDER = /^\d{4}-\d{2}-\d{2}\//;
+export const ART_MIN_SIZE = { width: 1200, height: 800 } as const;
+const MAX_BLOCK_ARTS = 3;
+const MAX_IMAGES_OF_THE_DAY = 1;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export const isIssueFileName = (name: string): boolean => ISSUE_FILE_NAME.test(name);
 export const isCoverFileName = (name: string): boolean => COVER_FILE_NAME.test(name);
-export const coverFileNames = (date: string): string[] => COVER_EXTENSIONS.map((extension) => `${date}${extension}`);
+const isArtPath = (art: string): boolean => PATH_INSIDE_FOLDER.test(art) && PICTURE_FILE.test(art);
+export const isArtFileName = (name: string): boolean =>
+  ISSUE_FOLDER.test(name) && isArtPath(name.replace(ISSUE_FOLDER, ""));
+export const coverFileNames = (date: string): string[] => PICTURE_EXTENSIONS.map((extension) => `${date}${extension}`);
+export const artFileName = (date: string, art: string): string => `${date}/${art}`;
+
+type PictureSize = { width: number; height: number };
+
+const PICTURE_WIDTHS = [240, 360, 480, 720, 960, 1200];
+
+export const pictureWidths = (width: number): number[] => [...PICTURE_WIDTHS.filter((each) => each < width), width];
+
+export const isLargeEnoughArt = ({ width, height }: PictureSize): boolean =>
+  width >= ART_MIN_SIZE.width && height >= ART_MIN_SIZE.height;
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);
 const headline = shortText(120);
@@ -65,6 +84,15 @@ const itemMeta = {
   tags: z.array(z.enum(MAGAZINE_TAGS)).max(MAGAZINE_TAGS.length).default([]),
   source_label: label.optional(),
 };
+
+const artPath = z
+  .string()
+  .regex(
+    PATH_INSIDE_FOLDER,
+    "must be a file in the issue's own folder, such as harbor.jpg, with no URL, absolute path, or ..",
+  )
+  .regex(PICTURE_FILE, `must end in ${PICTURE_EXTENSIONS.join(", ")}`);
+const artFields = { art: artPath.optional(), art_alt: note.optional() };
 
 type Reference = { bookmark?: string | undefined; scan?: string | undefined };
 
@@ -112,6 +140,7 @@ const blockSchemas = [
       kicker: label.optional(),
       headline,
       deck: deck.optional(),
+      ...artFields,
       ...itemMeta,
       ...blockStyle(["stacked", "overlay", "split"]),
     })
@@ -122,6 +151,7 @@ const blockSchemas = [
       ...reference,
       headline: headline.optional(),
       deck: deck.optional(),
+      ...artFields,
       ...itemMeta,
       ...blockStyle(["standard", "aside", "drop-cap"]),
     })
@@ -187,6 +217,14 @@ const blockSchemas = [
     deck: deck.optional(),
     ...fixedStyle,
   }),
+  z.strictObject({
+    type: z.literal("image-of-the-day"),
+    art: artPath,
+    art_alt: note.optional(),
+    headline: headline.optional(),
+    caption: note,
+    ...fixedStyle,
+  }),
   z
     .strictObject({
       type: z.literal("closer"),
@@ -203,6 +241,32 @@ export const MAGAZINE_BLOCK_TYPES = blockSchemas.map((schema) => schema.shape.ty
 
 export const magazineBlockSchema = z.discriminatedUnion("type", blockSchemas);
 
+type ParsedBlock = z.output<typeof magazineBlockSchema>;
+
+type ArtLimit = { counts: (block: ParsedBlock) => boolean; max: number; what: string };
+
+const ART_LIMITS: readonly ArtLimit[] = [
+  {
+    counts: (block) => block.type !== "image-of-the-day" && "art" in block && block.art !== undefined,
+    max: MAX_BLOCK_ARTS,
+    what: 'blocks with "art"',
+  },
+  {
+    counts: (block) => block.type === "image-of-the-day",
+    max: MAX_IMAGES_OF_THE_DAY,
+    what: '"image-of-the-day" block',
+  },
+];
+
+function limitArt(sections: ParsedBlock[], ctx: z.RefinementCtx): void {
+  for (const { counts, max, what } of ART_LIMITS) {
+    const over = sections.flatMap((block, index) => (counts(block) ? [index] : [])).slice(max);
+    for (const index of over) {
+      ctx.addIssue({ code: "custom", path: [index], message: `an issue takes at most ${max} ${what}` });
+    }
+  }
+}
+
 export const magazineIssueSchema = z.strictObject({
   date: z.iso.date(),
   title: shortText(80),
@@ -213,7 +277,7 @@ export const magazineIssueSchema = z.strictObject({
     fonts: z.enum(MAGAZINE_FONTS),
     accent: z.string().regex(HEX_COLOR, "must be a color such as #1d4ed8").optional(),
   }),
-  sections: z.array(magazineBlockSchema).min(1).max(30),
+  sections: z.array(magazineBlockSchema).min(1).max(30).superRefine(limitArt),
 });
 
 export type MagazineIssue = z.output<typeof magazineIssueSchema>;
@@ -221,7 +285,10 @@ export type MagazineBlock = MagazineIssue["sections"][number];
 type MagazineBlockType = MagazineBlock["type"];
 export type BlockOf<Type extends MagazineBlockType> = Extract<MagazineBlock, { type: Type }>;
 export type ItemsBlock = BlockOf<keyof typeof ITEM_LIMITS>;
-export type CoveredIssue = MagazineIssue & { cover: ImageMetadata | undefined };
+export type CoveredIssue = MagazineIssue & {
+  cover: ImageMetadata | undefined;
+  art: ReadonlyMap<string, ImageMetadata>;
+};
 export type PublishedIssue = CoveredIssue & { number: number };
 export type FindEntry = (ref: PostRef) => Post;
 export type ItemMeta = { why?: string | undefined; tags: MagazineTag[]; source_label?: string | undefined };
@@ -241,12 +308,36 @@ export function parseMagazineIssue({ raw, source }: { raw: unknown; source: stri
   return parseDataFile({ schema, raw, source });
 }
 
-export type IssueFile = { source: string; raw: unknown; cover?: ImageMetadata | undefined };
+export type IssueFile = {
+  source: string;
+  raw: unknown;
+  cover?: ImageMetadata | undefined;
+  art?: Record<string, ImageMetadata> | undefined;
+};
+
+const artReference = z.object({ art: artPath });
+
+export function artPathsIn(raw: unknown): string[] {
+  const issue = z.object({ sections: z.array(z.unknown()) }).safeParse(raw);
+  if (!issue.success) return [];
+  return issue.data.sections.flatMap((block) => {
+    const named = artReference.safeParse(block);
+    return named.success ? [named.data.art] : [];
+  });
+}
+
+function withUsableArt(file: IssueFile): CoveredIssue {
+  const issue = parseMagazineIssue(file);
+  const art = new Map(Object.entries(file.art ?? {}).filter(([, picture]) => isLargeEnoughArt(picture)));
+  const sections = issue.sections.flatMap((block): MagazineBlock[] => {
+    if (!("art" in block) || block.art === undefined || art.has(block.art)) return [block];
+    return block.type === "image-of-the-day" ? [] : [{ ...block, art: undefined }];
+  });
+  return { ...issue, sections, cover: file.cover, art };
+}
 
 export const parseMagazine = (files: readonly IssueFile[]): CoveredIssue[] =>
-  files
-    .map((file) => ({ ...parseMagazineIssue(file), cover: file.cover }))
-    .toSorted((a, b) => b.date.localeCompare(a.date));
+  files.map(withUsableArt).toSorted((a, b) => b.date.localeCompare(a.date));
 
 const MONTHS = [
   "January",

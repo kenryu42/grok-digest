@@ -21,17 +21,17 @@ The rest is in `template/README.md`. To convert a site that still holds a copy o
 
 A site repository contains:
 
-| Path                           | Contents                                                                                                                   |
-| ------------------------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| `data/bookmarks.json`          | The bookmarks. The Grok bot appends to it.                                                                                 |
-| `data/processed.json`          | Optional. Ids the bot has handled.                                                                                         |
-| `data/removed.json`            | Optional. Ids the bot has removed.                                                                                         |
-| `data/scans.json`              | Optional. Posts the bot's daily scan found that the owner did not save. Strong picks show on the page.                     |
-| `data/magazine/`               | Optional. One magazine issue per day, `YYYY-MM-DD.json`, and its cover picture, `YYYY-MM-DD.jpg`. The Grok bot makes both. |
-| `custom/`                      | Optional. The owner's changes to the page, described below.                                                                |
-| `package.json`                 | Depends on `"grok-digest": "latest"` and maps the scripts to the CLI below.                                                |
-| `bun.lock`                     | The lockfile.                                                                                                              |
-| `.github/workflows/deploy.yml` | Validates the data, builds with the newest `grok-digest`, and publishes to Pages.                                          |
+| Path                           | Contents                                                                                                                                                           |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `data/bookmarks.json`          | The bookmarks. The Grok bot appends to it.                                                                                                                         |
+| `data/processed.json`          | Optional. Ids the bot has handled.                                                                                                                                 |
+| `data/removed.json`            | Optional. Ids the bot has removed.                                                                                                                                 |
+| `data/scans.json`              | Optional. Posts the bot's daily scan found that the owner did not save. Strong picks show on the page.                                                             |
+| `data/magazine/`               | Optional. One magazine issue per day, `YYYY-MM-DD.json`, its cover picture, `YYYY-MM-DD.jpg`, and any art it names, in `YYYY-MM-DD/`. The Grok bot makes them all. |
+| `custom/`                      | Optional. The owner's changes to the page, described below.                                                                                                        |
+| `package.json`                 | Depends on `"grok-digest": "latest"` and maps the scripts to the CLI below.                                                                                        |
+| `bun.lock`                     | The lockfile.                                                                                                                                                      |
+| `.github/workflows/deploy.yml` | Validates the data, builds with the newest `grok-digest`, and publishes to Pages.                                                                                  |
 
 ## How a site takes new versions
 
@@ -79,7 +79,7 @@ grok-digest merge                Bring ejected components up to the installed ve
 
 `build`, `dev`, and `preview` read two environment variables. `SITE_URL` is the site's origin, such as `https://<your-username>.github.io`, and becomes Astro's `site`. `BASE_PATH` is the path the site is served under, such as `/<repository-name>`, and becomes Astro's `base`, so links on a `github.io/<repository-name>/` site stay under that path. The deploy workflow sets both from GitHub Pages.
 
-`validate` with no file checks `data/bookmarks.json`, whichever of `data/scans.json`, `data/processed.json`, `data/removed.json`, and `custom/config.json` exist, and every `.json` file in `data/magazine/`. It prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`, and fails naming the entry and the field of an invalid file. For an issue it also prints a `⚠` warning, naming the field, for each thing that depends on the bookmarks, such as a bookmark id missing from `data/bookmarks.json` or a scan id missing from `data/scans.json`, when the issue has no cover picture, when a scan it shows has no source link and is not tagged `unverified`, and, for an issue with corners, when it has no Open Window item or more than 60% interest items. Warnings do not fail it, so removing or editing a bookmark never stops a deploy. A `.json` file in `data/magazine/` not named after a date gets a warning and is ignored.
+`validate` with no file checks `data/bookmarks.json`, whichever of `data/scans.json`, `data/processed.json`, `data/removed.json`, and `custom/config.json` exist, and every `.json` file in `data/magazine/`. It prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`, and fails naming the entry and the field of an invalid file. For an issue it also prints a `⚠` warning, naming the field, for each thing that depends on the bookmarks, such as a bookmark id missing from `data/bookmarks.json` or a scan id missing from `data/scans.json`, when the issue has no cover picture, when art it names is missing, not a picture, or smaller than 1200 × 800 pixels, or shows on a post that has its own image, when a scan it shows has no source link and is not tagged `unverified`, and, for an issue with corners, when it has no Open Window item or more than 60% interest items. Warnings do not fail it, so removing or editing a bookmark never stops a deploy. A `.json` file in `data/magazine/` not named after a date gets a warning and is ignored.
 
 The site needs no Astro config. The package depends on the Astro version it was tested with and runs it.
 
@@ -93,14 +93,15 @@ import { SCHEMA_VERSION, bookmarkSchema, parseBookmarks, TOPICS } from "grok-dig
 
 `SCHEMA_VERSION` is `1`. The JSON files have no version field. A `bookmarks.json` that already validates is version 1. `posted_at` with milliseconds and a `Z` offset, as the bot writes it, is version 1. The optional `media` field, a post's images, is part of version 1 too: a bookmark without it parses with `media` set to `[]`. So is a link's optional `image`, X's copy of its preview image.
 
-| File                   | Version 1 shape                                                                                             |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `data/bookmarks.json`  | Array of bookmark objects. Every field is described in `BOT.md`.                                            |
-| `data/processed.json`  | Array of non-empty id strings. Optional. The page does not read it.                                         |
-| `data/removed.json`    | Same shape as `processed.json`. Optional. The page does not read it.                                        |
-| `data/scans.json`      | Optional. Array of scan objects: a bookmark object plus an optional boolean `pick`. Described in `BOT.md`.  |
-| `data/magazine/*.json` | Optional. One magazine issue per file, named by its date. Every field is described in `BOT.md`.             |
-| `data/magazine/*.jpg`  | Optional. An issue's cover picture, named by the issue's date: 3:4 portrait, as `.jpg`, `.png`, or `.webp`. |
+| File                    | Version 1 shape                                                                                             |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `data/bookmarks.json`   | Array of bookmark objects. Every field is described in `BOT.md`.                                            |
+| `data/processed.json`   | Array of non-empty id strings. Optional. The page does not read it.                                         |
+| `data/removed.json`     | Same shape as `processed.json`. Optional. The page does not read it.                                        |
+| `data/scans.json`       | Optional. Array of scan objects: a bookmark object plus an optional boolean `pick`. Described in `BOT.md`.  |
+| `data/magazine/*.json`  | Optional. One magazine issue per file, named by its date. Every field is described in `BOT.md`.             |
+| `data/magazine/*.jpg`   | Optional. An issue's cover picture, named by the issue's date: 3:4 portrait, as `.jpg`, `.png`, or `.webp`. |
+| `data/magazine/<date>/` | Optional. The art an issue's blocks name, as `.jpg`, `.png`, or `.webp`, at least 1200 × 800.               |
 
 Every site takes every release, so every release reads every data file an earlier release accepted. The policy is in `MIGRATION.md`.
 
@@ -116,7 +117,7 @@ A site with `data/scans.json` also lists the scans marked `pick`, the bot's stro
 
 A site with at least one issue, a `data/magazine/<YYYY-MM-DD>.json` file, also gets a magazine: `magazine/` shows the latest issue's cover large, with its title and contents, and the covers of the earlier issues by month, `magazine/<YYYY-MM-DD>/` shows one issue with links to the issues before and after it, and `magazine/rss.xml` is its feed. The header links to `magazine/`. A site without issues builds none of these, and its bookmarks page looks and works the same as without the feature.
 
-An issue is data the Grok bot writes once a day, described in `BOT.md` under "Write a magazine issue": a title, a theme chosen from preset palettes and font pairings, and a list of blocks that show bookmarks, such as a cover story, a pull quote, or a timeline. The package draws every block, so an issue holds no HTML, CSS, or web address. Each issue has a cover picture the bot makes, `data/magazine/<YYYY-MM-DD>.jpg` (or `.png`, `.webp`). The build resizes it for each screen, and the page sets the site's title across its top. An issue without one gets a lettered cover in its palette's color, and `validate` warns. When a block names a bookmark that is gone from `data/bookmarks.json`, the page leaves out that item, or the whole block when too few items are left, and `validate` warns. A block can name a scan from `data/scans.json` instead of a bookmark; a scan without a card on the page links to its post on X. `corner` blocks open recurring sections, drawn the same in every issue, and group the "In this issue" list; a `closer` ends the issue quietly.
+An issue is data the Grok bot writes once a day, described in `BOT.md` under "Write a magazine issue": a title, a theme chosen from preset palettes and font pairings, and a list of blocks that show bookmarks, such as a cover story, a pull quote, or a timeline. The package draws every block, so an issue holds no HTML, CSS, or web address. Each issue has a cover picture the bot makes, `data/magazine/<YYYY-MM-DD>.jpg` (or `.png`, `.webp`). The build resizes it for each screen, and the page sets the site's title across its top. An issue without one gets a lettered cover in its palette's color, and `validate` warns. The bot can also make up to three more pictures for blocks whose post has no image, `art` on a `cover-story` or `feature`, and one `image-of-the-day` block; they live in `data/magazine/<YYYY-MM-DD>/`, the build resizes them the same way, and `validate` fails a path that leaves that folder. When a block names a bookmark that is gone from `data/bookmarks.json`, the page leaves out that item, or the whole block when too few items are left, and `validate` warns. A block can name a scan from `data/scans.json` instead of a bookmark; a scan without a card on the page links to its post on X. `corner` blocks open recurring sections, drawn the same in every issue, and group the "In this issue" list; a `closer` ends the issue quietly.
 
 ## Package exports
 

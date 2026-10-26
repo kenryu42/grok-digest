@@ -11,6 +11,7 @@ import {
   type MagazineIssue,
   type MagazineTag,
 } from "./magazine.ts";
+import { postImages } from "./media.ts";
 import { postFinder, type FindPost, type Post, type PostRef } from "./posts.ts";
 
 export type IssueWarning = { path: (string | number)[]; message: string };
@@ -41,6 +42,12 @@ function referenceProblem(block: MagazineBlock, { source, id }: PostRef, post: P
   return undefined;
 }
 
+const hasUnseenArt = (block: MagazineBlock, post: Post | undefined): boolean =>
+  (block.type === "cover-story" || block.type === "feature") &&
+  block.art !== undefined &&
+  post !== undefined &&
+  postImages(post).length > 0;
+
 type Reference = { path: (string | number)[]; ref: PostRef; tags: readonly MagazineTag[] | undefined };
 
 const referenceField = (ref: PostRef): string => (ref.source === "scan" ? "scan" : "bookmark");
@@ -51,7 +58,7 @@ function referencesIn(block: MagazineBlock): Reference[] {
       const ref = refOf(item);
       return { path: ["items", index], ref, tags: item.tags };
     });
-  if (block.type === "topic-divider" || block.type === "corner") return [];
+  if (block.type === "topic-divider" || block.type === "corner" || block.type === "image-of-the-day") return [];
   return [{ path: [], ref: refOf(block), tags: "tags" in block ? block.tags : undefined }];
 }
 
@@ -152,6 +159,13 @@ export function issueWarnings({
       warnings.push({
         path: ["sections", index, ...path, problem.field ?? referenceField(ref)],
         message: `${problem.message}; ${leftOut(block, problems.length)}`,
+      });
+    }
+    const [framed] = references;
+    if (framed !== undefined && hasUnseenArt(block, find(framed.ref))) {
+      warnings.push({
+        path: ["sections", index, "art"],
+        message: `${framed.ref.source} "${framed.ref.id}" has its own image, which the page shows instead of the art`,
       });
     }
     for (const { path, ref, tags } of references) {

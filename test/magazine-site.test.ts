@@ -9,6 +9,7 @@ const ORIGIN = "https://example.github.io";
 const BASE_PATH = "/mag-check";
 const [agents, tokyo, design] = samples.map(({ id }) => id);
 const COVER_PICTURE = path.resolve("src/assets/icon-512.png");
+const ART_PICTURE = path.resolve("dev/data/magazine/2026-02-13/beaks.jpg");
 
 let site = "";
 
@@ -163,6 +164,51 @@ describe("a site with magazine issues", () => {
       await expect(readFile(path.join(site, "dist", pictures[0] ?? ""))).resolves.toEqual(
         await readFile(COVER_PICTURE),
       );
+    },
+    BUILD_TIMEOUT_MS,
+  );
+
+  it(
+    "shows art from the issue's folder, resized, where the post has no image, and leaves out what is missing",
+    async () => {
+      await writeIssue("2026-10-17", {
+        title: "Drawn issue",
+        theme,
+        sections: [
+          { type: "feature", bookmark: tokyo, art: "lead.jpg", art_alt: "Green hills" },
+          { type: "feature", bookmark: design, art: "gone.jpg" },
+          { type: "image-of-the-day", art: "day/end.jpg", headline: "The day, drawn", caption: "Soft green hills." },
+        ],
+      });
+      await writeIssue("2026-10-16", {
+        title: "Missing picture",
+        theme,
+        sections: [
+          { type: "feature", bookmark: design },
+          { type: "image-of-the-day", art: "gone.jpg", caption: "Never shown." },
+        ],
+      });
+      await mkdir(path.join(site, "data/magazine/2026-10-17/day"), { recursive: true });
+      await copyFile(ART_PICTURE, path.join(site, "data/magazine/2026-10-17/lead.jpg"));
+      await copyFile(ART_PICTURE, path.join(site, "data/magazine/2026-10-17/day/end.jpg"));
+      await build({ BASE_PATH });
+
+      const drawn = await read("dist/magazine/2026-10-17/index.html");
+      const arts = [...drawn.matchAll(/<img[^>]*data-art[^>]*>/g)].map(([tag]) => tag);
+      expect(arts).toHaveLength(2);
+      expect(arts[0]).toContain('alt="Green hills"');
+      for (const tag of arts) {
+        const sources = [...(/srcset="([^"]+)"/.exec(tag)?.[1] ?? "").matchAll(/(\S+) \d+w/g)].map(([, url]) => url);
+        expect(sources.length).toBeGreaterThan(1);
+        expect(sources.every((url) => url?.startsWith(`${BASE_PATH}/_astro/`))).toBe(true);
+      }
+      expect(drawn).toContain("The day, drawn");
+      expect(drawn).toContain("Soft green hills.");
+      expect(drawn.match(/data-block="feature"/g)).toHaveLength(2);
+
+      const missing = await read("dist/magazine/2026-10-16/index.html");
+      expect(missing).not.toContain('data-block="image-of-the-day"');
+      expect(missing).not.toContain("Never shown.");
     },
     BUILD_TIMEOUT_MS,
   );

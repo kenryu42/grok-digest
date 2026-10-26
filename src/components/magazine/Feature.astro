@@ -1,22 +1,28 @@
 ---
+import type { ImageMetadata } from "astro";
 import Block from "./Block.astro";
+import IssueArt from "./IssueArt.astro";
 import Byline from "./Byline.astro";
 import ItemMeta from "./ItemMeta.astro";
 import Kicker from "./Kicker.astro";
 import { langOf } from "../../lib/lang";
 import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
+import { postImages } from "../../lib/media";
 import { postLink } from "../../lib/paths";
 
 type Props = {
   block: BlockOf<"feature">;
   anchor: string;
   find: FindEntry;
+  art: ImageMetadata | undefined;
 };
 
-const { block, anchor, find } = Astro.props;
+const { block, anchor, find, art } = Astro.props;
 const post = find(refOf(block));
 const headline = block.headline ?? post.tldr;
 const aside = block.variant === "aside";
+const shownArt = postImages(post).length === 0 ? art : undefined;
+const ART_SIZES = block.span === "half" ? "(min-width: 56.25rem) 32rem, 100vw" : "(min-width: 72rem) 66rem, 100vw";
 ---
 
 <Block block={block} anchor={anchor}>
@@ -24,6 +30,11 @@ const aside = block.variant === "aside";
     lang={langOf(headline, post.summary)}
     class:list={["flex flex-col gap-4", aside && "sm:grid sm:grid-cols-[1.4fr_1fr] sm:gap-x-8"]}
   >
+    {shownArt !== undefined && (
+      <div class="aspect-[3/2] overflow-hidden rounded-2xl bg-muted sm:col-span-full">
+        <IssueArt picture={shownArt} alt={block.art_alt} sizes={ART_SIZES} />
+      </div>
+    )}
     <header class="flex flex-col gap-2 sm:col-span-full">
       <Kicker topic={post.topic} />
       <h3 class="font-(family-name:--issue-heading) text-[1.75rem] leading-tight font-semibold text-balance">

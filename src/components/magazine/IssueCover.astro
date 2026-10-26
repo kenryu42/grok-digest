@@ -1,6 +1,6 @@
 ---
 import { Image } from "astro:assets";
-import type { PublishedIssue } from "../../lib/magazine";
+import { pictureWidths, type PublishedIssue } from "../../lib/magazine";
 import { issueHref } from "../../lib/paths";
 import { siteConfig } from "../../lib/site-config";
 
@@ -10,8 +10,6 @@ type Props = {
   eager?: boolean;
   class?: string;
 };
-
-const COVER_WIDTHS = [240, 360, 480, 720, 960, 1200];
 
 const { issue, sizes, eager = false, class: className } = Astro.props;
 const { cover, title, date } = issue;
@@ -25,7 +23,7 @@ const { cover, title, date } = issue;
     <Image
       src={cover}
       alt=""
-      widths={[...COVER_WIDTHS.filter((width) => width < cover.width), cover.width]}
+      widths={pictureWidths(cover.width)}
       sizes={sizes}
       loading={eager ? "eager" : "lazy"}
       fetchpriority={eager ? "high" : "auto"}

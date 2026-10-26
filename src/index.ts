@@ -6,7 +6,7 @@ import type { AstroIntegration } from "astro";
 import type { Plugin, ViteDevServer } from "vite";
 import { existsSync } from "node:fs";
 import { componentFile, CONFIG_FILE, CUSTOM_DIR, OVERRIDABLE_COMPONENTS, THEME_FILE } from "./lib/custom.ts";
-import { BOOKMARKS_FILE, firstFileIn, jsonFilesIn, readJsonFile, SCANS_FILE } from "./lib/data-files.ts";
+import { BOOKMARKS_FILE, fileExists, firstFileIn, jsonFilesIn, readJsonFile, SCANS_FILE } from "./lib/data-files.ts";
 import {
   conflictedOverrides,
   defaultComponentFile,
@@ -16,7 +16,15 @@ import {
   overrideFile,
   staleOverrides,
 } from "./lib/eject.ts";
-import { coverFileNames, isCoverFileName, isIssueFileName, MAGAZINE_DIR } from "./lib/magazine.ts";
+import {
+  artFileName,
+  artPathsIn,
+  coverFileNames,
+  isArtFileName,
+  isCoverFileName,
+  isIssueFileName,
+  MAGAZINE_DIR,
+} from "./lib/magazine.ts";
 
 export type GrokDigestOptions = {
   dataDir?: string;
@@ -132,8 +140,15 @@ function dataModule({
 const issueFilesIn = async (dir: string): Promise<string[]> =>
   (await jsonFilesIn(dir)).filter((file) => isIssueFileName(path.basename(file)));
 
-const isMagazineFileName = (name: string): boolean => isIssueFileName(name) || isCoverFileName(name);
+const isMagazineFileName = (name: string): boolean =>
+  isIssueFileName(name) || isCoverFileName(name) || isArtFileName(name);
 const importPath = (file: string): string => JSON.stringify(file.split(path.sep).join("/"));
+
+async function presentArt(dir: string, date: string, names: readonly string[]) {
+  const pictures = [...new Set(names)].map((name) => ({ name, file: path.join(dir, artFileName(date, name)) }));
+  const present = await Promise.all(pictures.map(({ file }) => fileExists(file)));
+  return pictures.filter((_, index) => present[index]);
+}
 
 function magazineModule({ root, dir }: { root: string; dir: string }): Plugin {
   return {
@@ -149,17 +164,21 @@ function magazineModule({ root, dir }: { root: string; dir: string }): Plugin {
           this.addWatchFile(file);
           const source = displayPath(root, file);
           const raw = await readJsonFile({ file, source });
-          const cover = await firstFileIn(dir, coverFileNames(path.basename(file, ".json")));
-          return { index, source, raw, cover };
+          const date = path.basename(file, ".json");
+          const cover = await firstFileIn(dir, coverFileNames(date));
+          const art = await presentArt(dir, date, artPathsIn(raw));
+          for (const picture of art) this.addWatchFile(picture.file);
+          return { index, source, raw, cover, art };
         }),
       );
-      const imports = issues.flatMap(({ index, cover }) =>
-        cover === undefined ? [] : [`import cover${index} from ${importPath(cover)};`],
-      );
-      const entries = issues.map(
-        ({ index, source, raw, cover }) =>
-          `{ source: ${JSON.stringify(source)}, raw: ${JSON.stringify(raw)}, cover: ${cover === undefined ? "undefined" : `cover${index}`} }`,
-      );
+      const imports = issues.flatMap(({ index, cover, art }) => [
+        ...(cover === undefined ? [] : [`import cover${index} from ${importPath(cover)};`]),
+        ...art.map((picture, artIndex) => `import art${index}_${artIndex} from ${importPath(picture.file)};`),
+      ]);
+      const entries = issues.map(({ index, source, raw, cover, art }) => {
+        const artEntries = art.map(({ name }, artIndex) => `${JSON.stringify(name)}: art${index}_${artIndex}`);
+        return `{ source: ${JSON.stringify(source)}, raw: ${JSON.stringify(raw)}, cover: ${cover === undefined ? "undefined" : `cover${index}`}, art: { ${artEntries.join(", ")} } }`;
+      });
       return `${imports.join("\n")}\nexport default [${entries.join(",\n")}];`;
     },
   };
@@ -174,7 +193,7 @@ function whenFilesComeOrGo(
 ): void {
   let pending: ReturnType<typeof setTimeout> | undefined;
   const reactToFileInDir = (file: string): void => {
-    if (!file.startsWith(`${dir}${path.sep}`) || !named(path.basename(file))) return;
+    if (!file.startsWith(`${dir}${path.sep}`) || !named(path.relative(dir, file).split(path.sep).join("/"))) return;
     clearTimeout(pending);
     pending = setTimeout(respond, RESTART_DELAY_MS);
   };

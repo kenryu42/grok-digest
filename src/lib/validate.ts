@@ -20,7 +20,19 @@ import {
   SCANS_FILE,
   STATE_FILES,
 } from "./data-files.ts";
-import { COVER_EXTENSIONS, coverFileNames, isIssueFileName, MAGAZINE_DIR, parseMagazineIssue } from "./magazine.ts";
+import { readFile } from "node:fs/promises";
+import { imageMetadata } from "astro/assets/utils";
+import {
+  ART_MIN_SIZE,
+  artFileName,
+  coverFileNames,
+  isIssueFileName,
+  isLargeEnoughArt,
+  MAGAZINE_DIR,
+  parseMagazineIssue,
+  PICTURE_EXTENSIONS,
+  type MagazineIssue,
+} from "./magazine.ts";
 import { issueWarnings, type IssueWarning } from "./magazine-check.ts";
 
 type FileReport =
@@ -108,10 +120,42 @@ async function validateIssue({ file, source, context }: { file: string; source: 
   const cover = await firstFileIn(path.resolve(context.cwd, path.dirname(file)), coverFileNames(issue.date));
   if (cover === undefined) {
     warnings.push(
-      `no cover image; add ${toSource(path.join(path.dirname(file), issue.date))}${COVER_EXTENSIONS[0]} (or ${COVER_EXTENSIONS.slice(1).join(", ")}), a 3:4 portrait picture made for this issue`,
+      `no cover image; add ${toSource(path.join(path.dirname(file), issue.date))}${PICTURE_EXTENSIONS[0]} (or ${PICTURE_EXTENSIONS.slice(1).join(", ")}), a 3:4 portrait picture made for this issue`,
     );
   }
+  warnings.push(...(await artWarnings({ issue, dir: path.dirname(file), cwd: context.cwd })).map(warningLine));
   return { sections: issue.sections.length, warnings };
+}
+
+async function artProblem(file: string): Promise<string | undefined> {
+  if (!(await fileExists(file))) return "is missing";
+  const size = await imageMetadata(await readFile(file)).catch(() => undefined);
+  if (size === undefined) return "is not a picture";
+  if (isLargeEnoughArt(size)) return undefined;
+  return `is ${size.width} × ${size.height} pixels; make it at least ${ART_MIN_SIZE.width} × ${ART_MIN_SIZE.height}`;
+}
+
+async function artWarnings({
+  issue,
+  dir,
+  cwd,
+}: {
+  issue: MagazineIssue;
+  dir: string;
+  cwd: string;
+}): Promise<IssueWarning[]> {
+  const checked = await Promise.all(
+    issue.sections.map(async (block, index) => {
+      if (!("art" in block) || block.art === undefined) return [];
+      const file = path.join(dir, artFileName(issue.date, block.art));
+      const problem = await artProblem(path.resolve(cwd, file));
+      if (problem === undefined) return [];
+      const leftOut =
+        block.type === "image-of-the-day" ? "the page leaves the block out" : "the page shows the block without it";
+      return [{ path: ["sections", index, "art"], message: `${toSource(file)} ${problem}; ${leftOut}` }];
+    }),
+  );
+  return checked.flat();
 }
 
 async function validateFile({ file, context }: { file: string; context: Context }): Promise<FileReport> {

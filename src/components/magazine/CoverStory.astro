@@ -1,5 +1,7 @@
 ---
+import type { ImageMetadata } from "astro";
 import Block from "./Block.astro";
+import IssueArt from "./IssueArt.astro";
 import Byline from "./Byline.astro";
 import ItemMeta from "./ItemMeta.astro";
 import Kicker from "./Kicker.astro";
@@ -12,15 +14,18 @@ type Props = {
   block: BlockOf<"cover-story">;
   anchor: string;
   find: FindEntry;
+  art: ImageMetadata | undefined;
 };
 
-const { block, anchor, find } = Astro.props;
+const { block, anchor, find, art } = Astro.props;
 const post = find(refOf(block));
 const visual = cardKind(post);
 const lang = langOf(block.headline, block.deck);
 const image = visual.kind === "photo" ? visual.image : undefined;
-const overlay = image !== undefined && block.variant === "overlay";
-const split = image !== undefined && block.variant === "split";
+const pictured = image !== undefined || art !== undefined;
+const overlay = pictured && block.variant === "overlay";
+const split = pictured && block.variant === "split";
+const ART_SIZES = "(min-width: 72rem) 66rem, 100vw";
 
 const LAYOUT = {
   stacked: "flex flex-col gap-6",
@@ -30,7 +35,7 @@ const LAYOUT = {
 ---
 
 <Block block={block} anchor={anchor}>
-  {image === undefined ? (
+  {!pictured ? (
     <article lang={lang} class="flex flex-col gap-5">
       <span aria-hidden="true" class="h-2.5 w-24 rounded-full bg-brand" />
       <Kicker topic={post.topic} text={block.kicker} />
@@ -54,12 +59,16 @@ const LAYOUT = {
           overlay && "sm:absolute sm:inset-0 sm:aspect-auto sm:rounded-none",
         ]}
       >
-        <img
-          src={image.url}
-          alt={image.alt}
-          decoding="async"
-          class:list={["size-full", overlay ? "object-cover" : "object-contain"]}
-        />
+        {image === undefined ? (
+          art !== undefined && <IssueArt picture={art} alt={block.art_alt} sizes={ART_SIZES} />
+        ) : (
+          <img
+            src={image.url}
+            alt={image.alt}
+            decoding="async"
+            class:list={["size-full", overlay ? "object-cover" : "object-contain"]}
+          />
+        )}
       </div>
       <div
         class:list={[
