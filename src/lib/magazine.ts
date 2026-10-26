@@ -402,6 +402,9 @@ export function sectionHeading(block: MagazineBlock, find: FindEntry): string | 
 
 export const cornerLabel = (block: BlockOf<"corner">): string => block.label ?? CORNER_LABELS[block.corner];
 
+export const cornerNumber = (corner: MagazineCorner): string =>
+  String(MAGAZINE_CORNERS.indexOf(corner) + 1).padStart(2, "0");
+
 type ContentsEntry = { heading: string; anchor: string };
 type ContentsGroup = { corner: ContentsEntry | undefined; entries: ContentsEntry[] };
 

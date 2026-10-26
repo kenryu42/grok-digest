@@ -1,0 +1,83 @@
+---
+import DigestItem from "./DigestItem.astro";
+import IssueArt from "./IssueArt.astro";
+import { langOf } from "../../lib/lang";
+import { cornerNumber, issueDateLabel, themeAttributes, type FindEntry, type PublishedIssue } from "../../lib/magazine";
+import { issueDigest } from "../../lib/magazine-digest";
+import { siteConfig } from "../../lib/site-config";
+
+type Props = {
+  issue: PublishedIssue;
+  find: FindEntry;
+};
+
+const { issue, find } = Astro.props;
+const { date, number, title, subtitle, theme } = issue;
+const groups = issueDigest(issue, find);
+const headingOf = (index: number): string => `digest-${date}-${index + 1}`;
+---
+
+<article
+  data-digest={date}
+  {...themeAttributes(theme)}
+  class="flex flex-col gap-6 rounded-3xl bg-(--issue-paper) px-4 py-6 font-(family-name:--issue-body) ring-1 ring-foreground/8 *:mx-auto *:w-full *:max-w-3xl sm:px-10 sm:py-9"
+>
+  <header class="flex flex-col gap-2 border-b border-border pb-6">
+    <p class="font-sans text-xs font-semibold tracking-widest text-muted-foreground uppercase">
+      <span class="text-brand-ink">{siteConfig.title} Magazine</span>
+      {` · No. ${number} · `}
+      <time datetime={date}>{issueDateLabel(date)}</time>
+    </p>
+    <h2
+      lang={langOf(title)}
+      class="font-(family-name:--issue-heading) text-3xl leading-tight font-semibold tracking-tight text-balance sm:text-4xl"
+    >
+      {title}
+    </h2>
+    {subtitle !== undefined && (
+      <p data-digest-brief lang={langOf(subtitle)} class="max-w-3xl text-pretty text-muted-foreground sm:text-lg">
+        {subtitle}
+      </p>
+    )}
+  </header>
+  {groups.map(({ corner, entries }, index) => (
+    <section
+      data-digest-group
+      aria-labelledby={corner === undefined ? undefined : headingOf(index)}
+      class="flex flex-col gap-1"
+    >
+      {corner !== undefined && (
+        <h3
+          id={headingOf(index)}
+          data-digest-corner={corner.corner}
+          class="flex items-baseline gap-3 border-t-2 border-foreground pt-2 font-sans text-xs font-bold tracking-[0.22em] uppercase"
+        >
+          <span aria-hidden="true" class="text-muted-foreground tabular-nums">
+            {cornerNumber(corner.corner)}
+          </span>
+          <span lang={langOf(corner.label)}>{corner.label}</span>
+        </h3>
+      )}
+      <ul class="flex flex-col divide-y divide-border">
+        {entries.map((entry) =>
+          entry.kind === "post" ? (
+            <DigestItem entry={entry} />
+          ) : (
+            <li data-digest-picture class="flex items-start gap-3 py-3">
+              <div class="size-14 shrink-0 overflow-hidden rounded-lg bg-muted">
+                <IssueArt picture={entry.picture} alt={entry.alt} sizes="3.5rem" />
+              </div>
+              <p lang={langOf(entry.headline, entry.caption)} class="min-w-0 text-sm text-pretty">
+                <span class="font-sans text-xs font-semibold tracking-widest text-brand-ink uppercase">
+                  Image of the day
+                </span>{" "}
+                {entry.headline !== undefined && <span class="font-semibold">{entry.headline}.</span>}{" "}
+                <span class="text-muted-foreground">{entry.caption}</span>
+              </p>
+            </li>
+          ),
+        )}
+      </ul>
+    </section>
+  ))}
+</article>

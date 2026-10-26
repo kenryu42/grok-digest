@@ -1,0 +1,82 @@
+---
+import { langOf } from "../../lib/lang";
+import { TAG_LABELS } from "../../lib/magazine";
+import type { DigestLineKind, DigestPost } from "../../lib/magazine-digest";
+import { cardHref, postLink } from "../../lib/paths";
+import { TOPIC_LABELS } from "../../lib/topics";
+
+type Props = {
+  entry: DigestPost;
+};
+
+const { post, title, label, line, tags, sourceLabel } = Astro.props.entry;
+
+const LINE_LABELS = {
+  why: "Why it matters:",
+  note: undefined,
+  quote: undefined,
+  try: "Try:",
+} satisfies Record<DigestLineKind, string | undefined>;
+
+const lineLabel = line === undefined ? undefined : LINE_LABELS[line.kind];
+const lineText = line?.kind === "quote" ? `“${line.text}”` : line?.text;
+const action =
+  "inline-flex min-h-11 items-center px-2 font-medium text-brand-ink underline decoration-border underline-offset-4 hover:decoration-brand";
+---
+
+<li data-digest-item class="flex flex-col gap-1 py-2">
+  <p data-topic={post.topic} class="pt-2 font-sans text-[0.6875rem] font-semibold tracking-widest text-topic uppercase">
+    {label ?? TOPIC_LABELS[post.topic]}
+  </p>
+  <h4 lang={langOf(title)} class="font-(family-name:--issue-heading) text-[1.0625rem] leading-snug font-semibold">
+    <a class="block py-1.5 text-balance decoration-brand underline-offset-4 hover:underline" {...postLink(post)}>
+      {title}
+    </a>
+  </h4>
+  {line !== undefined && (
+    <p
+      data-why={line.kind === "why" ? "" : undefined}
+      data-digest-line={line.kind}
+      lang={langOf(line.text)}
+      class="text-[0.9375rem] text-pretty text-foreground/85"
+    >
+      {lineLabel !== undefined && (
+        <span class="font-sans text-[0.8125rem] font-semibold text-brand-ink">{lineLabel}</span>
+      )}{" "}
+      {lineText}
+    </p>
+  )}
+  <div class="-mr-2 flex items-center gap-2 font-sans text-xs">
+    <p class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1">
+      {sourceLabel !== undefined && (
+        <span data-source-label lang={langOf(sourceLabel)} class="font-semibold tracking-wider uppercase">
+          {sourceLabel}
+        </span>
+      )}
+      <span class="text-muted-foreground">@{post.author.handle}</span>
+      {tags.map((tag) => (
+        <span
+          data-tag={tag}
+          class:list={[
+            "rounded-full border px-2 py-0.5 font-semibold whitespace-nowrap uppercase",
+            tag === "unverified"
+              ? "border-dashed border-muted-foreground/60 text-muted-foreground"
+              : "border-brand/40 text-brand-ink",
+          ]}
+        >
+          {TAG_LABELS[tag]}
+        </span>
+      ))}
+    </p>
+    <span class="-my-2.5 flex shrink-0">
+      {post.onPage && (
+        <a class={action} href={cardHref(post.id)}>
+          Card
+        </a>
+      )}
+      <a class={action} href={post.url} target="_blank" rel="noopener noreferrer">
+        Open on X
+      </a>
+    </span>
+  </div>
+</li>

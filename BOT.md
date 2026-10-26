@@ -585,11 +585,13 @@ A `note` is one sentence you write for this issue: why the item matters today, n
 
 Every item, and every `cover-story`, `feature`, and `closer`, also takes three optional fields. They belong to the issue, not to the post, so the same post can be framed differently in another issue, and they work the same for a bookmark and a scan:
 
-- `why`: why the item matters to the owner, at most 200 characters. The page shows it as a "Why it matters:" line.
+- `why`: why the item matters to the owner, at most 200 characters. The page shows it as a "Why it matters:" line, in the magazine and in the digest view.
 - `tags`: up to four of `new-to-you`, `unverified`, `from-your-saves`, and `new-voice`, shown as small labels. Use `new-to-you` for a subject outside the owner's usual topics, `unverified` for a claim with a single source or no primary source, `from-your-saves` for an item that follows up a bookmark, and `new-voice` for an author the owner does not follow yet.
 - `source_label`: where the post comes from, at most 40 characters, such as `Nature` or `NHK`.
 
 `pull-quote` and `sidebar-box` take none of them: they show a post another block already shows.
+
+Each issue page also has a Digest view, a compact list the owner can switch to at the top of the page: every post once, in issue order, under its corner, with its title, one line, its source, author and tags, and links to its card and to X. The line is the item's `why`; without one, the block's `deck` or `note` (or a photo's `caption`), then the post's `tldr`. The digest leaves out `topic-divider` blocks, shows the `image-of-the-day` as a small picture with its caption, and opens with the issue's `subtitle`. You write nothing extra for it, but a `why` on every item makes it read best.
 
 ### Corners
 

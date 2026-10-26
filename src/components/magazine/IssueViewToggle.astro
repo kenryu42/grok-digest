@@ -1,0 +1,99 @@
+---
+import {
+  DEFAULT_ISSUE_VIEW,
+  ISSUE_VIEW_LABELS,
+  ISSUE_VIEW_PARAM,
+  ISSUE_VIEW_STORAGE_KEY,
+  ISSUE_VIEWS,
+  type IssueView,
+} from "../../lib/issue-view";
+import { themeAttributes, type MagazineIssue } from "../../lib/magazine";
+
+type Props = {
+  theme: MagazineIssue["theme"];
+};
+
+const { theme } = Astro.props;
+
+const LINK = {
+  magazine:
+    "bg-background text-foreground shadow-sm digest-view:bg-transparent digest-view:text-muted-foreground digest-view:shadow-none",
+  digest: "text-muted-foreground digest-view:bg-background digest-view:text-foreground digest-view:shadow-sm",
+} satisfies Record<IssueView, string>;
+---
+
+<div class="relative">
+  {ISSUE_VIEWS.map((view) => (
+    <span id={view} aria-hidden="true" class="absolute top-0 scroll-mt-4" />
+  ))}
+  <nav
+    aria-label="Issue view"
+    {...themeAttributes(theme)}
+    class="grid grid-cols-2 rounded-full bg-muted p-1 font-sans ring-1 ring-border sm:inline-grid"
+  >
+    {ISSUE_VIEWS.map((view) => (
+      <a
+        href={`#${view}`}
+        data-view-link={view}
+        class:list={[
+          "inline-flex min-h-11 items-center justify-center rounded-full px-6 text-sm font-semibold transition-colors hover:text-foreground focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none",
+          LINK[view],
+        ]}
+      >
+        {ISSUE_VIEW_LABELS[view]}
+      </a>
+    ))}
+  </nav>
+  <script
+    is:inline
+    define:vars={{
+      views: ISSUE_VIEWS,
+      defaultView: DEFAULT_ISSUE_VIEW,
+      param: ISSUE_VIEW_PARAM,
+      storageKey: ISSUE_VIEW_STORAGE_KEY,
+    }}
+  >
+    const root = document.documentElement;
+    const isView = (value) => views.includes(value);
+    const stored = () => {
+      try {
+        return JSON.parse(window.localStorage.getItem(storageKey) ?? "null");
+      } catch {
+        return null;
+      }
+    };
+    const asked = () => {
+      const fromQuery = new URLSearchParams(window.location.search).get(param);
+      if (isView(fromQuery)) return fromQuery;
+      const fromHash = window.location.hash.slice(1);
+      return isView(fromHash) ? fromHash : null;
+    };
+    const show = (view) => {
+      root.dataset.issueView = view;
+      for (const link of document.querySelectorAll("[data-view-link]")) {
+        link.setAttribute("aria-current", String(link.dataset.viewLink === view));
+      }
+    };
+    const choose = (view) => {
+      show(view);
+      try {
+        window.localStorage.setItem(storageKey, JSON.stringify(view));
+      } catch {}
+      const url = new URL(window.location.href);
+      if (view === defaultView) url.searchParams.delete(param);
+      else url.searchParams.set(param, view);
+      if (isView(url.hash.slice(1))) url.hash = "";
+      window.history.replaceState(window.history.state, "", url);
+    };
+    const remembered = stored();
+    show(asked() ?? (isView(remembered) ? remembered : defaultView));
+    document.addEventListener("click", (event) => {
+      const link = event.target instanceof Element ? event.target.closest("[data-view-link]") : null;
+      if (link === null || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+      event.preventDefault();
+      choose(link.dataset.viewLink);
+    });
+  </script>
+</div>

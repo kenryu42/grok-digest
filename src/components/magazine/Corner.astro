@@ -1,7 +1,7 @@
 ---
 import Block from "./Block.astro";
 import { langOf } from "../../lib/lang";
-import { cornerLabel, MAGAZINE_CORNERS, type BlockOf } from "../../lib/magazine";
+import { cornerLabel, cornerNumber, type BlockOf } from "../../lib/magazine";
 
 type Props = {
   block: BlockOf<"corner">;
@@ -10,7 +10,7 @@ type Props = {
 
 const { block, anchor } = Astro.props;
 const label = cornerLabel(block);
-const number = String(MAGAZINE_CORNERS.indexOf(block.corner) + 1).padStart(2, "0");
+const number = cornerNumber(block.corner);
 ---
 
 <Block block={block} anchor={anchor}>

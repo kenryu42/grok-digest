@@ -194,8 +194,10 @@ describe("a site with magazine issues", () => {
       await build({ BASE_PATH });
 
       const drawn = await read("dist/magazine/2026-10-17/index.html");
-      const arts = [...drawn.matchAll(/<img[^>]*data-art[^>]*>/g)].map(([tag]) => tag);
+      const [magazine = "", digest = ""] = drawn.split('data-view-panel="digest"');
+      const arts = [...magazine.matchAll(/<img[^>]*data-art[^>]*>/g)].map(([tag]) => tag);
       expect(arts).toHaveLength(2);
+      expect(digest.match(/<img[^>]*data-art[^>]*>/g)).toHaveLength(1);
       expect(arts[0]).toContain('alt="Green hills"');
       for (const tag of arts) {
         const sources = [...(/srcset="([^"]+)"/.exec(tag)?.[1] ?? "").matchAll(/(\S+) \d+w/g)].map(([, url]) => url);

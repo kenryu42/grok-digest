@@ -7,6 +7,7 @@
 @source "..";
 
 @custom-variant dark (&:is(.dark *));
+@custom-variant digest-view (&:is(html[data-issue-view="digest"] *, html:not([data-issue-view]):has(#digest:target) *));
 
 @theme {
   --ease-spring: linear(
@@ -322,7 +323,7 @@
     word-break: normal;
     overflow-wrap: anywhere;
   }
-  [data-issue] {
+  :is([data-issue], [data-digest]) {
     overflow-wrap: anywhere;
   }
 }

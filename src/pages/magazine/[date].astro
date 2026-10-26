@@ -1,6 +1,8 @@
 ---
+import IssueDigest from "../../components/magazine/IssueDigest.astro";
 import IssueNav from "../../components/magazine/IssueNav.astro";
 import IssueView from "../../components/magazine/IssueView.astro";
+import IssueViewToggle from "../../components/magazine/IssueViewToggle.astro";
 import MagazinePage from "../../components/magazine/MagazinePage.astro";
 import { findEntry, issues } from "../../lib/load-magazine";
 import type { PublishedIssue } from "../../lib/magazine";
@@ -22,6 +24,14 @@ const { issue, newer, older } = Astro.props;
 ---
 
 <MagazinePage pageTitle={issue.title} description={issue.subtitle ?? issue.title}>
-  <IssueView issue={issue} find={findEntry} />
+  <div class="flex flex-col gap-4">
+    <IssueViewToggle theme={issue.theme} />
+    <div data-view-panel="magazine" class="digest-view:hidden">
+      <IssueView issue={issue} find={findEntry} />
+    </div>
+    <div data-view-panel="digest" class="hidden digest-view:block">
+      <IssueDigest issue={issue} find={findEntry} />
+    </div>
+  </div>
   <IssueNav older={older} newer={newer} />
 </MagazinePage>
