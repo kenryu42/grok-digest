@@ -216,6 +216,54 @@ describe("a site with magazine issues", () => {
   );
 
   it(
+    "draws each interlude variant as a lazy, resized picture, and leaves interludes out of the digest",
+    async () => {
+      await writeIssue("2026-10-17", {
+        title: "Pauses",
+        theme,
+        sections: [
+          { type: "feature", bookmark: agents },
+          { type: "interlude", art: "wide.jpg", art_alt: "Soft hills" },
+          { type: "feature", bookmark: tokyo },
+          { type: "interlude", art: "square.jpg", variant: "square", caption: "A still pond." },
+          { type: "feature", bookmark: design },
+          { type: "interlude", art: "quiet.jpg", variant: "quiet" },
+          { type: "closer", bookmark: agents },
+        ],
+      });
+      await mkdir(path.join(site, "data/magazine/2026-10-17"), { recursive: true });
+      await Promise.all(
+        ["wide.jpg", "square.jpg", "quiet.jpg"].map((name) =>
+          copyFile(ART_PICTURE, path.join(site, "data/magazine/2026-10-17", name)),
+        ),
+      );
+      await build({ BASE_PATH });
+
+      const page = await read("dist/magazine/2026-10-17/index.html");
+      const [magazine = "", digest = ""] = page.split('data-view-panel="digest"');
+      const interludes = [...magazine.matchAll(/<section[^>]*data-block="interlude"[\s\S]*?<\/section>/g)].map(
+        ([section]) => section,
+      );
+      expect(interludes.map((section) => /data-variant="(\w+)"/.exec(section)?.[1])).toEqual([
+        "wide",
+        "square",
+        "quiet",
+      ]);
+      for (const section of interludes) {
+        const tag = /<img[^>]*data-art[^>]*>/.exec(section)?.[0] ?? "";
+        expect(tag).toContain('loading="lazy"');
+        expect(tag).toContain(`srcset="${BASE_PATH}/_astro/`);
+      }
+      expect(interludes[0]).toContain('alt="Soft hills"');
+      expect(interludes[1]).toContain("A still pond.");
+      expect(interludes[2]).toMatch(/\salt(?:="")?\s/);
+      expect(digest).not.toContain("data-art");
+      expect(digest).not.toContain("A still pond.");
+    },
+    BUILD_TIMEOUT_MS,
+  );
+
+  it(
     "lets custom/theme.css change a palette",
     async () => {
       await mkdir(path.join(site, "custom"));

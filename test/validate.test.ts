@@ -190,6 +190,18 @@ async function warningsOfIssue(): Promise<string[]> {
   return report?.ok === true ? (report.warnings ?? []) : [errorOf(report)];
 }
 
+async function writeIssueWithArt(raw: object, art: Record<string, string>): Promise<void> {
+  const artDir = path.join(cwd, "data/magazine/2026-10-19");
+  await writeData({ "bookmarks.json": JSON.stringify(templateSamples), "magazine/2026-10-19.jpg": "" });
+  await writeFile(path.join(cwd, "data/magazine/2026-10-19.json"), JSON.stringify(raw));
+  await Promise.all(
+    Object.entries(art).map(async ([name, from]) => {
+      await mkdir(path.dirname(path.join(artDir, name)), { recursive: true });
+      await copyFile(from, path.join(artDir, name));
+    }),
+  );
+}
+
 describe("validating an issue's art", () => {
   const withArt = {
     ...issue,
@@ -199,14 +211,7 @@ describe("validating an issue's art", () => {
     ],
   };
 
-  async function writeArt(art: Record<string, string>): Promise<void> {
-    await writeData({ "bookmarks.json": JSON.stringify(templateSamples), "magazine/2026-10-19.jpg": "" });
-    await writeFile(path.join(cwd, "data/magazine/2026-10-19.json"), JSON.stringify(withArt));
-    await mkdir(path.join(cwd, "data/magazine/2026-10-19/day"), { recursive: true });
-    await Promise.all(
-      Object.entries(art).map(([name, from]) => copyFile(from, path.join(cwd, "data/magazine/2026-10-19", name))),
-    );
-  }
+  const writeArt = (art: Record<string, string>) => writeIssueWithArt(withArt, art);
 
   it("passes art stored in the issue's folder that is large enough", async () => {
     await writeArt({ "lead.jpg": LARGE_ART, "day/end.png": LARGE_ART });
@@ -243,6 +248,51 @@ describe("validating an issue's art", () => {
     const [error = ""] = await warningsOfIssue();
     expect(error).toContain(message);
     expect(error).toContain("→ at sections[0].art");
+  });
+});
+
+describe("validating an issue's interludes", () => {
+  const WIDE_ART = path.resolve("dev/data/magazine/2026-02-13/tide-lines.jpg");
+  const SQUARE_ART = path.resolve("dev/data/magazine/2026-02-13/still-pond.jpg");
+  const [first, second, third] = templateSamples.map(({ id }) => ({ type: "feature", bookmark: id }));
+  const withInterludes = {
+    ...issue,
+    sections: [
+      first,
+      { type: "interlude", art: "wide.jpg" },
+      second,
+      { type: "interlude", art: "pause/square.png", variant: "square" },
+      third,
+    ],
+  };
+
+  const writeInterludes = (art: Record<string, string>, raw: object = withInterludes) => writeIssueWithArt(raw, art);
+
+  it("passes interludes whose pictures fit their variants", async () => {
+    await writeInterludes({ "wide.jpg": WIDE_ART, "pause/square.png": SQUARE_ART });
+    expect(await warningsOfIssue()).toEqual([]);
+  });
+
+  it("warns about a missing interlude picture and says the page leaves it out", async () => {
+    await writeInterludes({ "wide.jpg": WIDE_ART });
+    expect(await warningsOfIssue()).toEqual([
+      "data/magazine/2026-10-19/pause/square.png is missing; the page leaves the block out\n  → at sections[3].art",
+    ]);
+  });
+
+  it("warns about a picture too small for its variant", async () => {
+    await writeInterludes({ "wide.jpg": SMALL_ART, "pause/square.png": SMALL_ART });
+    expect(await warningsOfIssue()).toEqual([
+      "data/magazine/2026-10-19/wide.jpg is 512 × 512 pixels; make it at least 1200 pixels wide; the page leaves the block out\n  → at sections[1].art",
+      "data/magazine/2026-10-19/pause/square.png is 512 × 512 pixels; make it at least 800 × 800; the page leaves the block out\n  → at sections[3].art",
+    ]);
+  });
+
+  it("fails an interlude out of place", async () => {
+    await writeInterludes({}, { ...withInterludes, sections: withInterludes.sections.slice(1) });
+    const [error = ""] = await warningsOfIssue();
+    expect(error).toContain('an "interlude" cannot open the issue');
+    expect(error).toContain("→ at sections[0]");
   });
 });
 

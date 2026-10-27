@@ -30,6 +30,11 @@
       "tags": ["from-your-saves"]
     },
     {
+      "type": "interlude",
+      "art": "tide-lines.jpg",
+      "art_alt": "Green hills in soft bands, like tide lines"
+    },
+    {
       "type": "corner",
       "corner": "japan-desk",
       "label": "日本から"
@@ -51,6 +56,12 @@
           "why": "観測データの読み方が変わる発見です。"
         }
       ]
+    },
+    {
+      "type": "interlude",
+      "art": "still-pond.jpg",
+      "variant": "square",
+      "caption": "A still pond between two shores."
     },
     {
       "type": "corner",

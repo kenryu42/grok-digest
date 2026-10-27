@@ -112,4 +112,17 @@ describe("issueDigest", () => {
     ]);
     expect(outline(digestOf(sections))).toEqual([{ corner: undefined, entries: [agents] }]);
   });
+
+  it("leaves interludes out, even with their pictures there", () => {
+    const sections = [
+      { type: "feature", bookmark: agents },
+      { type: "interlude", art: "end.jpg", caption: "A pause." },
+      { type: "corner", corner: "kicker" },
+      { type: "closer", bookmark: tokyo },
+    ];
+    expect(outline(digestOf(sections, new Map([["end.jpg", PICTURE]])))).toEqual([
+      { corner: undefined, entries: [agents] },
+      { corner: "Kicker", entries: [tokyo] },
+    ]);
+  });
 });

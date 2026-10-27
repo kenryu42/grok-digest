@@ -2,6 +2,7 @@ import type { Bookmark, Scan } from "./bookmarks.ts";
 import {
   CORNER_LABELS,
   INTEREST_CORNERS,
+  isInterlude,
   ITEM_LIMITS,
   refOf,
   type FindEntry,
@@ -58,7 +59,14 @@ function referencesIn(block: MagazineBlock): Reference[] {
       const ref = refOf(item);
       return { path: ["items", index], ref, tags: item.tags };
     });
-  if (block.type === "topic-divider" || block.type === "corner" || block.type === "image-of-the-day") return [];
+  if (
+    block.type === "topic-divider" ||
+    block.type === "corner" ||
+    block.type === "image-of-the-day" ||
+    block.type === "interlude"
+  ) {
+    return [];
+  }
   return [{ path: [], ref: refOf(block), tags: "tags" in block ? block.tags : undefined }];
 }
 
@@ -80,6 +88,15 @@ function pairHalves(sections: readonly MagazineBlock[]): MagazineBlock[] {
   return paired;
 }
 
+function withoutStrayInterludes(sections: readonly MagazineBlock[]): MagazineBlock[] {
+  const kept: MagazineBlock[] = [];
+  for (const block of sections) {
+    if (isInterlude(block) && (kept.length === 0 || isInterlude(kept.at(-1)))) continue;
+    kept.push(block);
+  }
+  return isInterlude(kept.at(-1)) ? kept.slice(0, -1) : kept;
+}
+
 export function readableIssue<Issue extends MagazineIssue>(issue: Issue, find: FindPost): Issue {
   const usable = (block: MagazineBlock, ref: PostRef): boolean => referenceProblem(block, ref, find(ref)) === undefined;
   const sections = issue.sections.flatMap((block): MagazineBlock[] => {
@@ -89,7 +106,7 @@ export function readableIssue<Issue extends MagazineIssue>(issue: Issue, find: F
     }
     return referencesIn(block).every(({ ref }) => usable(block, ref)) ? [block] : [];
   });
-  return { ...issue, sections: pairHalves(sections) };
+  return { ...issue, sections: pairHalves(withoutStrayInterludes(sections)) };
 }
 
 function leftOut(block: MagazineBlock, missing: number): string {

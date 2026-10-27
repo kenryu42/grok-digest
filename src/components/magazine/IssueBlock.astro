@@ -6,6 +6,7 @@ import Corner from "./Corner.astro";
 import CoverStory from "./CoverStory.astro";
 import Feature from "./Feature.astro";
 import ImageOfTheDay from "./ImageOfTheDay.astro";
+import Interlude from "./Interlude.astro";
 import NumberedList from "./NumberedList.astro";
 import PhotoSpread from "./PhotoSpread.astro";
 import PullQuote from "./PullQuote.astro";
@@ -39,4 +40,5 @@ const picture = "art" in block && block.art !== undefined ? art.get(block.art) :
 {block.type === "image-of-the-day" && picture !== undefined && (
   <ImageOfTheDay block={block} anchor={anchor} art={picture} />
 )}
+{block.type === "interlude" && picture !== undefined && <Interlude block={block} anchor={anchor} art={picture} />}
 {block.type === "closer" && <Closer block={block} anchor={anchor} find={find} />}

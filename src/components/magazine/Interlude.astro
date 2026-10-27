@@ -1,0 +1,48 @@
+---
+import type { ImageMetadata } from "astro";
+import Block from "./Block.astro";
+import IssueArt from "./IssueArt.astro";
+import { langOf } from "../../lib/lang";
+import type { BlockOf } from "../../lib/magazine";
+
+type Props = {
+  block: BlockOf<"interlude">;
+  anchor: string;
+  art: ImageMetadata;
+};
+
+type Variant = BlockOf<"interlude">["variant"];
+
+const { block, anchor, art } = Astro.props;
+
+const FRAME = {
+  wide: "-mx-5 aspect-[21/9] sm:-mx-10 sm:aspect-[3/1]",
+  square: "mx-auto aspect-square w-40 rounded-2xl sm:w-56",
+  quiet: "mx-auto aspect-[4/1] w-full max-w-3xl rounded-xl sm:aspect-[6/1]",
+} satisfies Record<Variant, string>;
+
+const ART_SIZES = {
+  wide: "(min-width: 72rem) 71rem, 100vw",
+  square: "(min-width: 40rem) 14rem, 10rem",
+  quiet: "(min-width: 52rem) 48rem, 100vw",
+} satisfies Record<Variant, string>;
+
+const SPACING = {
+  wide: "py-6 sm:py-10",
+  square: "py-10 sm:py-16",
+  quiet: "py-4 sm:py-8",
+} satisfies Record<Variant, string>;
+---
+
+<Block block={block} anchor={anchor}>
+  <figure lang={langOf(block.caption)} class:list={["flex flex-col gap-4", SPACING[block.variant]]}>
+    <div class:list={["overflow-hidden bg-brand-soft", FRAME[block.variant]]}>
+      <IssueArt picture={art} alt={block.art_alt} sizes={ART_SIZES[block.variant]} />
+    </div>
+    {block.caption !== undefined && (
+      <figcaption class="mx-auto max-w-md text-center font-sans text-sm text-balance text-muted-foreground italic">
+        {block.caption}
+      </figcaption>
+    )}
+  </figure>
+</Block>

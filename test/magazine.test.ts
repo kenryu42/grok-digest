@@ -65,6 +65,7 @@ const allBlocks = withSections(
   { type: "sidebar-box", bookmark: agents, headline: "Try this" },
   { type: "corner", corner: "kicker" },
   { type: "image-of-the-day", art: "day.jpg", caption: "The day in one picture." },
+  { type: "interlude", art: "pause.jpg", variant: "square", caption: "A pause." },
   { type: "closer", bookmark: design, note: "To end on." },
 );
 
@@ -345,6 +346,98 @@ describe("parseMagazine with art", () => {
       },
     ]);
     expect(parsed?.sections.map(({ type }) => type)).toEqual(["cover-story"]);
+  });
+});
+
+const cover = issue.sections[0];
+const closer = { type: "closer", bookmark: design };
+const interlude = (extra: object = {}) => ({ type: "interlude", art: "pause.jpg", ...extra });
+const between = (...middle: unknown[]) => withSections(cover, ...middle, closer);
+
+describe("interlude", () => {
+  it("defaults to the wide variant and takes no emphasis or span of its own", () => {
+    expect(parse(between(interlude())).sections[1]).toEqual({
+      type: "interlude",
+      art: "pause.jpg",
+      variant: "wide",
+      emphasis: "normal",
+      span: "full",
+    });
+  });
+
+  it("accepts four interludes beside three blocks with art and an image of the day", () => {
+    const arts = ["a.jpg", "b.jpg", "c.jpg"].map((art) => artFeature(tokyo, art));
+    const raw = between(
+      ...arts.flatMap((block, index) => [block, interlude({ variant: ["wide", "square", "quiet"][index] })]),
+      imageOfTheDay,
+      interlude({ caption: "x".repeat(60) }),
+    );
+    expect(parse(raw).sections.filter(({ type }) => type === "interlude")).toHaveLength(4);
+  });
+
+  it.each([
+    [
+      "a fifth interlude",
+      between(...Array.from({ length: 5 }, () => [interlude(), closer]).flat()),
+      'at most 4 "interlude" blocks\n  → at sections[9]',
+    ],
+    [
+      "two interludes back to back",
+      between(interlude(), interlude()),
+      'an "interlude" cannot follow another; put a block between them\n  → at sections[2]',
+    ],
+    [
+      "an interlude as the first block",
+      withSections(interlude(), closer),
+      'an "interlude" cannot open the issue; put it between two other blocks\n  → at sections[0]',
+    ],
+    [
+      "an interlude as the last block",
+      withSections(cover, interlude()),
+      'an "interlude" cannot end the issue; put it between two other blocks\n  → at sections[1]',
+    ],
+    ["an interlude without art", between({ type: "interlude" }), "sections[1].art"],
+    ["an interlude at a path out of its folder", between(interlude({ art: "../x.jpg" })), "issue's own folder"],
+    ["an interlude at a web address", between(interlude({ art: "https://x.com/a.jpg" })), "issue's own folder"],
+    ["an interlude in another format", between(interlude({ art: "pause.gif" })), "must end in .jpg, .png, .webp"],
+    ["a caption over 60 characters", between(interlude({ caption: "x".repeat(61) })), "sections[1].caption"],
+    ["a bookmark on an interlude", between(interlude({ bookmark: agents })), '"bookmark"'],
+    ["a headline on an interlude", between(interlude({ headline: "Pause" })), '"headline"'],
+    ["emphasis on an interlude", between(interlude({ emphasis: "normal" })), 'takes no "emphasis"'],
+    ["a span on an interlude", between(interlude({ span: "full" })), 'takes no "span"'],
+    ["an unknown interlude variant", between(interlude({ variant: "standard" })), "sections[1].variant"],
+  ])("rejects %s", (_case, raw, field) => {
+    const error = errorOf(raw);
+    expect(error).toContain(`${SOURCE} is invalid:`);
+    expect(error).toContain(field);
+  });
+
+  it("is left out of the contents and refers to no post", () => {
+    expect(warningsOf(between(interlude()))).toEqual([]);
+  });
+
+  it("is left out when the blocks the page drops leave it first, last, or next to another", () => {
+    const gone = { type: "feature", bookmark: "404" };
+    expect(typesOf(withSections(gone, interlude(), closer))).toEqual(["closer"]);
+    expect(typesOf(withSections(cover, interlude(), gone))).toEqual(["cover-story"]);
+    expect(typesOf(between(interlude(), gone, interlude()))).toEqual(["cover-story", "interlude", "closer"]);
+  });
+
+  it.each([
+    ["wide", picture(1200, 300), true],
+    ["wide", picture(1199, 2000), false],
+    ["quiet", picture(1200, 200), true],
+    ["quiet", picture(1000, 200), false],
+    ["square", picture(800, 800), true],
+    ["square", picture(1200, 799), false],
+  ])("keeps a %s interlude whose picture is %o: %s", (variant, size, kept) => {
+    const [parsed] = parseMagazine([
+      { source: SOURCE, raw: between(interlude({ variant })), art: { "pause.jpg": size } },
+    ]);
+    expect(parsed?.sections.map(({ type }) => type)).toEqual(
+      kept ? ["cover-story", "interlude", "closer"] : ["cover-story", "closer"],
+    );
+    expect(parsed?.art.has("pause.jpg")).toBe(kept);
   });
 });
 

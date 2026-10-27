@@ -50,9 +50,11 @@ const COVER_FILE_NAME = /^\d{4}-\d{2}-\d{2}\.(?:jpg|png|webp)$/;
 const PATH_INSIDE_FOLDER = /^[\w-][\w.-]*(?:\/[\w-][\w.-]*)*$/;
 const PICTURE_FILE = /\.(?:jpg|png|webp)$/;
 const ISSUE_FOLDER = /^\d{4}-\d{2}-\d{2}\//;
-export const ART_MIN_SIZE = { width: 1200, height: 800 } as const;
+const INTERLUDE_VARIANTS = ["wide", "square", "quiet"] as const;
 const MAX_BLOCK_ARTS = 3;
 const MAX_IMAGES_OF_THE_DAY = 1;
+const MAX_INTERLUDES = 4;
+const INTERLUDE_CAPTION_MAX = 60;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export const isIssueFileName = (name: string): boolean => ISSUE_FILE_NAME.test(name);
@@ -65,12 +67,23 @@ export const artFileName = (date: string, art: string): string => `${date}/${art
 
 type PictureSize = { width: number; height: number };
 
+type InterludeVariant = (typeof INTERLUDE_VARIANTS)[number];
+
+const BLOCK_ART_MIN_SIZE: PictureSize = { width: 1200, height: 800 };
+const ANY_HEIGHT = 0;
+const INTERLUDE_MIN_SIZES: Record<InterludeVariant, PictureSize> = {
+  wide: { width: 1200, height: ANY_HEIGHT },
+  square: { width: 800, height: 800 },
+  quiet: { width: 1200, height: ANY_HEIGHT },
+};
+
 const PICTURE_WIDTHS = [240, 360, 480, 720, 960, 1200];
 
 export const pictureWidths = (width: number): number[] => [...PICTURE_WIDTHS.filter((each) => each < width), width];
 
-export const isLargeEnoughArt = ({ width, height }: PictureSize): boolean =>
-  width >= ART_MIN_SIZE.width && height >= ART_MIN_SIZE.height;
+export function minimumSizeLabel({ width, height }: PictureSize): string {
+  return height === ANY_HEIGHT ? `${width} pixels wide` : `${width} × ${height}`;
+}
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);
 const headline = shortText(120);
@@ -131,6 +144,12 @@ const fixedStyle = {
   emphasis: z.enum(["normal"]).default("normal"),
   span: z.enum(["full"]).default("full"),
 };
+
+const absent = <const Value extends string>(field: string, value: Value) =>
+  z
+    .never({ error: `an "interlude" takes no "${field}"` })
+    .optional()
+    .transform(() => value);
 
 const blockSchemas = [
   z
@@ -225,6 +244,15 @@ const blockSchemas = [
     caption: note,
     ...fixedStyle,
   }),
+  z.strictObject({
+    type: z.literal("interlude"),
+    art: artPath,
+    art_alt: note.optional(),
+    caption: shortText(INTERLUDE_CAPTION_MAX).optional(),
+    variant: z.enum(INTERLUDE_VARIANTS).default(INTERLUDE_VARIANTS[0]),
+    emphasis: absent("emphasis", "normal"),
+    span: absent("span", "full"),
+  }),
   z
     .strictObject({
       type: z.literal("closer"),
@@ -243,11 +271,24 @@ export const magazineBlockSchema = z.discriminatedUnion("type", blockSchemas);
 
 type ParsedBlock = z.output<typeof magazineBlockSchema>;
 
+type ArtOnlyBlock = Extract<ParsedBlock, { type: "image-of-the-day" | "interlude" }>;
+
+export const showsOnlyArt = (block: ParsedBlock): block is ArtOnlyBlock =>
+  block.type === "image-of-the-day" || block.type === "interlude";
+
+export const artMinSize = (block: ParsedBlock): PictureSize =>
+  block.type === "interlude" ? INTERLUDE_MIN_SIZES[block.variant] : BLOCK_ART_MIN_SIZE;
+
+export const fitsArt = (block: ParsedBlock, { width, height }: PictureSize): boolean => {
+  const min = artMinSize(block);
+  return width >= min.width && height >= min.height;
+};
+
 type ArtLimit = { counts: (block: ParsedBlock) => boolean; max: number; what: string };
 
 const ART_LIMITS: readonly ArtLimit[] = [
   {
-    counts: (block) => block.type !== "image-of-the-day" && "art" in block && block.art !== undefined,
+    counts: (block) => !showsOnlyArt(block) && "art" in block && block.art !== undefined,
     max: MAX_BLOCK_ARTS,
     what: 'blocks with "art"',
   },
@@ -256,7 +297,29 @@ const ART_LIMITS: readonly ArtLimit[] = [
     max: MAX_IMAGES_OF_THE_DAY,
     what: '"image-of-the-day" block',
   },
+  {
+    counts: (block) => block.type === "interlude",
+    max: MAX_INTERLUDES,
+    what: '"interlude" blocks',
+  },
 ];
+
+export const isInterlude = (block: { type: string } | undefined): boolean => block?.type === "interlude";
+
+function interludePlacement(sections: readonly ParsedBlock[], index: number): string | undefined {
+  if (index === 0) return 'an "interlude" cannot open the issue; put it between two other blocks';
+  if (index === sections.length - 1) return 'an "interlude" cannot end the issue; put it between two other blocks';
+  if (isInterlude(sections[index - 1])) return 'an "interlude" cannot follow another; put a block between them';
+  return undefined;
+}
+
+function placeInterludes(sections: ParsedBlock[], ctx: z.RefinementCtx): void {
+  sections.forEach((block, index) => {
+    if (!isInterlude(block)) return;
+    const message = interludePlacement(sections, index);
+    if (message !== undefined) ctx.addIssue({ code: "custom", path: [index], message });
+  });
+}
 
 function limitArt(sections: ParsedBlock[], ctx: z.RefinementCtx): void {
   for (const { counts, max, what } of ART_LIMITS) {
@@ -277,7 +340,7 @@ export const magazineIssueSchema = z.strictObject({
     fonts: z.enum(MAGAZINE_FONTS),
     accent: z.string().regex(HEX_COLOR, "must be a color such as #1d4ed8").optional(),
   }),
-  sections: z.array(magazineBlockSchema).min(1).max(30).superRefine(limitArt),
+  sections: z.array(magazineBlockSchema).min(1).max(30).superRefine(limitArt).superRefine(placeInterludes),
 });
 
 export type MagazineIssue = z.output<typeof magazineIssueSchema>;
@@ -328,11 +391,17 @@ export function artPathsIn(raw: unknown): string[] {
 
 function withUsableArt(file: IssueFile): CoveredIssue {
   const issue = parseMagazineIssue(file);
-  const art = new Map(Object.entries(file.art ?? {}).filter(([, picture]) => isLargeEnoughArt(picture)));
+  const pictures = new Map(Object.entries(file.art ?? {}));
+  const usable = (block: MagazineBlock, art: string): boolean => {
+    const picture = pictures.get(art);
+    return picture !== undefined && fitsArt(block, picture);
+  };
   const sections = issue.sections.flatMap((block): MagazineBlock[] => {
-    if (!("art" in block) || block.art === undefined || art.has(block.art)) return [block];
-    return block.type === "image-of-the-day" ? [] : [{ ...block, art: undefined }];
+    if (!("art" in block) || block.art === undefined || usable(block, block.art)) return [block];
+    return showsOnlyArt(block) ? [] : [{ ...block, art: undefined }];
   });
+  const shownArt = new Set(sections.flatMap((block) => ("art" in block && block.art !== undefined ? [block.art] : [])));
+  const art = new Map([...pictures].filter(([name]) => shownArt.has(name)));
   return { ...issue, sections, cover: file.cover, art };
 }
 
@@ -394,7 +463,14 @@ export const themeAttributes = ({ palette, fonts, accent }: MagazineIssue["theme
 });
 
 export function sectionHeading(block: MagazineBlock, find: FindEntry): string | undefined {
-  if (block.type === "pull-quote" || block.type === "sidebar-box" || block.type === "corner") return undefined;
+  if (
+    block.type === "pull-quote" ||
+    block.type === "sidebar-box" ||
+    block.type === "corner" ||
+    block.type === "interlude"
+  ) {
+    return undefined;
+  }
   if (block.type === "feature" || block.type === "closer") return block.headline ?? find(refOf(block)).tldr;
   if (block.type === "topic-divider") return block.label ?? TOPIC_LABELS[block.topic];
   return block.headline;

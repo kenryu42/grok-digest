@@ -422,6 +422,7 @@ An issue laid out this way:
         { "scan": "2110149626133438992", "tags": ["unverified"] }
       ]
     },
+    { "type": "interlude", "art": "tide-lines.jpg", "variant": "square" },
     {
       "type": "image-of-the-day",
       "art": "harbor-dusk.jpg",
@@ -517,12 +518,14 @@ Without a cover picture, the page draws a lettered cover in the palette's color 
 
 ### Art
 
-Besides the cover, an issue can carry up to four more pictures you make: art on up to three blocks, and one `image-of-the-day`. Every other picture on the page is a post's own image from `pbs.twimg.com`.
+Besides the cover, an issue can carry more pictures you make: art on up to three blocks, one `image-of-the-day`, and up to four `interlude` blocks. Each limit counts on its own. Every other picture on the page is a post's own image from `pbs.twimg.com`.
 
 - `art` on a `cover-story` or a `feature` names a picture for a post that has no image of its own. It fills in and never replaces: when the post has an image, the page shows the post's image, and `validate` warns that the art does not show. Use it on the day's lead when its post is text only.
 - An `image-of-the-day` block is one full-width picture that wraps up the day, with a short `caption` and an optional `headline`. Put it near the end, after the Open Window and before the Kicker corner.
+- An `interlude` block is a pause, the 間 between two parts of the issue: one picture with space around it, and no headline. Put it at the end of a corner, just before the next `corner` block. It does not illustrate a story; it lets the eye rest, so picture a mood that fits the day, such as a tide line, a field, or a pattern of light. Its optional `caption` is a few quiet words, at most 60 characters.
 - Save each picture in a folder named after the issue's date, next to the issue: `data/magazine/2026-10-19/harbor.jpg`. `art` is the file's name in that folder, `"harbor.jpg"`, or a path inside it, `"lead/harbor.jpg"`. Use `.jpg`, `.png`, or `.webp`; never a web address, a path that starts with `/`, or `..`.
 - Make it landscape, 3:2, at least 1200 × 800 pixels; 1800 × 1200 is better for an `image-of-the-day`. The page crops other shapes from the middle.
+- Make an interlude in its variant's shape: `wide`, a band across the whole page, 3:1, at least 1200 pixels wide (2400 × 800 is better); `square`, a small picture in the middle of open space, 1:1, at least 800 × 800; `quiet`, a narrow strip, 6:1, at least 1200 pixels wide (2400 × 400 is better). The page crops a `wide` interlude to 21:9 on a phone and a `quiet` one to 4:1, so keep what matters near the middle.
 - `art_alt` is optional: a few words on what the picture shows, for screen readers. Leave it out and the page treats the picture as decoration.
 - Follow the cover's rules: no words, letters, numbers, or logos, and no real people. Make something new rather than copying an image from a post. Change the style from one issue to the next, and echo the issue's `palette`.
 
@@ -577,6 +580,7 @@ Every block takes three optional fields that change how it looks:
 | `sidebar-box`      | The bookmark's `action` as a "Try this" box. The bookmark's `action` must not be empty.                                                     | `bookmark`, optional `headline` of at most 40 characters (default: "Try this")                                                                   | `note`, `callout`               |
 | `corner`           | A recurring section header, drawn the same in every issue: its number and label over a rule, and your deck.                                 | `corner`: a corner id below; optional `label` (default: the corner's label) and `deck`. No `emphasis` or `span`.                                 | `standard`                      |
 | `image-of-the-day` | A full-width picture you made that wraps up the day, with your caption. See "Art". No `emphasis` or `span`, and no `bookmark`.              | `art`, `caption`, optional `headline` and `art_alt`                                                                                              | `standard`                      |
+| `interlude`        | A pause between corners: one picture you made, with space around it. See "Art". No `emphasis`, `span`, `bookmark`, or `headline`.           | `art`, optional `art_alt` and `caption` of at most 60 characters                                                                                 | `wide`, `square`, `quiet`       |
 | `closer`           | A small, quiet closing item: headline, your note, and the author, ending the issue with a mark. `photo` adds the post's first image.        | `bookmark`, optional `headline` (default: its `tldr`) and `note`                                                                                 | `text`, `photo`                 |
 
 A `note` is one sentence you write for this issue: why the item matters today, not a copy of its `summary`. `compact` timelines leave notes out.
@@ -591,7 +595,7 @@ Every item, and every `cover-story`, `feature`, and `closer`, also takes three o
 
 `pull-quote` and `sidebar-box` take none of them: they show a post another block already shows.
 
-Each issue page also has a Digest view, a compact list the owner can switch to at the top of the page: every post once, in issue order, under its corner, with its title, one line, its source, author and tags, and links to its card and to X. The line is the item's `why`; without one, the block's `deck` or `note` (or a photo's `caption`), then the post's `tldr`. The digest leaves out `topic-divider` blocks, shows the `image-of-the-day` as a small picture with its caption, and opens with the issue's `subtitle`. You write nothing extra for it, but a `why` on every item makes it read best.
+Each issue page also has a Digest view, a compact list the owner can switch to at the top of the page: every post once, in issue order, under its corner, with its title, one line, its source, author and tags, and links to its card and to X. The line is the item's `why`; without one, the block's `deck` or `note` (or a photo's `caption`), then the post's `tldr`. The digest leaves out `topic-divider` and `interlude` blocks, shows the `image-of-the-day` as a small picture with its caption, and opens with the issue's `subtitle`. You write nothing extra for it, but a `why` on every item makes it read best.
 
 ### Corners
 
@@ -624,6 +628,7 @@ Let the day's bookmarks decide the shape:
 - Add a `pull-quote` when a post has a line worth quoting, and a `sidebar-box` for the most useful `action` of the day. Pair either with a `feature` using `"span": "half"` on both.
 - Use the `aside` variant of `feature` at full width. In a `half` block its two columns get narrow.
 - End the day with an `image-of-the-day` when one picture sums it up, just before the Kicker corner.
+- Give a long issue a breath with an `interlude` or two between corners, never two in a row. Pick `wide` after a dense corner, `square` for a quiet pause, and `quiet` for a light break between two short corners. A short issue needs none.
 - Put the strongest headlines first: the magazine's page lists only the first four for the latest issue.
 - Change `palette`, `fonts`, `variant`, and `emphasis` from one issue to the next, so the days look different. Use `loud` on one block an issue at most.
 
@@ -639,9 +644,11 @@ data/magazine/2026-10-19.json is invalid:
   → at theme.palette
 ```
 
-Art fails `validate` when its path is a web address, starts with `/`, contains `..`, or does not end in `.jpg`, `.png`, or `.webp`, and when an issue has art on more than three blocks or more than one `image-of-the-day`.
+Art fails `validate` when its path is a web address, starts with `/`, contains `..`, or does not end in `.jpg`, `.png`, or `.webp`, and when an issue has art on more than three blocks, more than one `image-of-the-day`, or more than four `interlude` blocks.
 
-A missing cover picture is a warning, not a failure. So is a picture `art` names that is missing, is not a picture, or is smaller than 1200 × 800 pixels: the page shows the block without its art, and leaves an `image-of-the-day` out. Art on a post that has its own image warns too, since the page shows the post's image instead. Everything that depends on the bookmarks or the scans is a warning too, so a change to `data/bookmarks.json` or `data/scans.json` never stops a deploy: a bookmark id that is not in `data/bookmarks.json`, a scan id that is not in `data/scans.json`, a quote that is no longer in the post, a `photo-spread` bookmark without `media`, a `sidebar-box` bookmark without an `action`, a bookmark in more than two blocks, more than one `loud` block, and an issue dated in the future: later than today anywhere on Earth, that is, later than the current date in UTC+14, the first time zone to reach a new day. The page leaves out an item that does not fit, and the whole block when that leaves it with fewer items than it needs, or when the block shows a single bookmark (`cover-story`, `feature`, `pull-quote`, `sidebar-box`, `closer`) and that one does not fit. Fix every warning in the issue you are writing.
+An `interlude` also fails when it is the issue's first or last block, or comes right after another `interlude`. These count the issue's whole `sections` list, corners included: an interlude just before a `corner` block sits between two parts, as it should. If the page leaves blocks out and that leaves an interlude first, last, or next to another, the page leaves that interlude out too.
+
+A missing cover picture is a warning, not a failure. So is a picture `art` names that is missing, is not a picture, or is smaller than 1200 × 800 pixels (for an `interlude`, narrower than 1200 pixels, or smaller than 800 × 800 for a `square` one): the page shows the block without its art, and leaves an `image-of-the-day` or an `interlude` out. Art on a post that has its own image warns too, since the page shows the post's image instead. Everything that depends on the bookmarks or the scans is a warning too, so a change to `data/bookmarks.json` or `data/scans.json` never stops a deploy: a bookmark id that is not in `data/bookmarks.json`, a scan id that is not in `data/scans.json`, a quote that is no longer in the post, a `photo-spread` bookmark without `media`, a `sidebar-box` bookmark without an `action`, a bookmark in more than two blocks, more than one `loud` block, and an issue dated in the future: later than today anywhere on Earth, that is, later than the current date in UTC+14, the first time zone to reach a new day. The page leaves out an item that does not fit, and the whole block when that leaves it with fewer items than it needs, or when the block shows a single bookmark (`cover-story`, `feature`, `pull-quote`, `sidebar-box`, `closer`) and that one does not fit. Fix every warning in the issue you are writing.
 
 Three more warnings check the issue's balance and sourcing:
 

@@ -23,14 +23,17 @@ import {
 import { readFile } from "node:fs/promises";
 import { imageMetadata } from "astro/assets/utils";
 import {
-  ART_MIN_SIZE,
   artFileName,
+  artMinSize,
   coverFileNames,
   isIssueFileName,
-  isLargeEnoughArt,
+  fitsArt,
   MAGAZINE_DIR,
+  minimumSizeLabel,
   parseMagazineIssue,
   PICTURE_EXTENSIONS,
+  showsOnlyArt,
+  type MagazineBlock,
   type MagazineIssue,
 } from "./magazine.ts";
 import { issueWarnings, type IssueWarning } from "./magazine-check.ts";
@@ -127,12 +130,12 @@ async function validateIssue({ file, source, context }: { file: string; source: 
   return { sections: issue.sections.length, warnings };
 }
 
-async function artProblem(file: string): Promise<string | undefined> {
+async function artProblem(file: string, block: MagazineBlock): Promise<string | undefined> {
   if (!(await fileExists(file))) return "is missing";
   const size = await imageMetadata(await readFile(file)).catch(() => undefined);
   if (size === undefined) return "is not a picture";
-  if (isLargeEnoughArt(size)) return undefined;
-  return `is ${size.width} × ${size.height} pixels; make it at least ${ART_MIN_SIZE.width} × ${ART_MIN_SIZE.height}`;
+  if (fitsArt(block, size)) return undefined;
+  return `is ${size.width} × ${size.height} pixels; make it at least ${minimumSizeLabel(artMinSize(block))}`;
 }
 
 async function artWarnings({
@@ -148,10 +151,9 @@ async function artWarnings({
     issue.sections.map(async (block, index) => {
       if (!("art" in block) || block.art === undefined) return [];
       const file = path.join(dir, artFileName(issue.date, block.art));
-      const problem = await artProblem(path.resolve(cwd, file));
+      const problem = await artProblem(path.resolve(cwd, file), block);
       if (problem === undefined) return [];
-      const leftOut =
-        block.type === "image-of-the-day" ? "the page leaves the block out" : "the page shows the block without it";
+      const leftOut = showsOnlyArt(block) ? "the page leaves the block out" : "the page shows the block without it";
       return [{ path: ["sections", index, "art"], message: `${toSource(file)} ${problem}; ${leftOut}` }];
     }),
   );
