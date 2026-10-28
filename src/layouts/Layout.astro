@@ -1,6 +1,7 @@
 ---
 import "../styles/global.css";
 import "virtual:grok-digest/theme.css";
+import { XAppLinks } from "../components/XAppLinks";
 import { siteHref } from "../lib/paths";
 import { TEXT_SIZE_STORAGE_KEY, TEXT_SIZES, DEFAULT_TEXT_SIZE } from "../lib/text-size";
 import { DARK_QUERY, THEME_STORAGE_KEY } from "../lib/theme";
@@ -74,5 +75,6 @@ const { title, description, feedHref, feedTitle = "Bookmarks" } = Astro.props;
   </head>
   <body class="min-h-dvh">
     <slot />
+    <XAppLinks client:load />
   </body>
 </html>

@@ -4,6 +4,7 @@ import Byline from "./Byline.astro";
 import ItemNote from "./ItemNote.astro";
 import ItemTitle from "./ItemTitle.astro";
 import Kicker from "./Kicker.astro";
+import PostExpander from "./PostExpander.astro";
 import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 
 type Props = {
@@ -31,6 +32,7 @@ const versus = block.variant === "versus";
         <Kicker topic={post.topic} text={item.label} />
         <ItemTitle post={post} text={post.tldr} />
         <ItemNote item={item} />
+        <PostExpander post={post} />
         <div class="mt-auto pt-2">
           <Byline post={post} />
         </div>

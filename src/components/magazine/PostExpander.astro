@@ -1,0 +1,43 @@
+---
+import { ChevronDownIcon } from "lucide-react";
+import { PostBody } from "../PostBody";
+import { langOf } from "../../lib/lang";
+import { postedDateLabel } from "../../lib/magazine";
+import { postParts } from "../../lib/media";
+import type { Post } from "../../lib/posts";
+
+type Props = {
+  post: Post;
+  class?: string | undefined;
+};
+
+const { post, class: className } = Astro.props;
+const { author, postedAt, text } = post;
+const hasText = text.trim() !== "";
+---
+
+{hasText && (
+  <details data-post-expander class:list={["group/post w-full min-w-0 text-left font-sans", className]}>
+    <summary class="flex min-h-11 w-fit cursor-pointer list-none items-center gap-1.5 rounded-md text-sm font-medium text-brand-ink select-none hover:underline hover:decoration-brand hover:underline-offset-4 focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none in-data-[block=closer]:mx-auto in-data-[variant=centered]:mx-auto [&::-webkit-details-marker]:hidden">
+      <span class="group-open/post:hidden">Read the post</span>
+      <span class="hidden group-open/post:inline">Hide the post</span>
+      <ChevronDownIcon
+        className="size-4 transition-transform duration-300 group-open/post:rotate-180 motion-reduce:transition-none"
+        aria-hidden="true"
+      />
+    </summary>
+    <figure
+      lang={langOf(text)}
+      class="mt-1 flex flex-col gap-3 rounded-xl bg-card p-4 text-card-foreground ring-1 ring-border sm:p-5"
+    >
+      <figcaption class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-sm">
+        <span class="font-medium">{author.name}</span>
+        <span class="text-muted-foreground">@{author.handle}</span>
+        <time class="ml-auto text-xs text-muted-foreground tabular-nums" datetime={postedAt.toISOString()}>
+          {postedDateLabel(postedAt)}
+        </time>
+      </figcaption>
+      <PostBody parts={postParts(post)} className="text-[0.9375rem]" />
+    </figure>
+  </details>
+)}

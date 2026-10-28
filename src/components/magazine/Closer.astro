@@ -2,6 +2,7 @@
 import Block from "./Block.astro";
 import ItemMeta from "./ItemMeta.astro";
 import ItemTitle from "./ItemTitle.astro";
+import PostExpander from "./PostExpander.astro";
 import { langOf } from "../../lib/lang";
 import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 import { postImages } from "../../lib/media";
@@ -36,6 +37,7 @@ const [image] = block.variant === "photo" ? postImages(post) : [];
     )}
     <ItemMeta meta={block} />
     <p class="font-sans text-sm text-muted-foreground">@{post.author.handle}</p>
+    <PostExpander post={post} />
     <span aria-hidden="true" class="text-brand">
       ∎
     </span>

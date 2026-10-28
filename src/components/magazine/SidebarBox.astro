@@ -1,6 +1,7 @@
 ---
 import { ZapIcon } from "lucide-react";
 import Block from "./Block.astro";
+import PostExpander from "./PostExpander.astro";
 import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 import { postLink } from "../../lib/paths";
 
@@ -35,5 +36,6 @@ const post = find(refOf(block));
       </a>{" "}
       by @{post.author.handle}
     </p>
+    <PostExpander post={post} />
   </aside>
 </Block>

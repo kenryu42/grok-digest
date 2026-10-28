@@ -5,6 +5,7 @@ import IssueArt from "./IssueArt.astro";
 import Byline from "./Byline.astro";
 import ItemMeta from "./ItemMeta.astro";
 import Kicker from "./Kicker.astro";
+import PostExpander from "./PostExpander.astro";
 import { cardKind } from "../../lib/card-kind";
 import { langOf } from "../../lib/lang";
 import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
@@ -90,4 +91,5 @@ const LAYOUT = {
       </div>
     </article>
   )}
+  <PostExpander post={post} />
 </Block>

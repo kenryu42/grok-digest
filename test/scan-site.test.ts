@@ -167,7 +167,7 @@ describe("a site with scans", () => {
   );
 
   it(
-    "keeps every item's note, why, tags and source label in one wrapper, so a block's grid never splits them",
+    "keeps every item's note, why, tags and source label in one wrapper and the post's expander in the text column, so a block's grid never splits them",
     async () => {
       const fields = {
         note: "A note.",
@@ -179,7 +179,10 @@ describe("a site with scans", () => {
         { scan: PICK, ...fields },
         { bookmark: tokyo, ...fields },
       ];
-      await writeFile(path.join(site, "data/scans.json"), JSON.stringify([scan(PICK, { pick: true })]));
+      await writeFile(
+        path.join(site, "data/scans.json"),
+        JSON.stringify([scan(PICK, { pick: true, text: "白色矮星は炭素で緑に光る。" })]),
+      );
       await mkdir(path.join(site, "data/magazine"));
       await writeFile(
         path.join(site, "data/magazine/2026-10-20.json"),
@@ -202,8 +205,14 @@ describe("a site with scans", () => {
       await build();
       const page = await read("dist/magazine/2026-10-20/index.html");
       for (const inner of itemsOf(page, "numbered-list")) {
-        expect(topLevelElements(inner).map((tag) => /^<(\w+)/.exec(tag)?.[1])).toEqual(["span", "h4", "div"]);
+        expect(topLevelElements(inner).map((tag) => /^<(\w+)/.exec(tag)?.[1])).toEqual([
+          "span",
+          "h4",
+          "div",
+          "details",
+        ]);
         expect(topLevelElements(inner)[2]).toContain("data-item-note");
+        expect(topLevelElements(inner)[3]).toMatch(/^<details data-post-expander class="[^"]*\bcol-start-2\b/);
       }
       for (const blockType of ["brief-grid", "timeline"]) {
         for (const inner of itemsOf(page, blockType)) {

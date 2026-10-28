@@ -264,6 +264,35 @@ describe("a site with magazine issues", () => {
   );
 
   it(
+    "lets a story open its full post, with line breaks, only when the post has text, and never in the digest",
+    async () => {
+      await writeIssue("2026-10-17", {
+        title: "Expanders",
+        theme,
+        sections: [
+          { type: "feature", bookmark: agents },
+          { type: "numbered-list", items: [{ bookmark: tokyo }, { bookmark: design }] },
+          { type: "closer", bookmark: design },
+        ],
+      });
+      await build();
+      const page = await read("dist/magazine/2026-10-17/index.html");
+      const [magazine = "", digest = ""] = page.split('data-view-panel="digest"');
+      const expanders = [...magazine.matchAll(/<details data-post-expander[\s\S]*?<\/details>/g)].map(([tag]) => tag);
+      const [agentsPost, tokyoPost] = samples;
+      expect(expanders).toHaveLength(2);
+      expect(expanders[0]).toContain("Read the post");
+      expect(expanders[0]).toContain(`@${agentsPost?.author.handle}`);
+      expect(expanders[0]).toContain("whitespace-pre-wrap");
+      expect(expanders[0]).toContain(agentsPost?.text.split("\n")[0]);
+      expect(expanders[1]).toContain(`@${tokyoPost?.author.handle}`);
+      expect(magazine.match(/data-block="closer"/g)).toHaveLength(1);
+      expect(digest).not.toContain("data-post-expander");
+    },
+    BUILD_TIMEOUT_MS,
+  );
+
+  it(
     "lets custom/theme.css change a palette",
     async () => {
       await mkdir(path.join(site, "custom"));

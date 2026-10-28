@@ -1,5 +1,6 @@
 ---
 import Block from "./Block.astro";
+import PostExpander from "./PostExpander.astro";
 import { langOf } from "../../lib/lang";
 import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 
@@ -10,7 +11,8 @@ type Props = {
 };
 
 const { block, anchor, find } = Astro.props;
-const { url, author } = find(refOf(block));
+const post = find(refOf(block));
+const { url, author } = post;
 const centered = block.variant === "centered";
 ---
 
@@ -37,5 +39,6 @@ const centered = block.variant === "centered";
       </a>
       <span class="text-muted-foreground">@{author.handle}</span>
     </figcaption>
+    <PostExpander post={post} />
   </figure>
 </Block>

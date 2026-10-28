@@ -1,6 +1,7 @@
 ---
 import Block from "./Block.astro";
 import ItemMeta from "./ItemMeta.astro";
+import PostExpander from "./PostExpander.astro";
 import { langOf } from "../../lib/lang";
 import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 import { postImages } from "../../lib/media";
@@ -71,6 +72,7 @@ const spansRow = (index: number, count: number): boolean => index === 0 || (inde
           <span class="text-muted-foreground">@{post.author.handle}</span>
         </figcaption>
         <ItemMeta meta={item} />
+        <PostExpander post={post} />
       </figure>
     ))}
   </div>

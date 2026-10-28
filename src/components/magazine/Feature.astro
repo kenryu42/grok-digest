@@ -5,6 +5,7 @@ import IssueArt from "./IssueArt.astro";
 import Byline from "./Byline.astro";
 import ItemMeta from "./ItemMeta.astro";
 import Kicker from "./Kicker.astro";
+import PostExpander from "./PostExpander.astro";
 import { langOf } from "../../lib/lang";
 import { refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 import { postImages } from "../../lib/media";
@@ -68,6 +69,7 @@ const ART_SIZES = block.span === "half" ? "(min-width: 56.25rem) 32rem, 100vw" :
     <div class="flex flex-col gap-3 sm:col-span-full">
       <ItemMeta meta={block} />
       <Byline post={post} />
+      <PostExpander post={post} />
     </div>
   </article>
 </Block>

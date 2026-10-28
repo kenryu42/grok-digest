@@ -3,6 +3,7 @@ import Block from "./Block.astro";
 import ItemNote from "./ItemNote.astro";
 import ItemTitle from "./ItemTitle.astro";
 import Kicker from "./Kicker.astro";
+import PostExpander from "./PostExpander.astro";
 import { postedDateLabel, refOf, type BlockOf, type FindEntry } from "../../lib/magazine";
 
 type Props = {
@@ -36,6 +37,7 @@ const compact = block.variant === "compact";
         {item.label !== undefined && <Kicker text={item.label} />}
         <ItemTitle post={post} text={post.tldr} />
         {!compact && <ItemNote item={item} />}
+        <PostExpander post={post} />
       </li>
     ))}
   </ol>

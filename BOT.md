@@ -160,7 +160,7 @@ One or two sentences on what the post says and why it matters. For a thread, sum
 
 The post's own words, copied exactly as posted, with its line breaks. For a thread, the author's posts in order, separated by a blank line. Keep every short link (`https://t.co/…` or `pic.x.com/…`) as it is, including ones that stand for an image or a link card; `media[].link` and `links[].short` point at them. For a long post, the X API's `note_tweet.text` holds the full text and `text` is cut off, so copy `note_tweet.text` when it is there. Some X reads never return `note_tweet`, even for a long post. Treat `text` as cut off when it is near 280 characters, ends mid-sentence or ends with a short link, or when the post's `display_text_range` ends past its length. Then get the full text from another source before you save, such as `raw_text.text` in `https://api.fxtwitter.com/<handle>/status/<id>`, and use it as you would `note_tweet.text`. Never save the cut-off text. `note_tweet.text` usually leaves out the short link that stands for the post's photos; don't add it back, and leave those images' `link` out. Write `""` when the post has no text.
 
-Keep it complete. Most AI assistants can't open x.com, so when the owner copies a bookmark into one, this text is all it gets of the post.
+Keep it complete. Most AI assistants can't open x.com, so when the owner copies a bookmark into one, this text is all it gets of the post. The magazine shows it too: every story in an issue opens to its full post, and a post whose `text` is empty gets no Read the post button.
 
 ### key_points
 
@@ -584,6 +584,8 @@ Every block takes three optional fields that change how it looks:
 | `closer`           | A small, quiet closing item: headline, your note, and the author, ending the issue with a mark. `photo` adds the post's first image.        | `bookmark`, optional `headline` (default: its `tldr`) and `note`                                                                                 | `text`, `photo`                 |
 
 A `note` is one sentence you write for this issue: why the item matters today, not a copy of its `summary`. `compact` timelines leave notes out.
+
+Every block and item that names a post also gets a Read the post button under it, which opens the post's full `text` in place, with its line breaks, author, date, images, and link cards, the way the bookmark's card shows it. A post whose `text` is `""` gets no button. The digest view has none.
 
 ### Item fields
 
