@@ -64,6 +64,15 @@ const allBlocks = withSections(
   { type: "topic-divider", topic: "design", variant: "band" },
   { type: "sidebar-box", bookmark: agents, headline: "Try this" },
   { type: "corner", corner: "kicker" },
+  {
+    type: "painting",
+    art: "temeraire.jpg",
+    title: "The Fighting Temeraire",
+    artist: "J. M. W. Turner",
+    year: "1839",
+    source_url: "https://www.nationalgallery.org.uk/paintings/joseph-mallord-william-turner-the-fighting-temeraire",
+    license: "Public domain",
+  },
   { type: "image-of-the-day", art: "day.jpg", caption: "The day in one picture." },
   { type: "interlude", art: "pause.jpg", variant: "square", caption: "A pause." },
   { type: "closer", bookmark: design, note: "To end on." },
@@ -438,6 +447,91 @@ describe("interlude", () => {
       kept ? ["cover-story", "interlude", "closer"] : ["cover-story", "closer"],
     );
     expect(parsed?.art.has("pause.jpg")).toBe(kept);
+  });
+});
+
+const painting = (extra: object = {}) => ({
+  type: "painting",
+  art: "temeraire.jpg",
+  art_alt: "An old warship towed up a river by a small steam tug at sunset",
+  title: "The Fighting Temeraire",
+  artist: "J. M. W. Turner",
+  year: "1839",
+  collection: "National Gallery, London",
+  source_url: "https://commons.wikimedia.org/wiki/File:Turner,_J._M._W._-_The_Fighting_T%C3%A9m%C3%A9raire.jpg",
+  license: "Public domain",
+  ...extra,
+});
+
+describe("painting", () => {
+  it("parses with a fixed style, and refers to no post", () => {
+    const raw = between(painting({ year: "c. 1665", license: "CC0", caption: "x".repeat(100) }));
+    expect(parse(raw).sections[1]).toMatchObject({ year: "c. 1665", variant: "standard", span: "full" });
+    expect(warningsOf(raw)).toEqual([]);
+  });
+
+  it("does not count toward the three blocks with art, the image of the day, or the interludes", () => {
+    const arts = ["a.jpg", "b.jpg", "c.jpg"].map((art) => artFeature(tokyo, art));
+    const raw = between(...arts, painting(), imageOfTheDay, interlude(), closer);
+    expect(parse(raw).sections.map(({ type }) => type)).toContain("painting");
+  });
+
+  it.each([
+    ["a second painting", between(painting(), closer, painting()), 'at most 1 "painting" block\n  → at sections[3]'],
+    ["a painting first", withSections(painting(), closer), 'a "painting" cannot open the issue'],
+    ["a painting last", withSections(cover, painting()), 'a "painting" cannot end the issue;'],
+    [
+      "a painting after an interlude",
+      between(interlude(), painting()),
+      'cannot sit next to an "interlude"; put a block between them\n  → at sections[2]',
+    ],
+    [
+      "a painting before an interlude",
+      between(painting(), interlude()),
+      'next to an "interlude"; put a block between them\n  → at sections[1]',
+    ],
+    ["a painting without a title", between(painting({ title: undefined })), "sections[1].title"],
+    ["a painting without an artist", between(painting({ artist: undefined })), "sections[1].artist"],
+    ["a painting without a year", between(painting({ year: undefined })), "sections[1].year"],
+    ["a painting without a license", between(painting({ license: undefined })), "sections[1].license"],
+    ["a license that is not public domain", between(painting({ license: "CC BY-SA 4.0" })), "sections[1].license"],
+    ["a painting without a source", between(painting({ source_url: undefined })), "sections[1].source_url"],
+    ["a source over http", between(painting({ source_url: "http://example.org/a" })), "must be an https address"],
+    ["a hotlinked painting", between(painting({ art: "https://upload.wikimedia.org/a.jpg" })), "issue's own folder"],
+    ["a collection over 60 characters", between(painting({ collection: "x".repeat(61) })), "sections[1].collection"],
+    ["a caption over 100 characters", between(painting({ caption: "x".repeat(101) })), "sections[1].caption"],
+    ["a headline on a painting", between(painting({ headline: "Hunger" })), '"headline"'],
+    ["a bookmark on a painting", between(painting({ bookmark: agents })), '"bookmark"'],
+    ["emphasis on a painting", between(painting({ emphasis: "loud" })), 'a "painting" takes no "emphasis"'],
+  ])("rejects %s", (_case, raw, field) => {
+    expect(errorOf(raw)).toContain(field);
+  });
+
+  it("warns when it has no art_alt", () => {
+    expect(warningsOf(between(painting({ art_alt: undefined })))).toEqual([
+      {
+        path: ["sections", 1, "art_alt"],
+        message: 'the painting has no "art_alt"; describe what it shows for screen readers',
+      },
+    ]);
+  });
+
+  it("is left out when the blocks the page drops leave it first, last, or next to an interlude", () => {
+    const gone = { type: "feature", bookmark: "404" };
+    expect(typesOf(withSections(gone, painting(), closer))).toEqual(["closer"]);
+    expect(typesOf(withSections(cover, painting(), gone))).toEqual(["cover-story"]);
+    expect(typesOf(between(painting(), gone, interlude()))).toEqual(["cover-story", "painting", "closer"]);
+  });
+
+  it.each([
+    [picture(1200, 900), true],
+    [picture(900, 1200), true],
+    [picture(1199, 1199), false],
+  ])("keeps a painting whose picture is %o: %s", (size, kept) => {
+    const [parsed] = parseMagazine([{ source: SOURCE, raw: between(painting()), art: { "temeraire.jpg": size } }]);
+    expect(parsed?.sections.map(({ type }) => type)).toEqual(
+      kept ? ["cover-story", "painting", "closer"] : ["cover-story", "closer"],
+    );
   });
 });
 

@@ -2,7 +2,7 @@ import type { Bookmark, Scan } from "./bookmarks.ts";
 import {
   CORNER_LABELS,
   INTEREST_CORNERS,
-  isInterlude,
+  isPause,
   ITEM_LIMITS,
   refOf,
   type FindEntry,
@@ -63,7 +63,7 @@ function referencesIn(block: MagazineBlock): Reference[] {
     block.type === "topic-divider" ||
     block.type === "corner" ||
     block.type === "image-of-the-day" ||
-    block.type === "interlude"
+    isPause(block)
   ) {
     return [];
   }
@@ -88,13 +88,13 @@ function pairHalves(sections: readonly MagazineBlock[]): MagazineBlock[] {
   return paired;
 }
 
-function withoutStrayInterludes(sections: readonly MagazineBlock[]): MagazineBlock[] {
+function withoutStrayPauses(sections: readonly MagazineBlock[]): MagazineBlock[] {
   const kept: MagazineBlock[] = [];
   for (const block of sections) {
-    if (isInterlude(block) && (kept.length === 0 || isInterlude(kept.at(-1)))) continue;
+    if (isPause(block) && (kept.length === 0 || isPause(kept.at(-1)))) continue;
     kept.push(block);
   }
-  return isInterlude(kept.at(-1)) ? kept.slice(0, -1) : kept;
+  return isPause(kept.at(-1)) ? kept.slice(0, -1) : kept;
 }
 
 export function readableIssue<Issue extends MagazineIssue>(issue: Issue, find: FindPost): Issue {
@@ -106,7 +106,7 @@ export function readableIssue<Issue extends MagazineIssue>(issue: Issue, find: F
     }
     return referencesIn(block).every(({ ref }) => usable(block, ref)) ? [block] : [];
   });
-  return { ...issue, sections: pairHalves(withoutStrayInterludes(sections)) };
+  return { ...issue, sections: pairHalves(withoutStrayPauses(sections)) };
 }
 
 function leftOut(block: MagazineBlock, missing: number): string {
@@ -197,6 +197,12 @@ export function issueWarnings({
     for (const shown of new Map(references.map(({ ref }) => [refKey(ref), ref])).values()) {
       const seen = blocksPerPost.get(refKey(shown)) ?? { ref: shown, blocks: [] };
       blocksPerPost.set(refKey(shown), { ref: shown, blocks: [...seen.blocks, index] });
+    }
+    if (block.type === "painting" && block.art_alt === undefined) {
+      warnings.push({
+        path: ["sections", index, "art_alt"],
+        message: 'the painting has no "art_alt"; describe what it shows for screen readers',
+      });
     }
     if (block.emphasis === "loud" && ++loudBlocks > MAX_LOUD_BLOCKS) {
       warnings.push({

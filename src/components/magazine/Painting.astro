@@ -1,0 +1,48 @@
+---
+import type { ImageMetadata } from "astro";
+import Block from "./Block.astro";
+import IssueArt from "./IssueArt.astro";
+import { langOf } from "../../lib/lang";
+import type { BlockOf } from "../../lib/magazine";
+
+type Props = {
+  block: BlockOf<"painting">;
+  anchor: string;
+  art: ImageMetadata;
+};
+
+const { block, anchor, art } = Astro.props;
+const MAX_HEIGHT = "80svh";
+const ART_SIZES = "(min-width: 72rem) 71rem, 100vw";
+const ratio = art.width / art.height;
+const dated = block.collection === undefined ? block.year : `${block.year} · ${block.collection}`;
+const sourceName = `Source: ${block.title} at ${block.collection ?? new URL(block.source_url).hostname}`;
+const link = "underline decoration-border underline-offset-4 transition-colors hover:decoration-brand";
+---
+
+<Block block={block} anchor={anchor}>
+  <figure lang={langOf(block.title, block.caption)} class="flex flex-col gap-5 py-8 sm:py-14">
+    <div class="-mx-5 sm:-mx-10">
+      <div
+        class="mx-auto w-full bg-muted"
+        style={{ aspectRatio: `${art.width} / ${art.height}`, maxWidth: `calc(${MAX_HEIGHT} * ${ratio})` }}
+      >
+        <IssueArt picture={art} alt={block.art_alt} sizes={ART_SIZES} />
+      </div>
+    </div>
+    <figcaption class="mx-auto flex max-w-xl flex-col items-center gap-3 text-center">
+      <div data-painting-credit class="flex flex-col gap-1 font-sans text-xs leading-relaxed text-muted-foreground">
+        <p class="text-pretty">
+          <span class="font-medium text-foreground">{block.artist}</span>, <cite>{block.title}</cite>, {dated}
+        </p>
+        <p>
+          <a class={link} href={block.source_url} aria-label={sourceName} target="_blank" rel="noopener noreferrer">
+            Source
+          </a>{" "}
+          · {block.license}
+        </p>
+      </div>
+      {block.caption !== undefined && <p class="text-sm text-balance text-muted-foreground italic">{block.caption}</p>}
+    </figcaption>
+  </figure>
+</Block>

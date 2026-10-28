@@ -24,12 +24,10 @@ import { readFile } from "node:fs/promises";
 import { imageMetadata } from "astro/assets/utils";
 import {
   artFileName,
-  artMinSize,
+  artRule,
   coverFileNames,
   isIssueFileName,
-  fitsArt,
   MAGAZINE_DIR,
-  minimumSizeLabel,
   parseMagazineIssue,
   PICTURE_EXTENSIONS,
   showsOnlyArt,
@@ -134,8 +132,9 @@ async function artProblem(file: string, block: MagazineBlock): Promise<string | 
   if (!(await fileExists(file))) return "is missing";
   const size = await imageMetadata(await readFile(file)).catch(() => undefined);
   if (size === undefined) return "is not a picture";
-  if (fitsArt(block, size)) return undefined;
-  return `is ${size.width} × ${size.height} pixels; make it at least ${minimumSizeLabel(artMinSize(block))}`;
+  const rule = artRule(block);
+  if (rule.fits(size)) return undefined;
+  return `is ${size.width} × ${size.height} pixels; make it at least ${rule.label}`;
 }
 
 async function artWarnings({

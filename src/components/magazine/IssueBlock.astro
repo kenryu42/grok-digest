@@ -8,6 +8,7 @@ import Feature from "./Feature.astro";
 import ImageOfTheDay from "./ImageOfTheDay.astro";
 import Interlude from "./Interlude.astro";
 import NumberedList from "./NumberedList.astro";
+import Painting from "./Painting.astro";
 import PhotoSpread from "./PhotoSpread.astro";
 import PullQuote from "./PullQuote.astro";
 import SidebarBox from "./SidebarBox.astro";
@@ -41,4 +42,5 @@ const picture = "art" in block && block.art !== undefined ? art.get(block.art) :
   <ImageOfTheDay block={block} anchor={anchor} art={picture} />
 )}
 {block.type === "interlude" && picture !== undefined && <Interlude block={block} anchor={anchor} art={picture} />}
+{block.type === "painting" && picture !== undefined && <Painting block={block} anchor={anchor} art={picture} />}
 {block.type === "closer" && <Closer block={block} anchor={anchor} find={find} />}

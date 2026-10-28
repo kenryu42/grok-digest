@@ -55,6 +55,11 @@ const MAX_BLOCK_ARTS = 3;
 const MAX_IMAGES_OF_THE_DAY = 1;
 const MAX_INTERLUDES = 4;
 const INTERLUDE_CAPTION_MAX = 60;
+const MAX_PAINTINGS = 1;
+const PAINTING_CAPTION_MAX = 100;
+const PAINTING_COLLECTION_MAX = 60;
+const PAINTING_LONG_SIDE_MIN = 1200;
+const PAINTING_LICENSES = ["Public domain", "CC0"] as const;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export const isIssueFileName = (name: string): boolean => ISSUE_FILE_NAME.test(name);
@@ -77,13 +82,21 @@ const INTERLUDE_MIN_SIZES: Record<InterludeVariant, PictureSize> = {
   quiet: { width: 1200, height: ANY_HEIGHT },
 };
 
+type ArtRule = { fits: (size: PictureSize) => boolean; label: string };
+
+const atLeast = (min: PictureSize): ArtRule => ({
+  fits: ({ width, height }) => width >= min.width && height >= min.height,
+  label: min.height === ANY_HEIGHT ? `${min.width} pixels wide` : `${min.width} × ${min.height}`,
+});
+
+const longSideAtLeast = (min: number): ArtRule => ({
+  fits: ({ width, height }) => Math.max(width, height) >= min,
+  label: `${min} pixels on its long side`,
+});
+
 const PICTURE_WIDTHS = [240, 360, 480, 720, 960, 1200];
 
 export const pictureWidths = (width: number): number[] => [...PICTURE_WIDTHS.filter((each) => each < width), width];
-
-export function minimumSizeLabel({ width, height }: PictureSize): string {
-  return height === ANY_HEIGHT ? `${width} pixels wide` : `${width} × ${height}`;
-}
 
 const shortText = (max: number) => z.string().trim().min(1).max(max);
 const headline = shortText(120);
@@ -145,9 +158,9 @@ const fixedStyle = {
   span: z.enum(["full"]).default("full"),
 };
 
-const absent = <const Value extends string>(field: string, value: Value) =>
+const absent = <const Value extends string>(block: string, field: string, value: Value) =>
   z
-    .never({ error: `an "interlude" takes no "${field}"` })
+    .never({ error: `${block} takes no "${field}"` })
     .optional()
     .transform(() => value);
 
@@ -237,6 +250,21 @@ const blockSchemas = [
     ...fixedStyle,
   }),
   z.strictObject({
+    type: z.literal("painting"),
+    art: artPath,
+    art_alt: note.optional(),
+    title: headline,
+    artist: shortText(80),
+    year: label,
+    collection: shortText(PAINTING_COLLECTION_MAX).optional(),
+    source_url: z.url({ protocol: /^https$/, error: "must be an https address" }),
+    license: z.enum(PAINTING_LICENSES),
+    caption: shortText(PAINTING_CAPTION_MAX).optional(),
+    variant: fixedStyle.variant,
+    emphasis: absent('a "painting"', "emphasis", "normal"),
+    span: absent('a "painting"', "span", "full"),
+  }),
+  z.strictObject({
     type: z.literal("image-of-the-day"),
     art: artPath,
     art_alt: note.optional(),
@@ -250,8 +278,8 @@ const blockSchemas = [
     art_alt: note.optional(),
     caption: shortText(INTERLUDE_CAPTION_MAX).optional(),
     variant: z.enum(INTERLUDE_VARIANTS).default(INTERLUDE_VARIANTS[0]),
-    emphasis: absent("emphasis", "normal"),
-    span: absent("span", "full"),
+    emphasis: absent('an "interlude"', "emphasis", "normal"),
+    span: absent('an "interlude"', "span", "full"),
   }),
   z
     .strictObject({
@@ -271,18 +299,16 @@ export const magazineBlockSchema = z.discriminatedUnion("type", blockSchemas);
 
 type ParsedBlock = z.output<typeof magazineBlockSchema>;
 
-type ArtOnlyBlock = Extract<ParsedBlock, { type: "image-of-the-day" | "interlude" }>;
+type ArtOnlyBlock = Extract<ParsedBlock, { type: "image-of-the-day" | "interlude" | "painting" }>;
 
 export const showsOnlyArt = (block: ParsedBlock): block is ArtOnlyBlock =>
-  block.type === "image-of-the-day" || block.type === "interlude";
+  block.type === "image-of-the-day" || block.type === "interlude" || block.type === "painting";
 
-export const artMinSize = (block: ParsedBlock): PictureSize =>
-  block.type === "interlude" ? INTERLUDE_MIN_SIZES[block.variant] : BLOCK_ART_MIN_SIZE;
-
-export const fitsArt = (block: ParsedBlock, { width, height }: PictureSize): boolean => {
-  const min = artMinSize(block);
-  return width >= min.width && height >= min.height;
-};
+export function artRule(block: ParsedBlock): ArtRule {
+  if (block.type === "interlude") return atLeast(INTERLUDE_MIN_SIZES[block.variant]);
+  if (block.type === "painting") return longSideAtLeast(PAINTING_LONG_SIDE_MIN);
+  return atLeast(BLOCK_ART_MIN_SIZE);
+}
 
 type ArtLimit = { counts: (block: ParsedBlock) => boolean; max: number; what: string };
 
@@ -302,21 +328,39 @@ const ART_LIMITS: readonly ArtLimit[] = [
     max: MAX_INTERLUDES,
     what: '"interlude" blocks',
   },
+  {
+    counts: (block) => block.type === "painting",
+    max: MAX_PAINTINGS,
+    what: '"painting" block',
+  },
 ];
 
-export const isInterlude = (block: { type: string } | undefined): boolean => block?.type === "interlude";
+const PAUSE_NAMES = { interlude: 'an "interlude"', painting: 'a "painting"' } as const;
 
-function interludePlacement(sections: readonly ParsedBlock[], index: number): string | undefined {
-  if (index === 0) return 'an "interlude" cannot open the issue; put it between two other blocks';
-  if (index === sections.length - 1) return 'an "interlude" cannot end the issue; put it between two other blocks';
-  if (isInterlude(sections[index - 1])) return 'an "interlude" cannot follow another; put a block between them';
+type PauseType = keyof typeof PAUSE_NAMES;
+
+const isInterlude = (block: { type: string } | undefined): boolean => block?.type === "interlude";
+
+export const isPause = (block: { type: string } | undefined): block is { type: PauseType } =>
+  block !== undefined && Object.hasOwn(PAUSE_NAMES, block.type);
+
+function pausePlacement(sections: readonly ParsedBlock[], index: number, type: PauseType): string | undefined {
+  const name = PAUSE_NAMES[type];
+  if (index === 0) return `${name} cannot open the issue; put it between two other blocks`;
+  if (index === sections.length - 1) return `${name} cannot end the issue; put it between two other blocks`;
+  if (type === "interlude" && isInterlude(sections[index - 1])) {
+    return 'an "interlude" cannot follow another; put a block between them';
+  }
+  if (type === "painting" && (isInterlude(sections[index - 1]) || isInterlude(sections[index + 1]))) {
+    return 'a "painting" cannot sit next to an "interlude"; put a block between them';
+  }
   return undefined;
 }
 
-function placeInterludes(sections: ParsedBlock[], ctx: z.RefinementCtx): void {
+function placePauses(sections: ParsedBlock[], ctx: z.RefinementCtx): void {
   sections.forEach((block, index) => {
-    if (!isInterlude(block)) return;
-    const message = interludePlacement(sections, index);
+    if (!isPause(block)) return;
+    const message = pausePlacement(sections, index, block.type);
     if (message !== undefined) ctx.addIssue({ code: "custom", path: [index], message });
   });
 }
@@ -340,7 +384,7 @@ export const magazineIssueSchema = z.strictObject({
     fonts: z.enum(MAGAZINE_FONTS),
     accent: z.string().regex(HEX_COLOR, "must be a color such as #1d4ed8").optional(),
   }),
-  sections: z.array(magazineBlockSchema).min(1).max(30).superRefine(limitArt).superRefine(placeInterludes),
+  sections: z.array(magazineBlockSchema).min(1).max(30).superRefine(limitArt).superRefine(placePauses),
 });
 
 export type MagazineIssue = z.output<typeof magazineIssueSchema>;
@@ -394,7 +438,7 @@ function withUsableArt(file: IssueFile): CoveredIssue {
   const pictures = new Map(Object.entries(file.art ?? {}));
   const usable = (block: MagazineBlock, art: string): boolean => {
     const picture = pictures.get(art);
-    return picture !== undefined && fitsArt(block, picture);
+    return picture !== undefined && artRule(block).fits(picture);
   };
   const sections = issue.sections.flatMap((block): MagazineBlock[] => {
     if (!("art" in block) || block.art === undefined || usable(block, block.art)) return [block];
@@ -463,12 +507,7 @@ export const themeAttributes = ({ palette, fonts, accent }: MagazineIssue["theme
 });
 
 export function sectionHeading(block: MagazineBlock, find: FindEntry): string | undefined {
-  if (
-    block.type === "pull-quote" ||
-    block.type === "sidebar-box" ||
-    block.type === "corner" ||
-    block.type === "interlude"
-  ) {
+  if (block.type === "pull-quote" || block.type === "sidebar-box" || block.type === "corner" || isPause(block)) {
     return undefined;
   }
   if (block.type === "feature" || block.type === "closer") return block.headline ?? find(refOf(block)).tldr;

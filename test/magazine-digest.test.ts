@@ -113,6 +113,26 @@ describe("issueDigest", () => {
     expect(outline(digestOf(sections))).toEqual([{ corner: undefined, entries: [agents] }]);
   });
 
+  it("leaves a painting out, even with its picture there", () => {
+    const sections = [
+      { type: "feature", bookmark: agents },
+      {
+        type: "painting",
+        art: "temeraire.jpg",
+        title: "The Fighting Temeraire",
+        artist: "J. M. W. Turner",
+        year: "1839",
+        source_url: "https://www.nationalgallery.org.uk/paintings/the-fighting-temeraire",
+        license: "Public domain",
+        caption: "The old ship still shines.",
+      },
+      { type: "closer", bookmark: tokyo },
+    ];
+    expect(outline(digestOf(sections, new Map([["temeraire.jpg", PICTURE]])))).toEqual([
+      { corner: undefined, entries: [agents, tokyo] },
+    ]);
+  });
+
   it("leaves interludes out, even with their pictures there", () => {
     const sections = [
       { type: "feature", bookmark: agents },

@@ -296,6 +296,53 @@ describe("validating an issue's interludes", () => {
   });
 });
 
+describe("validating an issue's painting", () => {
+  const [first, second] = templateSamples.map(({ id }) => ({ type: "feature", bookmark: id }));
+  const withPainting = (art: string) => ({
+    ...issue,
+    sections: [
+      first,
+      {
+        type: "painting",
+        art,
+        art_alt: "A warship towed by a tug",
+        title: "The Fighting Temeraire",
+        artist: "J. M. W. Turner",
+        year: "1839",
+        source_url: "https://www.nationalgallery.org.uk/paintings/the-fighting-temeraire",
+        license: "Public domain",
+      },
+      second,
+    ],
+  });
+
+  it.each([
+    ["a large enough picture", LARGE_ART, []],
+    [
+      "a picture short of 1200 pixels on its long side",
+      SMALL_ART,
+      [
+        "data/magazine/2026-10-19/painting.jpg is 512 × 512 pixels; make it at least 1200 pixels on its long side; the page leaves the block out\n  → at sections[1].art",
+      ],
+    ],
+    [
+      "a file that is not a picture",
+      path.resolve("package.json"),
+      ["data/magazine/2026-10-19/painting.jpg is not a picture; the page leaves the block out\n  → at sections[1].art"],
+    ],
+  ])("checks %s", async (_case, from, warnings) => {
+    await writeIssueWithArt(withPainting("painting.jpg"), { "painting.jpg": from });
+    expect(await warningsOfIssue()).toEqual(warnings);
+  });
+
+  it("warns about a missing painting", async () => {
+    await writeIssueWithArt(withPainting("gone.jpg"), {});
+    expect(await warningsOfIssue()).toEqual([
+      "data/magazine/2026-10-19/gone.jpg is missing; the page leaves the block out\n  → at sections[1].art",
+    ]);
+  });
+});
+
 const scan = (id: string, extra: object = {}) => ({ ...templateSamples[0], id, ...extra });
 
 const validateIssueOf = (date: string) =>

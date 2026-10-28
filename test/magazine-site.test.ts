@@ -39,6 +39,30 @@ const theme = { palette: "plum", fonts: "sans-serif" };
 const coverOf = (page: string, date: string): string =>
   new RegExp(`<div data-issue-cover="${BASE_PATH}/magazine/${date}/"[\\s\\S]*?</div>`).exec(page)?.[0] ?? "";
 
+const sourceLink = (html: string): string => /<a[^>]*>\s*Source\s*<\/a>/.exec(html)?.[0] ?? "";
+
+async function writePaintingIssue(date: string, painting: object): Promise<void> {
+  await writeIssue(date, {
+    title: "Hunger beats tenure",
+    theme,
+    sections: [
+      { type: "feature", bookmark: agents },
+      {
+        type: "painting",
+        art: "temeraire.jpg",
+        title: "The Fighting Temeraire",
+        artist: "J. M. W. Turner",
+        year: "1839",
+        license: "Public domain",
+        ...painting,
+      },
+      { type: "feature", bookmark: tokyo },
+    ],
+  });
+  await mkdir(path.join(site, `data/magazine/${date}`), { recursive: true });
+  await copyFile(ART_PICTURE, path.join(site, `data/magazine/${date}/temeraire.jpg`));
+}
+
 beforeEach(async () => {
   site = await linkedSite();
 });
@@ -288,6 +312,52 @@ describe("a site with magazine issues", () => {
       expect(expanders[1]).toContain(`@${tokyoPost?.author.handle}`);
       expect(magazine.match(/data-block="closer"/g)).toHaveLength(1);
       expect(digest).not.toContain("data-post-expander");
+    },
+    BUILD_TIMEOUT_MS,
+  );
+
+  it(
+    "draws a painting whole with its museum label, out of the contents and the digest",
+    async () => {
+      await writePaintingIssue("2026-10-18", {
+        art_alt: "An old warship towed by a steam tug",
+        collection: "National Gallery, London",
+        source_url: "https://www.nationalgallery.org.uk/paintings/the-fighting-temeraire",
+        caption: "The old ship still shines.",
+      });
+      await writePaintingIssue("2026-10-17", {
+        source_url: "https://commons.wikimedia.org/wiki/File:The_Fighting_Temeraire.jpg",
+      });
+      await build({ BASE_PATH });
+
+      const page = await read("dist/magazine/2026-10-18/index.html");
+      const [magazine = "", digest = ""] = page.split('data-view-panel="digest"');
+      const section = /<section[^>]*data-block="painting"[\s\S]*?<\/section>/.exec(magazine)?.[0] ?? "";
+      const anchor = /id="([^"]+)"/.exec(section)?.[1];
+      const credit = /<div[^>]*data-painting-credit[\s\S]*?<\/div>/.exec(section)?.[0] ?? "";
+      expect(/<img[^>]*data-art[^>]*>/.exec(section)?.[0]).toContain('alt="An old warship towed by a steam tug"');
+      expect(section).toMatch(/aspect-ratio:\s*1600 \/ 1067/);
+      const creditLines = [...credit.matchAll(/<p[^>]*>([\s\S]*?)<\/p>/g)].map(([, text = ""]) =>
+        text
+          .replaceAll(/<[^>]+>/g, "")
+          .replaceAll(/\s+/g, " ")
+          .trim(),
+      );
+      expect(creditLines).toEqual([
+        "J. M. W. Turner, The Fighting Temeraire, 1839 · National Gallery, London",
+        "Source · Public domain",
+      ]);
+      expect(sourceLink(credit)).toContain(
+        'href="https://www.nationalgallery.org.uk/paintings/the-fighting-temeraire" aria-label="Source: The Fighting Temeraire at National Gallery, London" target="_blank" rel="noopener noreferrer"',
+      );
+      expect(sourceLink(await read("dist/magazine/2026-10-17/index.html"))).toContain(
+        'aria-label="Source: The Fighting Temeraire at commons.wikimedia.org"',
+      );
+      expect(section).toContain("The old ship still shines.");
+      expect(anchor).toBeDefined();
+      expect(page).toContain("In this issue");
+      expect(page).not.toContain(`href="#${anchor}"`);
+      expect(digest).not.toContain("Temeraire");
     },
     BUILD_TIMEOUT_MS,
   );
