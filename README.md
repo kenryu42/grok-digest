@@ -123,7 +123,7 @@ Each issue page has a Magazine / Digest switch at the top. Digest shows the same
 
 ### Ask (optional)
 
-A site can let a reader select a passage and ask about it. It is off by default: a site without an endpoint ships no Ask code or markup. Turn it on with `ask` in `custom/config.json`:
+A site can give its readers a chat for questions about the page and the passages in it. It is off by default: a site without an endpoint ships no Ask code or markup. Turn it on with `ask` in `custom/config.json`:
 
 ```json
 { "ask": { "endpoint": "https://relay.example.com" } }
@@ -135,9 +135,9 @@ The endpoint is a relay the site owner runs. The page holds no key and sends no 
 
 | Request               | Body or query            | Answer                                                                                                                                                                                                                                                                                                                                              |
 | --------------------- | ------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `GET /health`         |                          | Any `2xx`. The page asks once per load and waits 2 seconds; without a `2xx` in time it shows nothing.                                                                                                                                                                                                                                               |
+| `GET /health`         |                          | Any `2xx`. The page asks once per load and waits 2 seconds; without a `2xx` in time it shows no Ask button.                                                                                                                                                                                                                                         |
 | `POST /ask`           | JSON, below              | `2xx` with `{ "request_id": "<id>" }`. Errors show a short message: `400` the question could not be read, `403` the site is not allowed, `429` the limit of 30 questions an hour, `502` the relay could not reach its assistant, `503` the relay is not set up. Another status, a missing `request_id`, or a network error shows a general message. |
-| `GET /answer?id=<id>` | `id` is the `request_id` | `{ "status": "pending" }` until `{ "status": "done", "answer": "<markdown>" }`, or `{ "status": "error" }`. The page asks every 2 seconds for up to 3 minutes, then says it timed out. A `404` means the relay lost the question; the page stops and asks the reader to ask again. Other errors and network failures keep it polling.               |
+| `GET /answer?id=<id>` | `id` is the `request_id` | `{ "status": "pending" }` until `{ "status": "done", "answer": "<markdown>" }`, or `{ "status": "error" }`. The page asks every 2 seconds for up to 90 seconds, then says it timed out. A `404` means the relay lost the question; the page stops and asks the reader to ask again. Other errors and network failures keep it polling.              |
 
 `POST /ask` sends:
 
@@ -156,11 +156,11 @@ The endpoint is a relay the site owner runs. The page holds no key and sends no 
 }
 ```
 
-`question` is at most 1,000 characters. `story_id` and `story_url` are the bookmark or scan the passage belongs to, left out when the passage spans several posts. `history` is the conversation's last 6 turns, `user` or `assistant`, left out on the first question. The conversation lasts for the browser tab, per page, in `sessionStorage`.
+`question` is at most 1,000 characters. `quote` is the passage the reader attached, at most 2,000 characters, left out when none is attached. `story_id` and `story_url` are the bookmark or scan the passage belongs to, left out without a passage or when it spans several posts. `history` is the conversation's last 6 turns, `user` or `assistant`, each cut to 2,000 characters, left out on the first question. The conversation lasts for the browser tab, per page, in `sessionStorage`.
 
 The answer is shown as Markdown: paragraphs, headings, lists, code, bold, italics, and `http` or `https` links, which open in a new tab with `rel="noopener noreferrer"`. HTML in the answer shows as plain text.
 
-The reader selects at least 3 characters in a bookmark card, a magazine issue, or its digest; a bar with the quote and an Ask button appears at the bottom of the screen, below the phone's own selection menu and inside its safe area. Ask opens the panel, which can be minimized to a button or closed.
+When the relay answers `/health`, the bookmarks page and each issue page show a round button with a face at the bottom right, inside the phone's safe area. It opens the Ask Grok Digest chat: a sheet along the bottom of a phone, a card above the button on a wider screen. The button or the close button folds it back, and so does `Esc`, which returns focus to the button. A reader can ask about the page without a passage. Selecting at least 3 characters in a bookmark card, a magazine issue, or its digest shows a small Ask button under the selection, clear of the phone's own selection menu; it opens the chat with the passage attached above the input, where × removes it. The passage stays attached for follow-up questions until it is removed, another one is picked, or the chat is closed. The chat is not printed.
 
 ## Package exports
 

@@ -6,11 +6,15 @@ import {
   ASK_PROBLEMS,
   askRelay,
   buildPayload,
+  CHIP_HEIGHT,
+  CHIP_WIDTH,
+  chipPosition,
   HEALTH_TIMEOUT_MS,
   HISTORY_TURNS,
   historyOf,
-  lastAsked,
+  MAX_HISTORY_TEXT_LENGTH,
   MAX_QUESTION_LENGTH,
+  MAX_QUOTE_LENGTH,
   POLL_INTERVAL_MS,
   quoteOf,
   readConversation,
@@ -131,9 +135,10 @@ describe("askRelay", () => {
     expect(elapsed()).toBe(3 * POLL_INTERVAL_MS);
   });
 
-  it("gives up honestly after 3 minutes without an answer", async () => {
+  it("gives up honestly after 90 seconds without an answer", async () => {
     const { relay, calls, elapsed } = fakeRelay([]);
     expect(await askRelay(ENDPOINT, payload, relay)).toEqual({ kind: "problem", problem: "timeout" });
+    expect(ASK_PROBLEMS.timeout).toContain("90 seconds");
     expect(elapsed()).toBe(ANSWER_TIMEOUT_MS);
     expect(calls).toHaveLength(1 + ANSWER_TIMEOUT_MS / POLL_INTERVAL_MS);
   });
@@ -184,8 +189,7 @@ describe("buildPayload", () => {
     expect(
       buildPayload({
         question: "What is it?",
-        quote: "a quote",
-        story: { id: "42", url: "https://x.com/a/status/42" },
+        selected: { quote: "a quote", story: { id: "42", url: "https://x.com/a/status/42" } },
         page,
         turns: [],
       }),
@@ -199,13 +203,40 @@ describe("buildPayload", () => {
     });
   });
 
+  it("asks without a quote or story when no passage is attached", () => {
+    expect(buildPayload({ question: "What is this page?", selected: undefined, page, turns: [] })).toEqual({
+      question: "What is this page?",
+      page_url: page.url,
+      page_title: page.title,
+    });
+  });
+
+  it("caps the quote and each history turn at the relay's limits", () => {
+    const long = "y".repeat(5000);
+    const turns: Turn[] = [
+      { id: "u", role: "user", text: "q" },
+      { id: "a", role: "assistant", text: long },
+    ];
+    const sent = buildPayload({ question: "Why?", selected: { quote: long, story: undefined }, page, turns });
+    expect(sent.quote).toHaveLength(MAX_QUOTE_LENGTH);
+    expect(sent.history).toEqual([
+      { role: "user", text: "q" },
+      { role: "assistant", text: "y".repeat(MAX_HISTORY_TEXT_LENGTH) },
+    ]);
+  });
+
   it("caps the question and sends the last turns as history, leaving notices out", () => {
     const turns: Turn[] = Array.from({ length: 5 }, (_, index): Turn[] => [
       { id: `u${index}`, role: "user", text: `q${index}`, quote: "a quote" },
       { id: `a${index}`, role: "assistant", text: `a${index}` },
       { id: `n${index}`, role: "notice", text: "timed out" },
     ]).flat();
-    const sent = buildPayload({ question: "x".repeat(2000), quote: "a quote", story: undefined, page, turns });
+    const sent = buildPayload({
+      question: "x".repeat(2000),
+      selected: { quote: "a quote", story: undefined },
+      page,
+      turns,
+    });
     expect(sent.question).toHaveLength(MAX_QUESTION_LENGTH);
     expect(sent).not.toHaveProperty("story_id");
     expect(sent.history).toHaveLength(HISTORY_TURNS);
@@ -229,19 +260,45 @@ describe("the conversation", () => {
     const turns: Turn[] = [
       { id: "1", role: "user", text: "q", quote: "a quote", story: { id: "1", url: "https://x.com/a/status/1" } },
       { id: "2", role: "assistant", text: "a" },
+      { id: "3", role: "user", text: "and without a quote?" },
     ];
     saveConversation(storage, "k", turns);
     expect(readConversation(storage, "k")).toEqual(turns);
-    expect(lastAsked(turns)).toEqual({ quote: "a quote", story: { id: "1", url: "https://x.com/a/status/1" } });
     memory.setItem(
       "k",
-      JSON.stringify([{ id: "3", role: "system", text: "x" }, { id: "4", role: "user", text: "no quote" }, ...turns]),
+      JSON.stringify([
+        { id: "4", role: "system", text: "x" },
+        { id: "5", role: "user", text: "q", quote: 7 },
+        ...turns,
+      ]),
     );
     expect(readConversation(storage, "k")).toEqual(turns);
     memory.setItem("k", "{not json");
     expect(readConversation(storage, "k")).toEqual([]);
     expect(readConversation(blocked, "k")).toEqual([]);
     expect(() => saveConversation(blocked, "k", turns)).not.toThrow();
+  });
+});
+
+const line = (top: number, right: number) => ({ top, bottom: top + 20, right });
+
+describe("chipPosition", () => {
+  const viewport = { width: 375, height: 812, scrollX: 0, scrollY: 1000 };
+
+  it("puts the chip under the end of the selection, further down on touch to clear the handles and menu", () => {
+    const mouse = chipPosition({ first: line(100, 300), last: line(140, 200), viewport, touch: false });
+    const touch = chipPosition({ first: line(100, 300), last: line(140, 200), viewport, touch: true });
+    expect(mouse).toEqual({ top: 1000 + 160 + 8, left: 200 - CHIP_WIDTH });
+    expect(touch.top).toBeGreaterThan(mouse.top);
+    expect(touch.left).toBe(mouse.left);
+  });
+
+  it("goes above the selection when there is no room below, and stays inside the screen", () => {
+    const placed = chipPosition({ first: line(700, 370), last: line(780, 30), viewport, touch: false });
+    expect(placed.top).toBe(1000 + 700 - 8 - CHIP_HEIGHT);
+    expect(placed.left).toBe(8);
+    const right = chipPosition({ first: line(100, 400), last: line(100, 400), viewport, touch: false });
+    expect(right.left).toBe(375 - CHIP_WIDTH - 8);
   });
 });
 

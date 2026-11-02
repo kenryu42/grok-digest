@@ -1,6 +1,7 @@
 import { createElement } from "react";
 import { createRoot } from "react-dom/client";
 import { Ask } from "../components/Ask.tsx";
+import { ASK_SCOPE } from "./ask.ts";
 
 const ISSUE_ACCENT = "--issue-accent";
 
@@ -15,6 +16,7 @@ function takeIssueTheme(host: HTMLElement): void {
 }
 
 export function startAsk(endpoint: string): void {
+  if (document.querySelector(ASK_SCOPE) === null) return;
   const host = document.createElement("div");
   takeIssueTheme(host);
   document.body.append(host);

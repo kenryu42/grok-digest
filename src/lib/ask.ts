@@ -1,16 +1,18 @@
 const MIN_QUOTE_LENGTH = 3;
 export const MAX_QUESTION_LENGTH = 1000;
+export const MAX_QUOTE_LENGTH = 2000;
+export const MAX_HISTORY_TEXT_LENGTH = 2000;
 export const HEALTH_TIMEOUT_MS = 2000;
 export const POLL_INTERVAL_MS = 2000;
-export const ANSWER_TIMEOUT_MS = 180_000;
+export const ANSWER_TIMEOUT_MS = 90_000;
 export const HISTORY_TURNS = 6;
 
 const RELAY_REQUEST = { mode: "cors", credentials: "omit" } satisfies RequestInit;
 
-export type Story = { id: string; url: string };
+type Story = { id: string; url: string };
 
 export type Turn = { id: string } & (
-  | { role: "user"; text: string; quote: string; story?: Story }
+  | { role: "user"; text: string; quote?: string; story?: Story }
   | { role: "assistant"; text: string }
   | { role: "notice"; text: string }
 );
@@ -21,7 +23,7 @@ export type HistoryTurn = { role: "user" | "assistant"; text: string };
 
 export type AskPayload = {
   question: string;
-  quote: string;
+  quote?: string;
   page_url: string;
   page_title: string;
   story_id?: string;
@@ -38,7 +40,7 @@ export const ASK_PROBLEMS = {
   network: "Could not reach the relay. Check your connection and try again.",
   failed: "The question could not be answered. Try again in a moment.",
   lost: "The answer was lost, please ask again.",
-  timeout: "No answer after 3 minutes. The relay may still be working on it; ask again later.",
+  timeout: "No answer after 90 seconds. The relay may still be working on it; ask again later.",
 } as const;
 
 type AskProblem = keyof typeof ASK_PROBLEMS;
@@ -140,28 +142,29 @@ export async function askRelay(endpoint: string, payload: AskPayload, relay: Rel
 export function historyOf(turns: readonly Turn[]): HistoryTurn[] {
   return turns
     .flatMap((turn): HistoryTurn[] =>
-      turn.role === "user" || turn.role === "assistant" ? [{ role: turn.role, text: turn.text }] : [],
+      turn.role === "user" || turn.role === "assistant"
+        ? [{ role: turn.role, text: turn.text.slice(0, MAX_HISTORY_TEXT_LENGTH) }]
+        : [],
     )
     .slice(-HISTORY_TURNS);
 }
 
 export function buildPayload({
   question,
-  quote,
-  story,
+  selected,
   page,
   turns,
 }: {
   question: string;
-  quote: string;
-  story: Story | undefined;
+  selected: Selected | undefined;
   page: { url: string; title: string };
   turns: readonly Turn[];
 }): AskPayload {
   const history = historyOf(turns);
+  const story = selected?.story;
   return {
     question: question.slice(0, MAX_QUESTION_LENGTH),
-    quote,
+    ...(selected === undefined ? {} : { quote: selected.quote.slice(0, MAX_QUOTE_LENGTH) }),
     page_url: page.url,
     page_title: page.title,
     ...(story === undefined ? {} : { story_id: story.id, story_url: story.url }),
@@ -174,7 +177,7 @@ export const quoteOf = (text: string): string | undefined => {
   return quote.length >= MIN_QUOTE_LENGTH ? quote : undefined;
 };
 
-const ASK_SCOPE = "[data-bookmark-id], article[data-issue], article[data-digest]";
+export const ASK_SCOPE = "[data-bookmark-id], article[data-issue], article[data-digest]";
 const POST_LINK = "a[data-post-id]";
 
 const elementOf = (node: Node): Element | null => (node instanceof Element ? node : node.parentElement);
@@ -205,7 +208,7 @@ export function selectedInScope(selection: Selection | null): Selected | undefin
   const start = elementOf(range.commonAncestorContainer);
   const scope = start?.closest(ASK_SCOPE);
   if (quote === undefined || start === null || scope === null || scope === undefined) return undefined;
-  return { quote, story: storyAround(start, scope) };
+  return { quote: quote.slice(0, MAX_QUOTE_LENGTH), story: storyAround(start, scope) };
 }
 
 export const conversationKey = (pathname: string): string => `grok-digest:${pathname}:ask`;
@@ -216,12 +219,7 @@ const isTurn = (value: unknown): value is Turn =>
   typeof value["text"] === "string" &&
   (value["role"] === "assistant" ||
     value["role"] === "notice" ||
-    (value["role"] === "user" && typeof value["quote"] === "string"));
-
-export function lastAsked(turns: readonly Turn[]): Selected | undefined {
-  const last = turns.findLast((turn) => turn.role === "user");
-  return last?.role === "user" ? { quote: last.quote, story: last.story } : undefined;
-}
+    (value["role"] === "user" && (value["quote"] === undefined || typeof value["quote"] === "string")));
 
 export function readConversation(storage: () => Storage, key: string): Turn[] {
   try {
@@ -240,3 +238,32 @@ export function saveConversation(storage: () => Storage, key: string, turns: rea
 
 export const truncated = (text: string, max: number): string =>
   text.length <= max ? text : `${text.slice(0, max - 1).trimEnd()}…`;
+
+export const CHIP_WIDTH = 76;
+export const CHIP_HEIGHT = 36;
+const CHIP_EDGE = 8;
+const CHIP_GAP_MOUSE = 8;
+const CHIP_GAP_TOUCH = 36;
+
+type Box = { top: number; bottom: number; right: number };
+
+export type Viewport = { width: number; height: number; scrollX: number; scrollY: number };
+
+export function chipPosition({
+  first,
+  last,
+  viewport,
+  touch,
+}: {
+  first: Box;
+  last: Box;
+  viewport: Viewport;
+  touch: boolean;
+}): { top: number; left: number } {
+  const gap = touch ? CHIP_GAP_TOUCH : CHIP_GAP_MOUSE;
+  const below = last.bottom + gap;
+  const top =
+    below + CHIP_HEIGHT + CHIP_EDGE <= viewport.height ? below : Math.max(CHIP_EDGE, first.top - gap - CHIP_HEIGHT);
+  const left = Math.min(Math.max(CHIP_EDGE, last.right - CHIP_WIDTH), viewport.width - CHIP_WIDTH - CHIP_EDGE);
+  return { top: top + viewport.scrollY, left: left + viewport.scrollX };
+}

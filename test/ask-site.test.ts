@@ -7,7 +7,7 @@ import { linkedSite, runCli } from "./linked-site.ts";
 const BUILD_TIMEOUT_MS = 60_000;
 const CONFIG_ENDPOINT = "https://relay.example/grok";
 const ENV_ENDPOINT = "http://127.0.0.1:8787";
-const ASK_CODE_MARKERS = ["/answer?id=", "Ask about the selection"];
+const ASK_CODE_MARKERS = ["/answer?id=", "Ask Grok Digest", "Ask about the selection"];
 
 let site = "";
 
@@ -39,7 +39,7 @@ afterEach(async () => {
   await rm(site, { recursive: true, force: true });
 });
 
-describe("the Ask panel", () => {
+describe("the Ask chat", () => {
   it(
     "ships no Ask code or markup without an endpoint",
     async () => {
@@ -52,13 +52,15 @@ describe("the Ask panel", () => {
   );
 
   it(
-    "ships the panel with the endpoint from custom/config.json, which the environment overrides",
+    "ships the chat with the endpoint from custom/config.json, which the environment overrides",
     async () => {
       await writeConfig({ ask: { endpoint: `${CONFIG_ENDPOINT}/` } });
       await build();
       const scripts = await builtText(".js");
       for (const marker of ASK_CODE_MARKERS) expect(scripts).toContain(marker);
       expect(scripts).toMatch(quoted(CONFIG_ENDPOINT));
+      const bookmarksPage = await readFile(path.join(site, "dist/index.html"), "utf8");
+      expect(bookmarksPage).toContain("data-bookmark-id");
 
       await build({ [ASK_ENDPOINT_ENV]: ENV_ENDPOINT });
       const overridden = await builtText(".js");
