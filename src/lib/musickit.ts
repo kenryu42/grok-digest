@@ -1,4 +1,5 @@
 import { clockLabel } from "./episode.ts";
+import { browserClock, fadeIn, SONG_FADE_SECONDS } from "./fade.ts";
 
 const MUSICKIT_SCRIPT = "https://js-cdn.music.apple.com/musickit/v3/musickit.js";
 const MUSICKIT_LOADED = "musickitloaded";
@@ -13,6 +14,7 @@ type MusicKitPlayer = {
   readonly currentPlaybackDuration: number;
   readonly playbackState: number;
   readonly nowPlayingItem: { readonly playbackDuration: number } | undefined;
+  volume: number;
   authorize: () => Promise<unknown>;
   hasMusicSubscription: () => Promise<boolean>;
   setQueue: (options: { song: string; startPlaying: boolean }) => Promise<unknown>;
@@ -133,7 +135,7 @@ const stageOf = (error: unknown): MusicStage => (error instanceof MusicKitProble
 const subscribed = (player: MusicKitPlayer): Promise<boolean> =>
   player.isAuthorized ? player.hasMusicSubscription().catch(() => false) : Promise.resolve(false);
 
-type SongPlayer = { show: () => void; pause: () => void };
+type SongPlayer = { prepare: () => void; show: (options: { fade: boolean }) => void; pause: () => void };
 
 export function startSongPlayer(next: HTMLElement | null, endpoint: string | undefined): SongPlayer {
   const root = next?.querySelector<HTMLElement>("[data-music-player]") ?? null;
@@ -156,6 +158,28 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
   let isSubscribed = false;
   let dragging = false;
   let wanted = false;
+  let fadePending = false;
+  let failed = false;
+  let stopFade: (() => void) | undefined;
+
+  const fullVolume = (): void => {
+    fadePending = false;
+    stopFade?.();
+    stopFade = undefined;
+    if (ready !== undefined) ready.player.volume = 1;
+  };
+  const startFade = (): void => {
+    if (ready === undefined || !fadePending) return;
+    fadePending = false;
+    const { player } = ready;
+    stopFade = fadeIn({
+      seconds: SONG_FADE_SECONDS,
+      apply: (level) => {
+        player.volume = level;
+      },
+      clock: browserClock(),
+    });
+  };
 
   const say = (text: string): void => {
     if (status !== null) status.textContent = text;
@@ -203,6 +227,7 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
     const { playing: playingState, ended, completed } = ready.musicKit.PlaybackStates;
     const state = ready.player.playbackState;
     const playing = state === playingState;
+    if (playing) startFade();
     const shown = root?.dataset["musicPlayback"];
     if ((state === ended || state === completed) && isPreviewReason(shown)) say(PREVIEW_ENDED[shown]);
     toggle.dataset["playing"] = String(playing);
@@ -214,6 +239,7 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
   const play = (): void => {
     if (ready === undefined || songId === undefined) return;
     const { player } = ready;
+    if (fadePending) player.volume = 0;
     const started =
       player.nowPlayingItem === undefined ? player.setQueue({ song: songId, startPlaying: true }) : player.play();
     started.catch(() => say("The song did not start. Tap Play again, or open it in Apple Music."));
@@ -222,8 +248,12 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
   toggle?.addEventListener("click", () => {
     if (ready === undefined) return;
     say("");
-    if (toggle.dataset["playing"] === "true") ready.player.pause();
-    else play();
+    if (toggle.dataset["playing"] === "true") {
+      fullVolume();
+      ready.player.pause();
+    } else {
+      play();
+    }
   });
 
   const seek = (seconds: number): void => {
@@ -231,6 +261,7 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
   };
   const skip = (step: number): void => {
     if (ready === undefined) return;
+    fullVolume();
     const { player } = ready;
     seek(skipTarget(player.currentPlaybackTime, step, player.currentPlaybackDuration));
   };
@@ -244,6 +275,7 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
   });
   scrub?.addEventListener("change", () => {
     dragging = false;
+    fullVolume();
     seek(Number(scrub.value));
   });
   const stopDragging = (): void => {
@@ -285,26 +317,21 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
 
   const tryAutoplay = (): void => {
     if (ready === undefined || !wanted) return;
+    if (fadePending) ready.player.volume = 0;
     ready.player.play().catch(() => undefined);
   };
 
-  const show = (): void => {
-    if (next === null) return;
-    next.hidden = false;
-    wanted = true;
-    if (ready !== undefined) {
-      tryAutoplay();
-      return;
-    }
-    if (root === null || endpoint === undefined || songId === undefined || loading) return;
+  const load = (): void => {
+    if (ready !== undefined || root === null || endpoint === undefined || songId === undefined || loading) return;
     loading = true;
     setState("loading");
     say("Getting Apple Music ready…");
     queueSong(endpoint, songId)
       .then(async (loaded) => {
-        ready = loaded;
         isSubscribed = await subscribed(loaded.player);
         attach(loaded);
+        ready = loaded;
+        failed = false;
         enable(true);
         setState("ready");
         say("");
@@ -314,6 +341,7 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
       })
       .catch((error: unknown) => {
         loading = false;
+        failed = true;
         setState("failed");
         root.dataset["musicStage"] = stageOf(error);
         enable(false);
@@ -321,11 +349,25 @@ export function startSongPlayer(next: HTMLElement | null, endpoint: string | und
       });
   };
 
+  const show = ({ fade }: { fade: boolean }): void => {
+    if (next === null) return;
+    next.hidden = false;
+    wanted = true;
+    fadePending = fade;
+    if (ready === undefined) load();
+    else tryAutoplay();
+  };
+
   const pause = (): void => {
     wanted = false;
+    fullVolume();
     if (ready === undefined || toggle?.dataset["playing"] !== "true") return;
     ready.player.pause();
   };
 
-  return { show, pause };
+  const prepare = (): void => {
+    if (!failed) load();
+  };
+
+  return { prepare, show, pause };
 }

@@ -1,4 +1,5 @@
 import { chapterIndexAt, EPISODE_LANGUAGES, preferredLanguage, type EpisodeLanguage } from "./episode.ts";
+import { browserClock, EPISODE_FADE_SECONDS, fadeOut, PREPARE_SONG_SECONDS, volumeIsSettable } from "./fade.ts";
 import { startSongPlayer } from "./musickit.ts";
 import { readStored, STORAGE_PREFIX, writeStored } from "./storage.ts";
 
@@ -74,6 +75,7 @@ function startPodcast(section: HTMLElement): void {
       list.hidden = list.dataset["podcastChapters"] !== chosen;
     }
     if (next !== null) next.hidden = true;
+    nextSong.pause();
     cancelSeek();
     audio.pause();
     audio.src = tab.dataset["src"] ?? "";
@@ -112,12 +114,87 @@ function startPodcast(section: HTMLElement): void {
     if (target !== undefined) seek(target.start);
   };
 
-  audio.addEventListener("timeupdate", highlight);
-  audio.addEventListener("seeked", highlight);
-  audio.addEventListener("ended", nextSong.show);
-  audio.addEventListener("play", () => {
+  const canFade = volumeIsSettable(audio);
+  const clock = browserClock();
+  let stopFading: (() => void) | undefined;
+  let fullVolume: number | undefined;
+  let applied: number | undefined;
+  let userVolume = false;
+  let songStarted = false;
+
+  const remaining = (): number => audio.duration - audio.currentTime;
+  const stopSong = (): void => {
+    songStarted = false;
     nextSong.pause();
     if (next !== null) next.hidden = true;
+  };
+  const endFade = (): void => {
+    stopFading?.();
+    stopFading = undefined;
+    if (!userVolume && fullVolume !== undefined) audio.volume = fullVolume;
+    fullVolume = undefined;
+    applied = undefined;
+  };
+  const applyLevel = (level: number): boolean => {
+    if (audio.paused) return false;
+    if (applied !== undefined && audio.volume !== applied) {
+      userVolume = true;
+      return false;
+    }
+    fullVolume ??= audio.volume;
+    applied = fullVolume * level;
+    audio.volume = applied;
+    if (!songStarted) {
+      songStarted = true;
+      nextSong.show({ fade: true });
+    }
+    return true;
+  };
+  const finishFade = (): void => {
+    endFade();
+    if (songStarted && !audio.paused && remaining() > EPISODE_FADE_SECONDS) stopSong();
+  };
+  const watchEnding = (): void => {
+    const left = remaining();
+    if (!Number.isFinite(left) || audio.paused) return;
+    if (left <= PREPARE_SONG_SECONDS) nextSong.prepare();
+    if (!canFade || userVolume || left > EPISODE_FADE_SECONDS || stopFading !== undefined) return;
+    stopFading = fadeOut({
+      seconds: EPISODE_FADE_SECONDS,
+      remaining,
+      apply: applyLevel,
+      done: finishFade,
+      clock,
+    });
+  };
+
+  audio.addEventListener("timeupdate", () => {
+    highlight();
+    watchEnding();
+  });
+  audio.addEventListener("seeked", () => {
+    highlight();
+    if (songStarted && remaining() > EPISODE_FADE_SECONDS) {
+      endFade();
+      stopSong();
+    }
+  });
+  audio.addEventListener("pause", () => {
+    if (audio.ended) return;
+    endFade();
+    if (songStarted) stopSong();
+  });
+  audio.addEventListener("emptied", endFade);
+  audio.addEventListener("ended", () => {
+    endFade();
+    if (!songStarted) nextSong.show({ fade: canFade });
+    songStarted = false;
+    userVolume = false;
+  });
+  audio.addEventListener("play", () => {
+    endFade();
+    userVolume = false;
+    stopSong();
     if (!("mediaSession" in navigator)) return;
     const { title, artist, album, artwork } = section.dataset;
     navigator.mediaSession.metadata = new MediaMetadata({
