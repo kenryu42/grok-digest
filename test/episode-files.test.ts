@@ -8,6 +8,7 @@ import { defaultDataFiles, validateFiles } from "../src/lib/validate.ts";
 import { runCli } from "./linked-site.ts";
 
 const NOW = new Date("2026-11-02T12:00:00Z");
+const CLI_TIMEOUT_MS = 30_000;
 const EPISODE = {
   date: "2026-11-02",
   voice: "ignored",
@@ -138,24 +139,28 @@ describe("pruning episodes", () => {
     expect(await pruneEpisodes({ magazineDir: path.join(cwd, "missing"), days: 60 })).toEqual([]);
   });
 
-  it("runs from the command line, with --dry-run and --days", async () => {
-    const dry = await runCli(cwd, ["prune-episodes", "--days", "1", "--dry-run"]);
-    expect(dry.code).toBe(0);
-    expect(dry.output).toContain(`Would delete data/magazine/${OLD}/episode.json`);
-    expect(dry.output).toContain("Would delete 5 files.");
-    expect(await readdir(folder(RECENT))).toHaveLength(2);
+  it(
+    "runs from the command line, with --dry-run and --days",
+    async () => {
+      const dry = await runCli(cwd, ["prune-episodes", "--days", "1", "--dry-run"]);
+      expect(dry.code).toBe(0);
+      expect(dry.output).toContain(`Would delete data/magazine/${OLD}/episode.json`);
+      expect(dry.output).toContain("Would delete 5 files.");
+      expect(await readdir(folder(RECENT))).toHaveLength(2);
 
-    const pruned = await runCli(cwd, ["prune-episodes"]);
-    expect(pruned.code).toBe(0);
-    expect(pruned.output).toContain("Deleted 3 files.");
-    expect(await readdir(folder(RECENT))).toHaveLength(2);
+      const pruned = await runCli(cwd, ["prune-episodes"]);
+      expect(pruned.code).toBe(0);
+      expect(pruned.output).toContain("Deleted 3 files.");
+      expect(await readdir(folder(RECENT))).toHaveLength(2);
 
-    const invalid = ["soon", "", "1.5", "-1"];
-    const refused = await Promise.all(invalid.map((days) => runCli(cwd, ["prune-episodes", `--days=${days}`])));
-    refused.forEach(({ code, output }, index) => {
-      expect(code).toBe(1);
-      expect(output).toContain(`--days must be a whole number of days, not "${invalid[index] ?? ""}"`);
-    });
-    expect(await readdir(folder(RECENT))).toHaveLength(2);
-  });
+      const invalid = ["soon", "", "1.5", "-1"];
+      const refused = await Promise.all(invalid.map((days) => runCli(cwd, ["prune-episodes", `--days=${days}`])));
+      refused.forEach(({ code, output }, index) => {
+        expect(code).toBe(1);
+        expect(output).toContain(`--days must be a whole number of days, not "${invalid[index] ?? ""}"`);
+      });
+      expect(await readdir(folder(RECENT))).toHaveLength(2);
+    },
+    CLI_TIMEOUT_MS,
+  );
 });

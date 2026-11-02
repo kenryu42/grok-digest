@@ -112,7 +112,7 @@ describe("an issue with a podcast episode", () => {
       expect(player).toMatch(/data-podcast-next[^>]*hidden/);
       expect(player).toContain("Here Comes the Sun</span> — The Beatles");
       expect(player).toContain(`href="${SONG.url}" target="_blank" rel="noopener noreferrer"`);
-      expect(player).not.toContain("data-music-play");
+      expect(player).not.toContain("data-music-player");
       expect(player).not.toContain("data-token-endpoint");
       expect(player).toContain("print:hidden");
       expect(page).not.toContain("not shipped");
@@ -134,7 +134,20 @@ describe("an issue with a podcast episode", () => {
       await build();
       const page = await read(`dist/magazine/${DATE}/index.html`);
       expect(page).toContain(`data-token-endpoint="${TOKEN_ENDPOINT}"`);
-      expect(page).toMatch(/<button[^>]*data-music-play[^>]*disabled/);
+      const player = page.slice(page.indexOf("<div data-music-player"), page.indexOf("data-music-duration"));
+      expect(player).not.toBe("");
+      expect(player).toContain('data-music-state="idle"');
+      expect(player).toMatch(
+        /<button[^>]*data-music-signin[^>]*hidden[^>]*>\s*Sign in to Apple Music for the full song/,
+      );
+      expect(player).toMatch(/<button[^>]*data-music-back[^>]*aria-label="Back 15 seconds"[^>]*disabled/);
+      expect(player).toMatch(/<button[^>]*data-music-play[^>]*aria-label="Play Here Comes the Sun"[^>]*disabled/);
+      expect(player).toMatch(/<button[^>]*data-music-forward[^>]*aria-label="Forward 15 seconds"[^>]*disabled/);
+      expect(player).toMatch(
+        /<input[^>]*type="range"[^>]*data-music-scrub[^>]*aria-label="Position in Here Comes the Sun"[^>]*aria-valuetext="0:00 of 0:00"/,
+      );
+      expect(player).toContain("<span data-music-time>0:00</span>");
+      expect(page).toMatch(/<span[^>]*data-music-preview[^>]*hidden/);
       expect(page).toContain(`href="${SONG.url}"`);
     },
     BUILD_TIMEOUT_MS,

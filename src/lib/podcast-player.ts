@@ -1,11 +1,8 @@
 import { chapterIndexAt, EPISODE_LANGUAGES, preferredLanguage, type EpisodeLanguage } from "./episode.ts";
-import { type MusicKitPlayer, playQueuedSong, PREVIEW_NOTE, RETRY_NOTE } from "./musickit.ts";
+import { startSongPlayer } from "./musickit.ts";
 import { readStored, STORAGE_PREFIX, writeStored } from "./storage.ts";
 
 const LANGUAGE_KEY = `${STORAGE_PREFIX}podcast-language`;
-const MUSICKIT_SCRIPT = "https://js-cdn.music.apple.com/musickit/v3/musickit.js";
-const MUSICKIT_LOADED = "musickitloaded";
-const MUSICKIT_APP = { name: "Grok Digest", build: "1" };
 const TAB_KEYS: Record<string, (index: number, count: number) => number> = {
   ArrowRight: (index, count) => (index + 1) % count,
   ArrowLeft: (index, count) => (index - 1 + count) % count,
@@ -13,132 +10,8 @@ const TAB_KEYS: Record<string, (index: number, count: number) => number> = {
   End: (_index, count) => count - 1,
 };
 
-type MusicKitGlobal = {
-  configure: (options: { developerToken: string; app: typeof MUSICKIT_APP }) => Promise<MusicKitPlayer>;
-};
-
-type MusicKitWindow = Window & { MusicKit?: MusicKitGlobal };
-
-type MusicStage = "script" | "token" | "configure" | "queue";
-
-class MusicKitProblem extends Error {
-  constructor(readonly stage: MusicStage) {
-    super(`Apple Music stopped at ${stage}`);
-  }
-}
-
 const isLanguage = (value: string | undefined): value is EpisodeLanguage =>
   EPISODE_LANGUAGES.some((language) => language === value);
-
-function loadMusicKit(): Promise<MusicKitGlobal> {
-  const ready = (window as MusicKitWindow).MusicKit;
-  if (ready !== undefined) return Promise.resolve(ready);
-  return new Promise((resolve, reject) => {
-    document.addEventListener(
-      MUSICKIT_LOADED,
-      () => {
-        const loaded = (window as MusicKitWindow).MusicKit;
-        if (loaded === undefined) reject(new MusicKitProblem("script"));
-        else resolve(loaded);
-      },
-      { once: true },
-    );
-    const script = document.createElement("script");
-    script.src = MUSICKIT_SCRIPT;
-    script.async = true;
-    script.addEventListener("error", () => reject(new MusicKitProblem("script")), { once: true });
-    document.head.append(script);
-  });
-}
-
-async function developerToken(endpoint: string): Promise<string> {
-  const response = await fetch(endpoint, { mode: "cors", credentials: "omit" }).catch(() => undefined);
-  if (response?.ok !== true) throw new MusicKitProblem("token");
-  const body: unknown = await response.json().catch(() => undefined);
-  const token = typeof body === "object" && body !== null && "token" in body ? body.token : undefined;
-  if (typeof token !== "string" || token === "") throw new MusicKitProblem("token");
-  return token;
-}
-
-async function queueSong(endpoint: string, songId: string): Promise<MusicKitPlayer> {
-  const [musicKit, token] = await Promise.all([loadMusicKit(), developerToken(endpoint)]);
-  const player = await musicKit.configure({ developerToken: token, app: MUSICKIT_APP }).catch(() => {
-    throw new MusicKitProblem("configure");
-  });
-  await player.setQueue({ song: songId, startPlaying: false }).catch(() => {
-    throw new MusicKitProblem("queue");
-  });
-  return player;
-}
-
-const stageOf = (error: unknown): MusicStage => (error instanceof MusicKitProblem ? error.stage : "configure");
-
-function startNextSong(section: HTMLElement): { show: () => void; pauseSong: () => void } {
-  const next = section.querySelector<HTMLElement>("[data-podcast-next]");
-  const play = next?.querySelector<HTMLButtonElement>("[data-music-play]");
-  const status = next?.querySelector<HTMLElement>("[data-music-status]");
-  const endpoint = section.dataset["tokenEndpoint"];
-  const songId = next?.dataset["appleMusicId"];
-  let loading = false;
-  let queued: MusicKitPlayer | undefined;
-  let askToSignIn = true;
-  const say = (text: string): void => {
-    if (status !== null && status !== undefined) status.textContent = text;
-  };
-  const fail = (stage: MusicStage): void => {
-    if (play === null || play === undefined) return;
-    play.dataset["musicState"] = "failed";
-    play.dataset["musicStage"] = stage;
-    play.disabled = true;
-    say("Apple Music could not start here. Open the song in Apple Music instead.");
-  };
-  const ready = (): void => {
-    if (play === null || play === undefined) return;
-    play.dataset["musicState"] = "ready";
-    play.disabled = false;
-  };
-  play?.addEventListener("click", () => {
-    if (queued === undefined || play.dataset["musicState"] === "starting") return;
-    play.dataset["musicState"] = "starting";
-    play.disabled = true;
-    const asking = askToSignIn;
-    askToSignIn = false;
-    playQueuedSong(queued, { askToSignIn: asking }).then(
-      (playback) => {
-        play.dataset["musicState"] = "playing";
-        play.dataset["musicPlayback"] = playback;
-        play.disabled = false;
-        say(playback === "preview" ? PREVIEW_NOTE : "");
-      },
-      () => {
-        ready();
-        say(RETRY_NOTE);
-      },
-    );
-  });
-  const show = (): void => {
-    if (next === null) return;
-    next.hidden = false;
-    if (play === null || play === undefined || endpoint === undefined || songId === undefined || loading) return;
-    loading = true;
-    play.dataset["musicState"] = "loading";
-    say("Getting Apple Music ready…");
-    queueSong(endpoint, songId).then(
-      (player) => {
-        queued = player;
-        ready();
-        say("");
-      },
-      (error: unknown) => fail(stageOf(error)),
-    );
-  };
-  const pauseSong = (): void => {
-    if (queued === undefined || play?.dataset["musicState"] !== "playing") return;
-    queued.pause();
-    ready();
-  };
-  return { show, pauseSong };
-}
 
 function startPodcast(section: HTMLElement): void {
   const audio = section.querySelector<HTMLAudioElement>("[data-podcast-audio]");
@@ -146,7 +19,7 @@ function startPodcast(section: HTMLElement): void {
   const tabs = [...section.querySelectorAll<HTMLButtonElement>("[data-podcast-tab]")];
   if (audio === null || panel === null || tabs.length === 0) return;
   const next = section.querySelector<HTMLElement>("[data-podcast-next]");
-  const nextSong = startNextSong(section);
+  const nextSong = startSongPlayer(next, section.dataset["tokenEndpoint"]);
   let language = tabs[0]?.dataset["podcastTab"];
 
   const chaptersByLanguage = new Map(
@@ -243,7 +116,7 @@ function startPodcast(section: HTMLElement): void {
   audio.addEventListener("seeked", highlight);
   audio.addEventListener("ended", nextSong.show);
   audio.addEventListener("play", () => {
-    nextSong.pauseSong();
+    nextSong.pause();
     if (next !== null) next.hidden = true;
     if (!("mediaSession" in navigator)) return;
     const { title, artist, album, artwork } = section.dataset;

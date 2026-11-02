@@ -176,8 +176,8 @@ function TypingDots() {
 function Face() {
   return (
     <svg viewBox="0 0 48 48" aria-hidden="true" className="size-12">
-      <rect x="15" y="18" width="5" height="11" rx="2.5" transform="rotate(-14 17.5 23.5)" fill="currentColor" />
-      <rect x="28" y="18" width="5" height="11" rx="2.5" transform="rotate(14 30.5 23.5)" fill="currentColor" />
+      <rect x="15" y="18" width="5" height="11" rx="2.5" fill="currentColor" />
+      <rect x="28" y="18" width="5" height="11" rx="2.5" fill="currentColor" />
     </svg>
   );
 }

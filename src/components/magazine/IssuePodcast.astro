@@ -2,6 +2,7 @@
 import { EPISODE_LANGUAGE_LABELS, clockLabel, type PlayableEpisode } from "../../lib/episode";
 import { issueDateLabel, themeAttributes, type PublishedIssue } from "../../lib/magazine";
 import { siteConfig } from "../../lib/site-config";
+import { PauseIcon, PlayIcon, RotateCcwIcon, RotateCwIcon } from "lucide-react";
 import { PodcastPlayers } from "../PodcastPlayers";
 
 type Props = {
@@ -16,6 +17,9 @@ const id = `podcast-${issue.date}`;
 const tabId = (language: string): string => `${id}-tab-${language}`;
 const panelId = `${id}-panel`;
 const tokenEndpoint = siteConfig.musicKit?.tokenEndpoint;
+const round =
+  "inline-flex items-center justify-center rounded-full transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50";
+const control = `${round} size-11 hover:bg-muted`;
 const pill =
   "inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
 ---
@@ -94,27 +98,69 @@ const pill =
           <span class="text-xs font-semibold tracking-widest text-brand-ink uppercase">Next</span>{" "}
           <span class="font-semibold">{song.title}</span> — {song.artist}
         </p>
-        <div class="flex flex-wrap items-center gap-2">
-          {tokenEndpoint !== undefined && (
+        <span
+          data-music-preview
+          hidden
+          class="self-start rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground"
+        />
+        {tokenEndpoint !== undefined && (
+          <div data-music-player data-music-state="idle" class="flex flex-col gap-2">
             <button
               type="button"
-              data-music-play
-              data-music-state="idle"
-              disabled
-              class={`${pill} bg-primary text-primary-foreground disabled:opacity-50`}
+              data-music-signin
+              hidden
+              class={`${pill} self-start border border-border bg-background hover:bg-muted`}
             >
-              Play {song.title}
+              Sign in to Apple Music for the full song
             </button>
-          )}
-          <a
-            href={song.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            class={`${pill} border border-border bg-background hover:bg-muted`}
-          >
-            Open in Apple Music
-          </a>
-        </div>
+            <div class="flex items-center justify-center gap-3">
+              <button type="button" data-music-back aria-label="Back 15 seconds" disabled class={control}>
+                <RotateCcwIcon aria-hidden="true" className="size-5" />
+                <span class="sr-only">15</span>
+              </button>
+              <button
+                type="button"
+                data-music-play
+                data-title={song.title}
+                data-playing="false"
+                aria-label={`Play ${song.title}`}
+                disabled
+                class={`${round} group size-14 bg-primary text-primary-foreground hover:bg-primary/85`}
+              >
+                <PlayIcon aria-hidden="true" className="size-6 fill-current group-data-[playing=true]:hidden" />
+                <PauseIcon aria-hidden="true" className="hidden size-6 fill-current group-data-[playing=true]:block" />
+              </button>
+              <button type="button" data-music-forward aria-label="Forward 15 seconds" disabled class={control}>
+                <RotateCwIcon aria-hidden="true" className="size-5" />
+                <span class="sr-only">15</span>
+              </button>
+            </div>
+            <input
+              type="range"
+              data-music-scrub
+              aria-label={`Position in ${song.title}`}
+              aria-valuetext="0:00 of 0:00"
+              min="0"
+              max="0"
+              step="1"
+              value="0"
+              disabled
+              class="h-11 w-full cursor-pointer accent-(--brand) disabled:cursor-default disabled:opacity-50"
+            />
+            <p class="flex justify-between text-xs text-muted-foreground tabular-nums">
+              <span data-music-time>0:00</span>
+              <span data-music-duration>0:00</span>
+            </p>
+          </div>
+        )}
+        <a
+          href={song.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          class={`${pill} self-start border border-border bg-background hover:bg-muted`}
+        >
+          Open in Apple Music
+        </a>
         <p data-music-status role="status" class="text-sm text-muted-foreground" />
       </div>
     )}

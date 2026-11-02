@@ -138,7 +138,9 @@ With `musicKit.tokenEndpoint` in `custom/config.json`, the page also offers one-
 { "musicKit": { "tokenEndpoint": "https://relay.example.com/musickit-token" } }
 ```
 
-Only once the episode has ended, the page loads MusicKit from Apple, gets a developer token from the endpoint with a `GET` that sends no cookies, expecting `{ "token": "<token>" }`, and queues the song without playing it. Nothing plays until the reader taps Play. On the first tap, a reader not yet signed in to Apple Music is asked to sign in, once per visit; with an Apple Music subscription they hear the whole song. A reader who declines hears Apple's 30-second preview, with a note saying so; signed in without a subscription, Apple plays the preview too. Playing the episode again pauses the song. If the song does not start, for example because the sign-in took long enough for the browser to stop treating it as the reader's tap, the page asks for another tap.
+Only once the episode has ended, the page loads MusicKit from Apple, gets a developer token from the endpoint with a `GET` that sends no cookies, expecting `{ "token": "<token>" }`, queues the song, and shows a mini player: play and pause, 15 seconds back and forward, a position slider, and the time played and the song's length. It then tries to start the song. Browsers that only play sound after a tap, such as Safari on iPhone, refuse; the player then waits for a tap on Play, with no error.
+
+Apple plays the whole song only to a reader signed in to Apple Music with a subscription; everyone else hears a 30-second preview, which stops at 0:30. The player says which: a reader not signed in sees "Preview · sign in for the full song" and a Sign in to Apple Music for the full song button, and a signed-in reader whose subscription check fails, or whose song plays for 30 seconds of a longer track, sees "Preview · Apple Music subscription needed". Playing the episode again pauses the song.
 
 For this to work:
 
@@ -146,7 +148,7 @@ For this to work:
 - The endpoint must answer CORS requests from the site's origin, such as `https://<your-username>.github.io`, and from `http://localhost:4321` to work with `dev`.
 - The token's `origin` claim, when it has one, must include the site's origin; Apple refuses the token on other pages.
 
-When getting MusicKit ready fails, the Play button stays disabled, `data-music-stage` on it names the step (`script`, `token`, `configure`, or `queue`), and the Open in Apple Music link still works. Without the setting, the page shows only the link.
+When getting MusicKit ready fails, the player's controls stay disabled, `data-music-stage` on `[data-music-player]` names the step (`script`, `token`, `configure`, or `queue`), and the Open in Apple Music link still works. Without the setting, the page shows only the link.
 
 ### Ask (optional)
 
