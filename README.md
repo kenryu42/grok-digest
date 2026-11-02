@@ -138,7 +138,15 @@ With `musicKit.tokenEndpoint` in `custom/config.json`, the page also offers one-
 { "musicKit": { "tokenEndpoint": "https://relay.example.com/musickit-token" } }
 ```
 
-Only once the episode has ended, the page loads MusicKit from Apple, gets a developer token from the endpoint with a `GET` that sends no cookies, expecting `{ "token": "<token>" }`, and queues the song without playing it, so a tap on Play starts it. Readers signed in to Apple Music hear the whole song; others hear Apple's preview. The endpoint must answer CORS requests from the site's origin and `http://localhost:4321`. Without the setting, the page shows only the link.
+Only once the episode has ended, the page loads MusicKit from Apple, gets a developer token from the endpoint with a `GET` that sends no cookies, expecting `{ "token": "<token>" }`, and queues the song without playing it. Nothing plays until the reader taps Play. On the first tap, a reader not yet signed in to Apple Music is asked to sign in, once per visit; with an Apple Music subscription they hear the whole song. A reader who declines hears Apple's 30-second preview, with a note saying so; signed in without a subscription, Apple plays the preview too. Playing the episode again pauses the song. If the song does not start, for example because the sign-in took long enough for the browser to stop treating it as the reader's tap, the page asks for another tap.
+
+For this to work:
+
+- The page must be served over `https` (or from `http://localhost`), since MusicKit needs a secure page.
+- The endpoint must answer CORS requests from the site's origin, such as `https://<your-username>.github.io`, and from `http://localhost:4321` to work with `dev`.
+- The token's `origin` claim, when it has one, must include the site's origin; Apple refuses the token on other pages.
+
+When getting MusicKit ready fails, the Play button stays disabled, `data-music-stage` on it names the step (`script`, `token`, `configure`, or `queue`), and the Open in Apple Music link still works. Without the setting, the page shows only the link.
 
 ### Ask (optional)
 

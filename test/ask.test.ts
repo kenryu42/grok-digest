@@ -103,6 +103,15 @@ describe("relayIsUp", () => {
     expect(calls[0]?.init?.signal).toBeInstanceOf(AbortSignal);
   });
 
+  it("asks /health under an endpoint with a path", async () => {
+    const urls: string[] = [];
+    await relayIsUp("https://grokbot.example.net/ask", (input) => {
+      urls.push(urlOf(input));
+      return Promise.resolve(new Response("ok"));
+    });
+    expect(urls).toEqual(["https://grokbot.example.net/ask/health"]);
+  });
+
   it("is false when /health fails, errors or hangs past the timeout", async () => {
     expect(await relayIsUp(ENDPOINT, () => Promise.resolve(new Response("down", { status: 503 })))).toBe(false);
     expect(await relayIsUp(ENDPOINT, () => Promise.reject(new TypeError("Failed to fetch")))).toBe(false);
