@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 import { readFileSync } from "node:fs";
+import path from "node:path";
 import { parseArgs } from "node:util";
 import { z } from "zod";
 import { SCHEMA_VERSION } from "./lib/bookmarks.ts";
 import { isOverridable, OVERRIDABLE_COMPONENTS } from "./lib/custom.ts";
+import { EPISODE_STALE_DAYS } from "./lib/episode.ts";
 import { displayPath, ejectComponent, mergeOverrides } from "./lib/eject.ts";
+import { MAGAZINE_DIR } from "./lib/magazine.ts";
 import { defaultDataFiles, validateFiles } from "./lib/validate.ts";
 import type { SiteCommand } from "./site.ts";
 
@@ -17,7 +20,11 @@ Commands:
   validate [file ...]  Check data files against schema version ${SCHEMA_VERSION}. With no
                        file, checks <dir>/bookmarks.json and, when present,
                        <dir>/processed.json, <dir>/removed.json,
-                       custom/config.json and every <dir>/magazine/*.json.
+                       custom/config.json, every <dir>/magazine/*.json and
+                       every <dir>/magazine/<date>/episode.json.
+  prune-episodes       Delete episode.json and the episode MP3s of issues older
+                       than --days days (default ${EPISODE_STALE_DAYS}). --dry-run lists them
+                       without deleting.
   eject <component>    Copy a component into custom/components/ to change it.
                        Components: ${OVERRIDABLE_COMPONENTS.join(", ")}.
   merge                Bring each ejected component up to the installed
@@ -25,6 +32,8 @@ Commands:
 
 Options:
   --data-dir <dir>  The folder that holds the data files. Defaults to "data".
+  --days <n>        With prune-episodes, the age in days to keep.
+  --dry-run         With prune-episodes, list the files without deleting them.
   --host            With dev or preview, also serve on this machine's network
                     address, so a phone on the same Wi-Fi can open the site.
   -h, --help        Show this help.
@@ -43,6 +52,8 @@ const { values, positionals } = parseArgs({
   options: {
     "data-dir": { type: "string", default: "data" },
     host: { type: "boolean", default: false },
+    days: { type: "string", default: String(EPISODE_STALE_DAYS) },
+    "dry-run": { type: "boolean", default: false },
     help: { type: "boolean", short: "h" },
     version: { type: "boolean", short: "v" },
   },
@@ -75,6 +86,24 @@ if (values.version === true) {
     }
   }
   if (reports.some((report) => !report.ok)) process.exitCode = 1;
+} else if (command === "prune-episodes") {
+  const days = /^\d+$/.test(values.days) ? Number(values.days) : Number.NaN;
+  if (Number.isNaN(days)) {
+    console.error(`✖ --days must be a whole number of days, not "${values.days}".`);
+    process.exitCode = 1;
+  } else {
+    const { pruneEpisodes } = await import("./lib/prune-episodes.ts");
+    const dryRun = values["dry-run"];
+    const magazineDir = path.join(dataDir, MAGAZINE_DIR);
+    const pruned = await pruneEpisodes({ magazineDir, days, dryRun });
+    const verb = dryRun ? "Would delete" : "Deleted";
+    for (const file of pruned) console.log(`${verb} ${file.split(path.sep).join("/")}`);
+    console.log(
+      pruned.length === 0
+        ? `No episodes older than ${days} days in ${magazineDir}.`
+        : `${verb} ${pruned.length} file${pruned.length === 1 ? "" : "s"}.`,
+    );
+  }
 } else if (command === "eject") {
   const [name = ""] = files;
   if (isOverridable(name)) {

@@ -1,0 +1,123 @@
+---
+import { EPISODE_LANGUAGE_LABELS, clockLabel, type PlayableEpisode } from "../../lib/episode";
+import { issueDateLabel, themeAttributes, type PublishedIssue } from "../../lib/magazine";
+import { siteConfig } from "../../lib/site-config";
+import { PodcastPlayers } from "../PodcastPlayers";
+
+type Props = {
+  issue: PublishedIssue;
+  episode: PlayableEpisode;
+};
+
+const { issue, episode } = Astro.props;
+const { tracks, song } = episode;
+const [first] = tracks;
+const id = `podcast-${issue.date}`;
+const tabId = (language: string): string => `${id}-tab-${language}`;
+const panelId = `${id}-panel`;
+const tokenEndpoint = siteConfig.musicKit?.tokenEndpoint;
+const pill =
+  "inline-flex min-h-11 items-center rounded-full px-4 text-sm font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50";
+---
+
+{first !== undefined && (
+  <section
+    data-podcast={issue.date}
+    data-title={issue.title}
+    data-album={`${siteConfig.title} · ${issueDateLabel(issue.date)}`}
+    data-artist={siteConfig.title}
+    data-artwork={issue.cover?.src}
+    data-token-endpoint={tokenEndpoint}
+    aria-labelledby={`${id}-title`}
+    {...themeAttributes(issue.theme)}
+    class="flex flex-col gap-4 rounded-3xl bg-(--issue-paper) p-4 font-sans ring-1 ring-foreground/8 sm:p-6 print:hidden"
+  >
+    <header class="flex flex-wrap items-center justify-between gap-3">
+      <h2 id={`${id}-title`} class="font-(family-name:--issue-heading) text-xl font-semibold">
+        Listen to this issue
+      </h2>
+      <div role="tablist" aria-label="Language" class="flex gap-1 rounded-full bg-muted p-1">
+        {tracks.map((track) => (
+          <button
+            type="button"
+            role="tab"
+            id={tabId(track.language)}
+            data-podcast-tab={track.language}
+            data-src={track.src}
+            aria-selected={track === first ? "true" : "false"}
+            aria-controls={panelId}
+            tabindex={track === first ? 0 : -1}
+            lang={track.language}
+            class={`${pill} min-h-9 aria-selected:bg-background aria-selected:text-foreground aria-selected:shadow-sm text-muted-foreground`}
+          >
+            {EPISODE_LANGUAGE_LABELS[track.language]}
+          </button>
+        ))}
+      </div>
+    </header>
+    <div id={panelId} role="tabpanel" aria-labelledby={tabId(first.language)} class="flex flex-col gap-3">
+      <audio data-podcast-audio controls preload="none" src={first.src} class="w-full" />
+      {tracks.map((track) => (
+        <ol
+          data-podcast-chapters={track.language}
+          hidden={track !== first}
+          lang={track.language}
+          aria-label="Chapters"
+          class="flex flex-col"
+        >
+          {track.chapters.map((chapter) => (
+            <li>
+              <button
+                type="button"
+                data-start={chapter.start}
+                aria-current="false"
+                class="flex min-h-11 w-full items-center gap-3 rounded-xl px-3 text-left text-[0.95rem] transition-colors outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-ring/50 aria-[current=true]:bg-brand-soft aria-[current=true]:font-semibold"
+              >
+                <span class="w-12 shrink-0 text-xs text-muted-foreground tabular-nums">
+                  {clockLabel(chapter.start)}
+                </span>
+                <span class="min-w-0 flex-1">{chapter.title}</span>
+              </button>
+            </li>
+          ))}
+        </ol>
+      ))}
+    </div>
+    {song !== undefined && (
+      <div
+        data-podcast-next
+        data-apple-music-id={song.appleMusicId}
+        hidden
+        class="flex flex-col gap-3 border-t border-border pt-4"
+      >
+        <p class="text-pretty">
+          <span class="text-xs font-semibold tracking-widest text-brand-ink uppercase">Next</span>{" "}
+          <span class="font-semibold">{song.title}</span> — {song.artist}
+        </p>
+        <div class="flex flex-wrap items-center gap-2">
+          {tokenEndpoint !== undefined && (
+            <button
+              type="button"
+              data-music-play
+              data-music-state="idle"
+              disabled
+              class={`${pill} bg-primary text-primary-foreground disabled:opacity-50`}
+            >
+              Play {song.title}
+            </button>
+          )}
+          <a
+            href={song.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            class={`${pill} border border-border bg-background hover:bg-muted`}
+          >
+            Open in Apple Music
+          </a>
+        </div>
+        <p data-music-status role="status" class="text-sm text-muted-foreground" />
+      </div>
+    )}
+    <PodcastPlayers client:load />
+  </section>
+)}

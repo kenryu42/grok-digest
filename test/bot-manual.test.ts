@@ -14,6 +14,7 @@ import {
   magazineIssueSchema,
 } from "../src/lib/magazine.ts";
 import { issueWarnings } from "../src/lib/magazine-check.ts";
+import { EPISODE_LANGUAGES, episodeAudioFile, episodeSchema } from "../src/lib/episode.ts";
 import { REMOVE_REQUEST } from "../src/lib/remove-request.ts";
 import { TOPIC_LABELS, TOPICS } from "../src/lib/topics.ts";
 
@@ -60,6 +61,13 @@ describe("BOT.md", () => {
     const warnings = issueWarnings({ issue, bookmarks: [], latestToday: issue.date });
     expect(warnings.filter(({ message }) => !message.includes("is not a bookmark id"))).toEqual([]);
     for (const span of MAGAZINE_SPANS) expect(manual).toContain(`\`${span}\``);
+  });
+
+  it("shows a podcast episode the schema accepts and names every language's file", () => {
+    const example = /### The podcast episode[\s\S]*?```json\n([\s\S]*?)\n```/.exec(manual)?.[1];
+    expect(episodeSchema.safeParse(JSON.parse(example ?? "")).success).toBe(true);
+    for (const language of EPISODE_LANGUAGES) expect(manual).toContain(`\`${episodeAudioFile(language)}\``);
+    expect(manual).toContain("prune-episodes --days 60");
   });
 
   it("lists every magazine block with its variants, and every palette, font pairing and emphasis", () => {

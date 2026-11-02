@@ -15,18 +15,20 @@ import {
   BOOKMARKS_FILE,
   fileExists,
   firstFileIn,
+  foldersIn,
   jsonFilesIn,
   readJsonFile,
   SCANS_FILE,
   STATE_FILES,
 } from "./data-files.ts";
-import { readFile } from "node:fs/promises";
+import { readFile, stat } from "node:fs/promises";
 import { imageMetadata } from "astro/assets/utils";
 import {
   artFileName,
   artRule,
   coverFileNames,
   isIssueFileName,
+  isIssueFolderName,
   MAGAZINE_DIR,
   parseMagazineIssue,
   PICTURE_EXTENSIONS,
@@ -35,6 +37,14 @@ import {
   type MagazineIssue,
 } from "./magazine.ts";
 import { issueWarnings, type IssueWarning } from "./magazine-check.ts";
+import {
+  EPISODE_FILE,
+  EPISODE_STALE_DAYS,
+  episodeAgeDays,
+  episodeLanguages,
+  MAX_EPISODE_BYTES,
+  parseEpisode,
+} from "./episode.ts";
 
 type FileReport =
   | { source: string; ok: true; summary: string; warnings?: string[] }
@@ -50,6 +60,8 @@ const isMagazineFile = (file: string): boolean =>
   path.basename(file) !== BOOKMARKS_FILE &&
   !isScansFile(file) &&
   !isStateFile(file);
+const isEpisodeFile = (file: string): boolean =>
+  path.basename(file) === EPISODE_FILE && path.basename(path.dirname(path.dirname(file))) === MAGAZINE_DIR;
 const toSource = (file: string): string => file.split(path.sep).join("/");
 const plural = (count: number, noun: string): string => `${count} ${noun}${count === 1 ? "" : "s"}`;
 const CONFIG_PATH = path.join(CUSTOM_DIR, CONFIG_FILE);
@@ -74,7 +86,16 @@ export async function defaultDataFiles({ cwd, dataDir }: { cwd: string; dataDir:
   const magazineFiles = (await jsonFilesIn(path.resolve(cwd, magazineDir))).map((file) =>
     path.join(magazineDir, path.basename(file)),
   );
-  return [path.join(dataDir, BOOKMARKS_FILE), ...optional.filter((_, index) => present[index]), ...magazineFiles];
+  const episodes = (await foldersIn(path.resolve(cwd, magazineDir)))
+    .filter(isIssueFolderName)
+    .map((date) => path.join(magazineDir, date, EPISODE_FILE));
+  const episodePresent = await Promise.all(episodes.map((file) => fileExists(path.resolve(cwd, file))));
+  return [
+    path.join(dataDir, BOOKMARKS_FILE),
+    ...optional.filter((_, index) => present[index]),
+    ...magazineFiles,
+    ...episodes.filter((_, index) => episodePresent[index]),
+  ];
 }
 
 type Loader<Entry> = (file: string) => Promise<Entry[]>;
@@ -98,7 +119,13 @@ function loader<Entry>(
   };
 }
 
-type Context = { cwd: string; loadBookmarks: Loader<Bookmark>; loadScans: Loader<Scan>; latestToday: string };
+type Context = {
+  cwd: string;
+  loadBookmarks: Loader<Bookmark>;
+  loadScans: Loader<Scan>;
+  latestToday: string;
+  now: Date;
+};
 
 async function loadForIssue<Entry>(load: Loader<Entry>, file: string, source: string): Promise<Entry[]> {
   return load(file).catch((error: unknown) => {
@@ -159,9 +186,56 @@ async function artWarnings({
   return checked.flat();
 }
 
+const MEGABYTE = 1024 * 1024;
+
+async function audioProblem(file: string): Promise<string | undefined> {
+  const size = await stat(file).then(
+    (stats) => stats.size,
+    () => undefined,
+  );
+  if (size === undefined) return "is missing";
+  if (size > MAX_EPISODE_BYTES) {
+    return `is ${(size / MEGABYTE).toFixed(1)} MB; keep each episode file at most ${MAX_EPISODE_BYTES / MEGABYTE} MB`;
+  }
+  return undefined;
+}
+
+async function validateEpisode({ file, source, context }: { file: string; source: string; context: Context }) {
+  const episode = parseEpisode({ raw: await readJsonFile({ file: path.resolve(context.cwd, file), source }), source });
+  const dir = path.dirname(file);
+  const languages = episodeLanguages(episode);
+  const problems = await Promise.all(
+    languages.map(async (language) => {
+      const audio = path.join(dir, episode.languages[language]?.file ?? "");
+      const problem = await audioProblem(path.resolve(context.cwd, audio));
+      return problem === undefined ? [] : [`${toSource(audio)} ${problem}`];
+    }),
+  );
+  const errors = problems.flat();
+  if (errors.length > 0) throw new Error(`${source} is invalid:\n${errors.map((error) => `✖ ${error}`).join("\n")}`);
+  const date = path.basename(dir);
+  const age = episodeAgeDays(date, context.now);
+  const warnings: string[] = [];
+  const issue = path.join(path.dirname(dir), `${date}.json`);
+  if (!(await fileExists(path.resolve(context.cwd, issue)))) {
+    warnings.push(`there is no issue ${toSource(issue)}, so no page plays this episode`);
+  }
+  if (age > EPISODE_STALE_DAYS) {
+    warnings.push(
+      `the episode is ${age} days old; run grok-digest prune-episodes --days ${EPISODE_STALE_DAYS} to delete episodes older than ${EPISODE_STALE_DAYS} days`,
+    );
+  }
+  const song = episode.song === undefined ? "" : `, then "${episode.song.title}"`;
+  return { summary: `episode in ${languages.join(", ")}${song}`, warnings };
+}
+
 async function validateFile({ file, context }: { file: string; context: Context }): Promise<FileReport> {
   const source = toSource(file);
   try {
+    if (isEpisodeFile(file)) {
+      const { summary, warnings } = await validateEpisode({ file, source, context });
+      return warnings.length === 0 ? { source, ok: true, summary } : { source, ok: true, summary, warnings };
+    }
     if (isMagazineFile(file)) {
       if (!isIssueFileName(path.basename(file))) {
         return {
@@ -208,6 +282,7 @@ export async function validateFiles({
     loadBookmarks: loader(cwd, parseBookmarks, { optional: false }),
     loadScans: loader(cwd, parseScans, { optional: true }),
     latestToday: latestDateOnEarth(now),
+    now,
   };
   return Promise.all(files.map((file) => validateFile({ file, context })));
 }

@@ -3,6 +3,7 @@ import { once } from "node:events";
 import { cp, mkdir, mkdtemp, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import { expect } from "vitest";
 
 const REPOSITORY = path.resolve(".");
 
@@ -69,3 +70,8 @@ export async function stop(child: ChildProcess | undefined): Promise<void> {
 
 export const withoutBuildHashes = (html: string): string =>
   html.replaceAll(/\/_astro\/[^"]+/g, "/_astro/*").replaceAll(/\suid="[^"]*"/g, "");
+
+export async function buildSite(cwd: string, env: Record<string, string> = {}): Promise<void> {
+  const { code, output } = await runCli(cwd, ["build"], env);
+  expect({ code, output }).toMatchObject({ code: 0 });
+}

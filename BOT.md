@@ -247,11 +247,12 @@ To undo a change, delete the setting, the CSS, or the component file and its cop
 
 `custom/config.json` is one JSON object. Leave out a setting to keep its default. `bun run validate` rejects a setting it does not know and names it. 0.5.8 removed `defaultView`, `reviewSize`, and `detail`; if validation names one of them, delete it from the file.
 
-| Setting        | Default         | What it does                                                                                                                                                                                                                                    |
-| -------------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `title`        | `"Grok Digest"` | The page's name in the header, the browser tab, and on the home screen.                                                                                                                                                                         |
-| `swipeMode`    | `true`          | `false` hides the Swipe button and the `s` shortcut.                                                                                                                                                                                            |
-| `ask.endpoint` | none            | The owner's Ask relay, such as `"https://relay.example.com"`. Readers can then ask about the page, or about text they select, in a chat. Leave it out to turn Ask off. Set it only when the owner gives you the address; never put a key in it. |
+| Setting                  | Default         | What it does                                                                                                                                                                                                                                                                                                            |
+| ------------------------ | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `title`                  | `"Grok Digest"` | The page's name in the header, the browser tab, and on the home screen.                                                                                                                                                                                                                                                 |
+| `swipeMode`              | `true`          | `false` hides the Swipe button and the `s` shortcut.                                                                                                                                                                                                                                                                    |
+| `ask.endpoint`           | none            | The owner's Ask relay, such as `"https://relay.example.com"`. Readers can then ask about the page, or about text they select, in a chat. Leave it out to turn Ask off. Set it only when the owner gives you the address; never put a key in it.                                                                         |
+| `musicKit.tokenEndpoint` | none            | An address that answers `GET` with `{ "token": "<Apple Music developer token>" }`. After a podcast episode ends, the page uses it to queue the episode's song for one-tap play. Leave it out to show only an Open in Apple Music link. Set it only when the owner gives you the address; never put a token in the file. |
 
 ```json
 {
@@ -447,8 +448,9 @@ If the owner wants a magazine, run this every morning:
 4. If you picked none, skip the day. Write nothing and push nothing.
 5. Write the issue below to `data/magazine/<today>.json`. Use the picked bookmarks; you may add an older bookmark when it explains a picked one.
 6. Make the issue's cover picture, as "The cover" says, and save it as `data/magazine/<today>.jpg`. If the issue names art, make each picture as "Art" says and save it in `data/magazine/<today>/`; download a painting into the same folder, as "Painting" says.
-7. Run `bun run validate` and fix the issue until it passes with no `⚠` warning for it.
-8. Commit only the issue, its cover, and its art folder with the message `Magazine issue YYYY-MM-DD`, using today's date, and push to `main`.
+7. If the owner makes a podcast episode for the issue, save it in `data/magazine/<today>/` as "The podcast episode" says.
+8. Run `bun run validate` and fix the issue until it passes with no `⚠` warning for it. If it warns that an episode is older than 60 days, run `bunx grok-digest prune-episodes --days 60` and commit the deletions with the issue.
+9. Commit only the issue, its cover, its art folder, and its episode with the message `Magazine issue YYYY-MM-DD`, using today's date, and push to `main`.
 
 When the owner asks you to redo an issue, rewrite its file, cover, and art from scratch with the same date and the same bookmarks, delete art the new issue no longer names, and commit them with the same message.
 
@@ -677,6 +679,43 @@ Let the day's bookmarks decide the shape:
 - Change `palette`, `fonts`, `variant`, and `emphasis` from one issue to the next, so the days look different. Use `loud` on one block an issue at most.
 
 Show each bookmark in at most two blocks, and every picked bookmark in at least one.
+
+### The podcast episode
+
+An issue can have a spoken episode in English, Chinese, or Japanese. The issue page plays it above the magazine, with a tab per language and the chapters to jump to; the digest view leaves it out. Save these in `data/magazine/<today>/`:
+
+- `episode.json`, below.
+- One MP3 per language, named `episode-en.mp3`, `episode-zh.mp3`, or `episode-ja.mp3`, each at most 10 MB.
+
+```json
+{
+  "languages": {
+    "en": {
+      "file": "episode-en.mp3",
+      "duration": 235.57,
+      "chapters": [
+        { "start": 0, "title": "Jingle" },
+        { "start": 5.4, "title": "Tokyo weather" },
+        { "start": 41.55, "title": "A kernel bug that roots Linux boxes" }
+      ]
+    }
+  },
+  "song": {
+    "title": "Here Comes the Sun",
+    "artist": "The Beatles",
+    "appleMusicId": "1441164589",
+    "url": "https://music.apple.com/jp/album/1441164426?i=1441164589"
+  }
+}
+```
+
+- `languages` holds `en`, `zh`, `ja`, or any two or three of them. `file` must be that language's MP3 name. `duration` is the file's length in seconds.
+- `chapters` lists each chapter's `start` in seconds and its `title`. Each `start` must be later than the one before it and before `duration`.
+- `song` is optional: the song to play after the episode, with its numeric Apple Music id and its `https` Apple Music link. The page shows "Next" with the song after the episode ends.
+
+Other fields, such as notes on voices, scripts, or sources, are allowed and ignored. Only the MP3s `episode.json` names are published; leave drafts, takes, and scripts out of the commit anyway.
+
+Episodes are large, so delete them after 60 days. `validate` warns about an older one; `bunx grok-digest prune-episodes --days 60` deletes `episode.json` and the episode MP3s of issues older than that and keeps the issue, its cover, and its art. Add `--dry-run` to list the files first.
 
 ### Validation and warnings
 

@@ -8,6 +8,7 @@ import { existsSync } from "node:fs";
 import { askConfigFile, askEndpoint } from "./lib/ask-config.ts";
 import { componentFile, CONFIG_FILE, CUSTOM_DIR, OVERRIDABLE_COMPONENTS, THEME_FILE } from "./lib/custom.ts";
 import { BOOKMARKS_FILE, fileExists, firstFileIn, jsonFilesIn, readJsonFile, SCANS_FILE } from "./lib/data-files.ts";
+import { EPISODE_FILE, EPISODE_FILES, episodeLanguages, parseEpisode } from "./lib/episode.ts";
 import {
   conflictedOverrides,
   defaultComponentFile,
@@ -24,6 +25,7 @@ import {
   isArtFileName,
   isCoverFileName,
   isIssueFileName,
+  isIssueFolderName,
   MAGAZINE_DIR,
 } from "./lib/magazine.ts";
 
@@ -143,14 +145,33 @@ function dataModule({
 const issueFilesIn = async (dir: string): Promise<string[]> =>
   (await jsonFilesIn(dir)).filter((file) => isIssueFileName(path.basename(file)));
 
+const isEpisodeFileName = (name: string): boolean => {
+  const [date = "", file = "", ...rest] = name.split("/");
+  return rest.length === 0 && isIssueFolderName(date) && EPISODE_FILES.includes(file);
+};
+
 const isMagazineFileName = (name: string): boolean =>
-  isIssueFileName(name) || isCoverFileName(name) || isArtFileName(name);
+  isIssueFileName(name) || isCoverFileName(name) || isArtFileName(name) || isEpisodeFileName(name);
 const importPath = (file: string): string => JSON.stringify(file.split(path.sep).join("/"));
 
 async function presentArt(dir: string, date: string, names: readonly string[]) {
   const pictures = [...new Set(names)].map((name) => ({ name, file: path.join(dir, artFileName(date, name)) }));
   const present = await Promise.all(pictures.map(({ file }) => fileExists(file)));
   return pictures.filter((_, index) => present[index]);
+}
+
+async function presentEpisode(root: string, dir: string, date: string) {
+  const file = path.join(dir, date, EPISODE_FILE);
+  if (!(await fileExists(file))) return undefined;
+  const source = displayPath(root, file);
+  const raw = await readJsonFile({ file, source });
+  const episode = parseEpisode({ raw, source });
+  const audio = episodeLanguages(episode).flatMap((language) => {
+    const name = episode.languages[language]?.file;
+    return name === undefined ? [] : [{ language, file: path.join(dir, date, name) }];
+  });
+  const present = await Promise.all(audio.map(({ file: audioFile }) => fileExists(audioFile)));
+  return { file, source, raw, audio: audio.filter((_, index) => present[index]) };
 }
 
 function magazineModule({ root, dir }: { root: string; dir: string }): Plugin {
@@ -171,16 +192,26 @@ function magazineModule({ root, dir }: { root: string; dir: string }): Plugin {
           const cover = await firstFileIn(dir, coverFileNames(date));
           const art = await presentArt(dir, date, artPathsIn(raw));
           for (const picture of art) this.addWatchFile(picture.file);
-          return { index, source, raw, cover, art };
+          const episode = await presentEpisode(root, dir, date);
+          if (episode !== undefined) this.addWatchFile(episode.file);
+          return { index, source, raw, cover, art, episode };
         }),
       );
-      const imports = issues.flatMap(({ index, cover, art }) => [
+      const imports = issues.flatMap(({ index, cover, art, episode }) => [
         ...(cover === undefined ? [] : [`import cover${index} from ${importPath(cover)};`]),
         ...art.map((picture, artIndex) => `import art${index}_${artIndex} from ${importPath(picture.file)};`),
+        ...(episode?.audio ?? []).map(
+          ({ language, file }) => `import episode${index}_${language} from ${importPath(`${file}?url&no-inline`)};`,
+        ),
       ]);
-      const entries = issues.map(({ index, source, raw, cover, art }) => {
+      const entries = issues.map(({ index, source, raw, cover, art, episode }) => {
         const artEntries = art.map(({ name }, artIndex) => `${JSON.stringify(name)}: art${index}_${artIndex}`);
-        return `{ source: ${JSON.stringify(source)}, raw: ${JSON.stringify(raw)}, cover: ${cover === undefined ? "undefined" : `cover${index}`}, art: { ${artEntries.join(", ")} } }`;
+        const audioEntries = (episode?.audio ?? []).map(({ language }) => `${language}: episode${index}_${language}`);
+        const episodeEntry =
+          episode === undefined
+            ? "undefined"
+            : `{ source: ${JSON.stringify(episode.source)}, raw: ${JSON.stringify(episode.raw)}, audio: { ${audioEntries.join(", ")} } }`;
+        return `{ source: ${JSON.stringify(source)}, raw: ${JSON.stringify(raw)}, cover: ${cover === undefined ? "undefined" : `cover${index}`}, art: { ${artEntries.join(", ")} }, episode: ${episodeEntry} }`;
       });
       return `${imports.join("\n")}\nexport default [${entries.join(",\n")}];`;
     },

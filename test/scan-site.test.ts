@@ -2,7 +2,7 @@ import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import samples from "../template/data/bookmarks.json";
-import { linkedSite, runCli } from "./linked-site.ts";
+import { buildSite, linkedSite } from "./linked-site.ts";
 
 const BUILD_TIMEOUT_MS = 60_000;
 const [agents, tokyo] = samples.map(({ id }) => id);
@@ -31,10 +31,7 @@ const scan = (id: string, extra: object) => ({
   ...extra,
 });
 
-async function build(): Promise<void> {
-  const { code, output } = await runCli(site, ["build"], { BASE_PATH });
-  expect({ code, output }).toMatchObject({ code: 0 });
-}
+const build = (): Promise<void> => buildSite(site, { BASE_PATH });
 
 function cardOf(html: string, id: string): string {
   const start = html.indexOf(`<li id="b-${id}"`);

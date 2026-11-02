@@ -43,3 +43,16 @@ export async function firstFileIn(dir: string, names: readonly string[]): Promis
   const present = await Promise.all(files.map(fileExists));
   return files.find((_, index) => present[index]);
 }
+
+export async function foldersIn(dir: string): Promise<string[]> {
+  try {
+    const entries = await readdir(dir, { withFileTypes: true });
+    return entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .toSorted();
+  } catch (error) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") return [];
+    throw error;
+  }
+}

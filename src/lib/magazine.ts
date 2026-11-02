@@ -1,6 +1,7 @@
 import type { ImageMetadata } from "astro";
 import { z } from "zod";
 import { parseDataFile } from "./bookmarks.ts";
+import { parseEpisode, playableEpisode, type EpisodeLanguage, type PlayableEpisode } from "./episode.ts";
 import type { Post, PostRef } from "./posts.ts";
 import { TOPIC_LABELS, TOPICS } from "./topics.ts";
 
@@ -63,6 +64,7 @@ const PAINTING_LICENSES = ["Public domain", "CC0"] as const;
 const HEX_COLOR = /^#[0-9a-fA-F]{6}$/;
 
 export const isIssueFileName = (name: string): boolean => ISSUE_FILE_NAME.test(name);
+export const isIssueFolderName = (name: string): boolean => isIssueFileName(`${name}.json`);
 export const isCoverFileName = (name: string): boolean => COVER_FILE_NAME.test(name);
 const isArtPath = (art: string): boolean => PATH_INSIDE_FOLDER.test(art) && PICTURE_FILE.test(art);
 export const isArtFileName = (name: string): boolean =>
@@ -395,6 +397,7 @@ export type ItemsBlock = BlockOf<keyof typeof ITEM_LIMITS>;
 export type CoveredIssue = MagazineIssue & {
   cover: ImageMetadata | undefined;
   art: ReadonlyMap<string, ImageMetadata>;
+  episode: PlayableEpisode | undefined;
 };
 export type PublishedIssue = CoveredIssue & { number: number };
 export type FindEntry = (ref: PostRef) => Post;
@@ -415,11 +418,18 @@ export function parseMagazineIssue({ raw, source }: { raw: unknown; source: stri
   return parseDataFile({ schema, raw, source });
 }
 
+type EpisodeFile = {
+  source: string;
+  raw: unknown;
+  audio: Partial<Record<EpisodeLanguage, string>>;
+};
+
 export type IssueFile = {
   source: string;
   raw: unknown;
   cover?: ImageMetadata | undefined;
   art?: Record<string, ImageMetadata> | undefined;
+  episode?: EpisodeFile | undefined;
 };
 
 const artReference = z.object({ art: artPath });
@@ -446,7 +456,9 @@ function withUsableArt(file: IssueFile): CoveredIssue {
   });
   const shownArt = new Set(sections.flatMap((block) => ("art" in block && block.art !== undefined ? [block.art] : [])));
   const art = new Map([...pictures].filter(([name]) => shownArt.has(name)));
-  return { ...issue, sections, cover: file.cover, art };
+  const episode =
+    file.episode === undefined ? undefined : playableEpisode(parseEpisode(file.episode), file.episode.audio);
+  return { ...issue, sections, cover: file.cover, art, episode: episode?.tracks.length === 0 ? undefined : episode };
 }
 
 export const parseMagazine = (files: readonly IssueFile[]): CoveredIssue[] =>

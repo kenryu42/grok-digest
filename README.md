@@ -47,7 +47,7 @@ A site changes its page from `custom/`, and keeps every release for the parts it
 
 | Path                                  | Changes                                                                                                                                                                                                                                 |
 | ------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `custom/config.json`                  | Settings: `title`, `swipeMode`, and `ask`. `validate` checks the file.                                                                                                                                                                  |
+| `custom/config.json`                  | Settings: `title`, `swipeMode`, `ask`, and `musicKit`. `validate` checks the file.                                                                                                                                                      |
 | `custom/theme.css`                    | Plain CSS loaded after the page's own: the color variables, fonts, and any selector.                                                                                                                                                    |
 | `custom/components/<Component>.astro` | Replaces `Header`, `Footer`, or `BookmarkCard`. Tailwind classes in it work.                                                                                                                                                            |
 | `custom/components/<Component>.tsx`   | Replaces a part of the controls: `ControlsLayout`, `SearchField`, `TopicChips`, `FilterMenu`, `StatusLine`, `KeyboardHints`, `UndoToast`, or `DoneCleanup`; or of swipe mode: `SwipeHeader`, `SwipeCard`, `SwipeFooter`, or `SwipeEnd`. |
@@ -70,8 +70,11 @@ grok-digest preview              Serve the site built in dist/.
 grok-digest validate [file ...]  Check the data files and custom/config.json.
 grok-digest eject <component>    Copy a page component or a part of the controls into custom/components/.
 grok-digest merge                Bring ejected components up to the installed version.
+grok-digest prune-episodes       Delete podcast episodes older than --days days (default 60).
 
 --data-dir <dir>  The folder that holds the data files. Defaults to "data".
+--days <n>        With prune-episodes, the age in days to keep.
+--dry-run         With prune-episodes, list the files without deleting them.
 --host            With dev or preview, also serve on this machine's network address.
 ```
 
@@ -79,7 +82,9 @@ grok-digest merge                Bring ejected components up to the installed ve
 
 `build`, `dev`, and `preview` read two environment variables. `SITE_URL` is the site's origin, such as `https://<your-username>.github.io`, and becomes Astro's `site`. `BASE_PATH` is the path the site is served under, such as `/<repository-name>`, and becomes Astro's `base`, so links on a `github.io/<repository-name>/` site stay under that path. The deploy workflow sets both from GitHub Pages.
 
-`validate` with no file checks `data/bookmarks.json`, whichever of `data/scans.json`, `data/processed.json`, `data/removed.json`, and `custom/config.json` exist, and every `.json` file in `data/magazine/`. It prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`, and fails naming the entry and the field of an invalid file. For an issue it also prints a `⚠` warning, naming the field, for each thing that depends on the bookmarks, such as a bookmark id missing from `data/bookmarks.json` or a scan id missing from `data/scans.json`, when the issue has no cover picture, when art it names is missing, not a picture, or smaller than 1200 × 800 pixels, or shows on a post that has its own image, when a scan it shows has no source link and is not tagged `unverified`, and, for an issue with corners, when it has no Open Window item or more than 60% interest items. Warnings do not fail it, so removing or editing a bookmark never stops a deploy. A `.json` file in `data/magazine/` not named after a date gets a warning and is ignored.
+`validate` with no file checks `data/bookmarks.json`, whichever of `data/scans.json`, `data/processed.json`, `data/removed.json`, and `custom/config.json` exist, and every `.json` file in `data/magazine/`. It prints one line per file, such as `✓ data/bookmarks.json: 2 bookmarks`, and fails naming the entry and the field of an invalid file. For an issue it also prints a `⚠` warning, naming the field, for each thing that depends on the bookmarks, such as a bookmark id missing from `data/bookmarks.json` or a scan id missing from `data/scans.json`, when the issue has no cover picture, when art it names is missing, not a picture, or smaller than 1200 × 800 pixels, or shows on a post that has its own image, when a scan it shows has no source link and is not tagged `unverified`, and, for an issue with corners, when it has no Open Window item or more than 60% interest items. Warnings do not fail it, so removing or editing a bookmark never stops a deploy. A `.json` file in `data/magazine/` not named after a date gets a warning and is ignored. It also checks each `data/magazine/<YYYY-MM-DD>/episode.json`: it fails when a language's MP3 is missing, not named `episode-<en|zh|ja>.mp3`, or over 10 MB, or when chapters do not start later each time and before the end, and warns when the episode is older than 60 days.
+
+`prune-episodes` deletes `episode.json` and `episode-<en|zh|ja>.mp3` from each `data/magazine/<YYYY-MM-DD>/` older than `--days` days, keeping the issue, its cover, and its art, and prints each file. `--dry-run` prints them without deleting.
 
 The site needs no Astro config. The package depends on the Astro version it was tested with and runs it.
 
@@ -120,6 +125,20 @@ A site with at least one issue, a `data/magazine/<YYYY-MM-DD>.json` file, also g
 An issue is data the Grok bot writes once a day, described in `BOT.md` under "Write a magazine issue": a title, a theme chosen from preset palettes and font pairings, and a list of blocks that show bookmarks, such as a cover story, a pull quote, or a timeline. The package draws every block, so an issue holds no HTML, CSS, or web address. Each issue has a cover picture the bot makes, `data/magazine/<YYYY-MM-DD>.jpg` (or `.png`, `.webp`). The build resizes it for each screen, and the page sets the site's title across its top. An issue without one gets a lettered cover in its palette's color, and `validate` warns. The bot can also make up to three more pictures for blocks whose post has no image, `art` on a `cover-story` or `feature`, one `image-of-the-day` block, and up to four `interlude` blocks, pictures that give a pause between corners in a `wide`, `square`, or `quiet` shape. One `painting` block can also show a famous public-domain artwork the bot downloads, uncropped, with a museum label linking its source; it does not count toward those limits. They live in `data/magazine/<YYYY-MM-DD>/`, the build resizes them the same way, and `validate` fails a path that leaves that folder. When a block names a bookmark that is gone from `data/bookmarks.json`, the page leaves out that item, or the whole block when too few items are left, and `validate` warns. A block can name a scan from `data/scans.json` instead of a bookmark; a scan without a card on the page links to its post on X. `corner` blocks open recurring sections, drawn the same in every issue, and group the "In this issue" list; a `closer` ends the issue quietly.
 
 Each issue page has a Magazine / Digest switch at the top. Digest shows the same issue as a compact list for a quick read: each post once, in issue order, under its corner, with its "Why it matters" line (or, without one, the block's note or the post's tldr), its source, author, tags, and links to its card and to X. The page remembers the choice in the browser. `magazine/<YYYY-MM-DD>/?view=digest` and `magazine/<YYYY-MM-DD>/#digest` open the digest; `#digest` works with JavaScript off too, since both views are in the page and CSS shows the one the address targets.
+
+### Podcast (optional)
+
+An issue can have a spoken episode: `data/magazine/<YYYY-MM-DD>/episode.json` with one MP3 per language, `episode-en.mp3`, `episode-zh.mp3`, or `episode-ja.mp3`, described in `BOT.md` under "The podcast episode". The issue file does not change. The build publishes only the MP3s `episode.json` names, with a hash in their names, and ignores everything else in the folder and fields it does not use.
+
+The issue page shows a player above the magazine view, not in the digest or in print: a tab per language present (EN, 中文, 日本語), one audio player that loads nothing until played, and the chapters, which seek when tapped and highlight while they play. It starts on the language the reader picked last, kept in the browser, or else the browser's own language. The phone's lock screen shows the issue's title, the site's title, and its cover. When the episode ends, it shows the song from `episode.json` as "Next" with an Open in Apple Music link.
+
+With `musicKit.tokenEndpoint` in `custom/config.json`, the page also offers one-tap play of the song:
+
+```json
+{ "musicKit": { "tokenEndpoint": "https://relay.example.com/musickit-token" } }
+```
+
+Only once the episode has ended, the page loads MusicKit from Apple, gets a developer token from the endpoint with a `GET` that sends no cookies, expecting `{ "token": "<token>" }`, and queues the song without playing it, so a tap on Play starts it. Readers signed in to Apple Music hear the whole song; others hear Apple's preview. The endpoint must answer CORS requests from the site's origin and `http://localhost:4321`. Without the setting, the page shows only the link.
 
 ### Ask (optional)
 

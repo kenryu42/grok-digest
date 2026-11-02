@@ -40,6 +40,7 @@ export const siteConfigSchema = z.strictObject({
   title: z.string().trim().min(1).default(DEFAULT_TITLE),
   swipeMode: z.boolean().default(true),
   ask: z.strictObject({ endpoint: askEndpointSchema }).optional(),
+  musicKit: z.strictObject({ tokenEndpoint: askEndpointSchema }).optional(),
 });
 
 export type PageSettings = Pick<z.output<typeof siteConfigSchema>, "swipeMode">;
